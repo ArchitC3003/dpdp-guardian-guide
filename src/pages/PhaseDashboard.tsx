@@ -188,7 +188,7 @@ export default function PhaseDashboard() {
     { category: "Breach notification failure", penalty: "₹200 Cr", domains: "F" },
     { category: "Children's data non-compliance", penalty: "₹200 Cr", domains: "I" },
     { category: "Processor obligation failures", penalty: "₹250 Cr", domains: "J, K" },
-    { category: "Notice/consent/rights/governance", penalty: "₹50 Cr", domains: "A–D, G–H, L–N" },
+    { category: "Notice/consent/rights/governance", penalty: "₹50 Cr", domains: "A–D, G–H, L–O" },
   ];
 
   const chartData = domainScores.map((d) => ({ name: d.domain, score: d.score }));
@@ -233,7 +233,7 @@ export default function PhaseDashboard() {
         </Card>
         <Card className="border-border bg-card">
           <CardContent className="pt-6 text-center">
-            <p className="text-2xl font-bold">{totalAssessed}/84</p>
+            <p className="text-2xl font-bold">{totalAssessed}/92</p>
             <p className="text-xs text-muted-foreground mt-1">Items Assessed</p>
             <p className="text-xs mt-1">
               <span className="text-emerald">{totalYes}Y</span> / <span className="text-amber">{totalPartial}P</span> / <span className="text-risk-critical">{totalNo}N</span>
