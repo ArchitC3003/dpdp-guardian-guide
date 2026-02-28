@@ -174,6 +174,19 @@ export const DOMAINS: Domain[] = [
       { id: "N.6", description: "Third-party contractors/temp staff: privacy acknowledgement", risk: "standard", evidence: "Report" },
     ],
   },
+  {
+    code: "O", name: "Privacy by Design & Default", section: "Sec 4(2), 8(1), Rule 6", penalty: "₹50 Cr",
+    items: [
+      { id: "O.1", description: "Proactive not Reactive — privacy risk assessments conducted before new processing, products, or systems", risk: "critical", evidence: "Assessment Record" },
+      { id: "O.2", description: "Privacy as Default Setting — data collection limited to minimum by default; no user action required for maximum privacy", risk: "critical", evidence: "System Config" },
+      { id: "O.3", description: "Privacy Embedded into Design — privacy controls integrated into system architecture, not bolted on", risk: "high", evidence: "Architecture Doc" },
+      { id: "O.4", description: "Full Functionality — positive-sum approach; privacy not traded off against functionality or security", risk: "standard", evidence: "Assessment Record" },
+      { id: "O.5", description: "End-to-End Security — data protected throughout its entire lifecycle from collection to deletion", risk: "high", evidence: "System Config" },
+      { id: "O.6", description: "Visibility and Transparency — processing activities are verifiable and auditable by data principals and regulators", risk: "high", evidence: "Report" },
+      { id: "O.7", description: "Respect for Data Principal — user-centric design with strong defaults, clear notices, and empowerment features", risk: "high", evidence: "UI/UX Review" },
+      { id: "O.8", description: "Privacy impact documented for all new projects, features, and vendor integrations before launch", risk: "critical", evidence: "Report" },
+    ],
+  },
 ];
 
 export const POLICY_ITEMS = {
