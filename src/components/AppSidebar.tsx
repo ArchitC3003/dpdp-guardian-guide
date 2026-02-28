@@ -13,13 +13,14 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { NavLink } from "@/components/NavLink";
-import { Shield, LayoutDashboard, ClipboardList, Share2, Building2, FileText, Search, Grid3X3, Paperclip, BarChart3, LogOut } from "lucide-react";
+import { Shield, LayoutDashboard, ClipboardList, Share2, FolderOpen, Building2, FileText, Search, Grid3X3, Paperclip, BarChart3, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const mainNav = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Assessments", url: "/assessments", icon: ClipboardList },
   { title: "Shared Reports", url: "/shared", icon: Share2 },
+  { title: "Repository", url: "/repository", icon: FolderOpen },
 ];
 
 const phases = [

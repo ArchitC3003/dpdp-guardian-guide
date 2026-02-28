@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import ProfileSetup from "./pages/ProfileSetup";
 import Dashboard from "./pages/Dashboard";
 import SharedReports from "./pages/SharedReports";
+import Repository from "./pages/Repository";
 import PhaseOrgProfile from "./pages/PhaseOrgProfile";
 import PhasePolicyMatrix from "./pages/PhasePolicyMatrix";
 import PhaseRapidAssessment from "./pages/PhaseRapidAssessment";
@@ -54,6 +55,7 @@ const App = () => (
               <Route path="/" element={<Dashboard />} />
               <Route path="/assessments" element={<Dashboard />} />
               <Route path="/shared" element={<SharedReports />} />
+              <Route path="/repository" element={<Repository />} />
               <Route path="/assessment/:assessmentId/org-profile" element={<PhaseOrgProfile />} />
               <Route path="/assessment/:assessmentId/policy-matrix" element={<PhasePolicyMatrix />} />
               <Route path="/assessment/:assessmentId/rapid-assessment" element={<PhaseRapidAssessment />} />
