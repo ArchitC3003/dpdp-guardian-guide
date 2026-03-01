@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Shield } from "lucide-react";
+import { Cog } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 export default function Auth() {
@@ -48,8 +48,8 @@ export default function Auth() {
       <Card className="w-full max-w-md border-border bg-card">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto flex items-center gap-2">
-            <Shield className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold text-gradient">DPDP Comply</span>
+            <Cog className="h-8 w-8 text-primary" />
+            <span className="text-2xl font-bold text-gradient">PrivcybHub</span>
           </div>
           <CardTitle className="text-xl">{isLogin ? "Welcome back" : "Create account"}</CardTitle>
           <CardDescription>

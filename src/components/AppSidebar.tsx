@@ -13,14 +13,14 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { NavLink } from "@/components/NavLink";
-import { Shield, LayoutDashboard, ClipboardList, Share2, FolderOpen, Building2, FileText, Search, Grid3X3, Paperclip, BarChart3, LogOut } from "lucide-react";
+import { Cog, LayoutDashboard, ClipboardList, Share2, FolderOpen, Building2, FileText, Search, Grid3X3, Paperclip, BarChart3, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const mainNav = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Assessments", url: "/assessments", icon: ClipboardList },
   { title: "Shared Reports", url: "/shared", icon: Share2 },
-  { title: "Repository", url: "/repository", icon: FolderOpen },
+  { title: "Assessment Repository", url: "/repository", icon: FolderOpen },
 ];
 
 const phases = [
@@ -48,10 +48,10 @@ export function AppSidebar() {
       <SidebarContent>
         {/* Logo */}
         <div className="p-4 flex items-center gap-2 border-b border-border">
-          <Shield className="h-7 w-7 text-primary shrink-0" />
+          <Cog className="h-7 w-7 text-primary shrink-0" />
           {!collapsed && (
             <div className="flex items-center gap-2">
-              <span className="font-bold text-lg text-gradient">DPDP Comply</span>
+              <span className="font-bold text-lg text-gradient">PrivcybHub</span>
               <span className="text-[10px] font-mono bg-primary/20 text-primary px-1.5 py-0.5 rounded">v3.0</span>
             </div>
           )}
