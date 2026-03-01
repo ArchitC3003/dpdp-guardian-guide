@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Shield } from "lucide-react";
+import { Cog } from "lucide-react";
 
 export default function ProfileSetup() {
   const { user, refreshProfile } = useAuth();
@@ -43,8 +43,8 @@ export default function ProfileSetup() {
       <Card className="w-full max-w-lg border-border bg-card">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto flex items-center gap-2">
-            <Shield className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold text-gradient">DPDP Comply</span>
+            <Cog className="h-8 w-8 text-primary" />
+            <span className="text-2xl font-bold text-gradient">PrivcybHub</span>
           </div>
           <CardTitle className="text-xl">Complete Your Profile</CardTitle>
           <CardDescription>Tell us about yourself and your organisation</CardDescription>
