@@ -139,19 +139,14 @@ function addDomainChartSlide(pptx: PptxGenJS, domainScores: DomainScore[]) {
     w: 9,
     h: 4.2,
     showValue: true,
-    valueFontSize: 8,
-    valueFontColor: WHITE,
     catAxisLabelColor: MUTED,
     catAxisLabelFontSize: 9,
     valAxisLabelColor: MUTED,
     valAxisLabelFontSize: 8,
     valAxisMaxVal: 100,
     chartColors: [BRAND_GREEN],
-    plotArea: { fill: { color: BRAND_CARD } },
     showLegend: false,
-    catGridLine: { style: "none" } as any,
-    valGridLine: { color: "334155", style: "dash", size: 0.5 } as any,
-  });
+  } as any);
 }
 
 function addPenaltySlide(pptx: PptxGenJS, penaltyMap: { category: string; penalty: string; domains: string }[]) {
