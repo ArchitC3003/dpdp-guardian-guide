@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
+import { SessionTimeout } from "./SessionTimeout";
 
 export function AppLayout() {
   return (
@@ -16,8 +17,16 @@ export function AppLayout() {
               <Outlet />
             </div>
           </main>
+          <footer className="border-t border-border px-6 py-3 flex items-center justify-center gap-4 text-xs text-muted-foreground shrink-0">
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Privacy Policy</a>
+            <span>·</span>
+            <a href="/terms" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Terms of Service</a>
+            <span>·</span>
+            <span>© {new Date().getFullYear()} PrivcybHub</span>
+          </footer>
         </div>
       </div>
+      <SessionTimeout />
     </SidebarProvider>
   );
 }
