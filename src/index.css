@@ -140,21 +140,21 @@
 
 @layer utilities {
   .gradient-primary {
-    background: linear-gradient(135deg, hsl(239 84% 67%), hsl(263 70% 58%));
+    background: linear-gradient(135deg, hsl(161 93% 30%), hsl(158 64% 51%));
   }
   .gradient-card {
     background: linear-gradient(180deg, hsl(222 47% 10%), hsl(222 47% 8%));
   }
   .text-gradient {
-    background: linear-gradient(135deg, hsl(239 84% 67%), hsl(263 70% 58%));
+    background: linear-gradient(135deg, hsl(161 93% 30%), hsl(158 64% 51%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
   .glow-primary {
-    box-shadow: 0 0 20px -5px hsl(239 84% 67% / 0.4);
+    box-shadow: 0 0 20px -5px hsl(161 93% 30% / 0.4);
   }
   .glow-accent {
-    box-shadow: 0 0 20px -5px hsl(263 70% 58% / 0.4);
+    box-shadow: 0 0 20px -5px hsl(158 64% 51% / 0.4);
   }
 }
