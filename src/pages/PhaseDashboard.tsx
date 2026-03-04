@@ -6,10 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DOMAINS, POLICY_ITEMS, DEPARTMENTS, DEPT_CONTROLS, getRiskMultiplier, getStatusPct } from "@/data/assessmentDomains";
 import { toast } from "sonner";
-import { Save, Share2, CheckCircle2, Copy, AlertTriangle, Shield, BarChart3, FileText, Grid3X3 } from "lucide-react";
+import { Save, Share2, CheckCircle2, Copy, AlertTriangle, Shield, BarChart3, FileText, Grid3X3, Download } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
 import type { Tables } from "@/integrations/supabase/types";
 import type { Json } from "@/integrations/supabase/types";
+import { exportDashboardToPPT } from "@/lib/exportPpt";
+import type { DomainScore } from "@/lib/pptTypes";
 
 interface SpecialStatus {
   sdf?: boolean;
@@ -18,17 +20,7 @@ interface SpecialStatus {
   [key: string]: boolean | undefined;
 }
 
-interface DomainScore {
-  domain: string;
-  name: string;
-  items: number;
-  yes: number;
-  partial: number;
-  no: number;
-  na: number;
-  score: number;
-  penalty: string;
-}
+// DomainScore type imported from pptTypes
 
 export default function PhaseDashboard() {
   const { assessmentId } = useParams();
@@ -181,6 +173,36 @@ export default function PhaseDashboard() {
     toast.success("Assessment marked as complete");
   };
 
+  const handleExportPPT = async () => {
+    const narrative = `DPDP Rapid Assessment (v3.0) for ${assessment?.org_name || "—"} covering ${totalAssessed} of 84 items across 14 domains. Weighted score: ${overallScore}% (${band.label}). ${totalYes} compliant, ${totalPartial} partial, ${totalNo} non-compliant. Evidence verified for ${evidenceVerified} items. Policy stack: ${policyCurrentCount} of 37 current; ${policyMissingCount} missing. P1 items: ${p1Count}. Dept grid: ${deptCompliant}/${deptTotal} compliant.`;
+    toast.info("Generating presentation...");
+    try {
+      await exportDashboardToPPT({
+        orgName: assessment?.org_name || "",
+        overallScore,
+        bandLabel: band.label,
+        totalAssessed,
+        totalYes,
+        totalPartial,
+        totalNo,
+        p1Count,
+        policyCurrentCount,
+        policyMissingCount,
+        deptCompliant,
+        deptTotal,
+        evidenceVerified,
+        evidenceStated,
+        evidenceNA,
+        domainScores,
+        penaltyMap,
+        narrative,
+      });
+      toast.success("Presentation downloaded!");
+    } catch (e: any) {
+      toast.error("Export failed: " + e.message);
+    }
+  };
+
   if (loading) return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading dashboard...</div>;
 
   const penaltyMap = [
@@ -201,7 +223,8 @@ export default function PhaseDashboard() {
           <span className="text-xs font-mono font-bold bg-primary/20 text-primary px-2 py-1 rounded">PHASE 6</span>
           <h1 className="text-2xl font-bold">Compliance Dashboard</h1>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" onClick={handleExportPPT}><Download className="h-4 w-4 mr-2" /> Download PPT</Button>
           <Button variant="outline" onClick={saveVersion}><Save className="h-4 w-4 mr-2" /> Save Version</Button>
           <Button variant="outline" onClick={shareReport}><Share2 className="h-4 w-4 mr-2" /> Share Report</Button>
           <Button className="gradient-primary" onClick={markComplete}><CheckCircle2 className="h-4 w-4 mr-2" /> Mark Complete</Button>
