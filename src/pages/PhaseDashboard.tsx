@@ -6,10 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DOMAINS, POLICY_ITEMS, DEPARTMENTS, DEPT_CONTROLS, getRiskMultiplier, getStatusPct } from "@/data/assessmentDomains";
 import { toast } from "sonner";
-import { Save, Share2, CheckCircle2, Copy, AlertTriangle, Shield, BarChart3, FileText, Grid3X3 } from "lucide-react";
+import { Save, Share2, CheckCircle2, Copy, AlertTriangle, Shield, BarChart3, FileText, Grid3X3, Download } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
 import type { Tables } from "@/integrations/supabase/types";
 import type { Json } from "@/integrations/supabase/types";
+import { exportDashboardToPPT } from "@/lib/exportPpt";
+import type { DomainScore } from "@/lib/pptTypes";
 
 interface SpecialStatus {
   sdf?: boolean;
@@ -18,17 +20,7 @@ interface SpecialStatus {
   [key: string]: boolean | undefined;
 }
 
-interface DomainScore {
-  domain: string;
-  name: string;
-  items: number;
-  yes: number;
-  partial: number;
-  no: number;
-  na: number;
-  score: number;
-  penalty: string;
-}
+// DomainScore type imported from pptTypes
 
 export default function PhaseDashboard() {
   const { assessmentId } = useParams();
