@@ -1,12 +1,15 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { repositoryPhases, type RepositoryItem } from "@/data/repositoryData";
-import { Search, ChevronDown, ChevronRight, FolderOpen, FileText, Download, Copy, CheckCircle, Clock, Circle } from "lucide-react";
+import { Search, ChevronDown, ChevronRight, FolderOpen, FileText, Download, Copy, CheckCircle, Clock, Circle, Upload, Trash2, File } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 const STATUS_STYLES: Record<string, string> = {
   "not-started": "bg-slate-600/20 text-slate-400 border border-slate-600/30",
@@ -26,21 +29,40 @@ const STATUS_LABELS: Record<string, string> = {
   "completed": "Completed",
 };
 
+const ACCEPTED_FILE_TYPES = ".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+interface UploadedFile {
+  name: string;
+  path: string;
+}
+
 function ItemTable({
   items,
   itemStatuses,
   itemNotes,
+  uploadedFiles,
+  uploadingId,
   onStatusChange,
   onNotesChange,
   onViewTemplate,
+  onUploadFile,
+  onDeleteFile,
+  onDownloadFile,
 }: {
   items: RepositoryItem[];
   itemStatuses: Record<string, string>;
   itemNotes: Record<string, string>;
+  uploadedFiles: Record<string, UploadedFile>;
+  uploadingId: string | null;
   onStatusChange: (id: string, status: string) => void;
   onNotesChange: (id: string, notes: string) => void;
   onViewTemplate: (item: RepositoryItem) => void;
+  onUploadFile: (itemId: string, file: File) => void;
+  onDeleteFile: (itemId: string) => void;
+  onDownloadFile: (itemId: string) => void;
 }) {
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -50,6 +72,7 @@ function ItemTable({
             <th className="py-2 px-2">Requirement</th>
             <th className="py-2 px-2 w-28">DPDP Ref</th>
             <th className="py-2 px-2 w-32">Template</th>
+            <th className="py-2 px-2 w-48">Upload</th>
             <th className="py-2 px-2 w-36">Status</th>
             <th className="py-2 px-2 w-40">Notes</th>
           </tr>
@@ -58,6 +81,8 @@ function ItemTable({
           {items.map((item, i) => {
             const status = itemStatuses[item.id] ?? item.status;
             const notes = itemNotes[item.id] ?? item.notes;
+            const uploaded = uploadedFiles[item.id];
+            const isUploading = uploadingId === item.id;
             return (
               <tr key={item.id} className={`border-b border-slate-700/30 ${i % 2 === 0 ? "bg-slate-800/30" : ""}`}>
                 <td className="py-2.5 px-2 text-muted-foreground">{i + 1}</td>
@@ -69,12 +94,58 @@ function ItemTable({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 h-7 text-xs"
+                    className="text-primary hover:text-primary/80 hover:bg-primary/10 h-7 text-xs"
                     onClick={() => onViewTemplate(item)}
                   >
                     <FileText className="h-3.5 w-3.5 mr-1" />
                     View Template
                   </Button>
+                </td>
+                <td className="py-2.5 px-2">
+                  {uploaded ? (
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        className="flex items-center gap-1 text-xs text-primary hover:underline truncate max-w-[120px]"
+                        onClick={() => onDownloadFile(item.id)}
+                        title={uploaded.name}
+                      >
+                        <File className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{uploaded.name}</span>
+                      </button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 text-destructive hover:text-destructive/80 hover:bg-destructive/10"
+                        onClick={() => onDeleteFile(item.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <input
+                        type="file"
+                        accept={ACCEPTED_FILE_TYPES}
+                        className="hidden"
+                        ref={(el) => { fileInputRefs.current[item.id] = el; }}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) onUploadFile(item.id, file);
+                          e.target.value = "";
+                        }}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-muted-foreground hover:text-foreground hover:bg-accent/30"
+                        disabled={isUploading}
+                        onClick={() => fileInputRefs.current[item.id]?.click()}
+                      >
+                        <Upload className="h-3.5 w-3.5 mr-1" />
+                        {isUploading ? "Uploading..." : "Upload"}
+                      </Button>
+                    </>
+                  )}
                 </td>
                 <td className="py-2.5 px-2">
                   <Select value={status} onValueChange={(v) => onStatusChange(item.id, v)}>
@@ -111,6 +182,7 @@ function ItemTable({
 }
 
 export default function Repository() {
+  const { session } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [phaseFilter, setPhaseFilter] = useState("all");
@@ -126,8 +198,88 @@ export default function Repository() {
   const [itemStatuses, setItemStatuses] = useState<Record<string, string>>({});
   const [itemNotes, setItemNotes] = useState<Record<string, string>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<Record<string, UploadedFile>>({});
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+
+  const userId = session?.user?.id;
 
   const getStatus = (item: RepositoryItem) => (itemStatuses[item.id] ?? item.status) as string;
+
+  const handleUploadFile = async (itemId: string, file: File) => {
+    if (!userId) {
+      toast.error("You must be signed in to upload files.");
+      return;
+    }
+
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      toast.error("File size must be under 10MB.");
+      return;
+    }
+
+    const allowed = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+    if (!allowed.includes(file.type)) {
+      toast.error("Only PDF and Word documents are allowed.");
+      return;
+    }
+
+    setUploadingId(itemId);
+    const ext = file.name.split(".").pop();
+    const filePath = `${userId}/${itemId}.${ext}`;
+
+    const { error } = await supabase.storage
+      .from("repository-files")
+      .upload(filePath, file, { upsert: true });
+
+    if (error) {
+      toast.error("Upload failed: " + error.message);
+    } else {
+      setUploadedFiles((prev) => ({ ...prev, [itemId]: { name: file.name, path: filePath } }));
+      toast.success(`"${file.name}" uploaded successfully.`);
+    }
+    setUploadingId(null);
+  };
+
+  const handleDeleteFile = async (itemId: string) => {
+    const uploaded = uploadedFiles[itemId];
+    if (!uploaded) return;
+
+    const { error } = await supabase.storage
+      .from("repository-files")
+      .remove([uploaded.path]);
+
+    if (error) {
+      toast.error("Failed to delete file: " + error.message);
+    } else {
+      setUploadedFiles((prev) => {
+        const next = { ...prev };
+        delete next[itemId];
+        return next;
+      });
+      toast.success("File deleted.");
+    }
+  };
+
+  const handleDownloadFile = async (itemId: string) => {
+    const uploaded = uploadedFiles[itemId];
+    if (!uploaded) return;
+
+    const { data, error } = await supabase.storage
+      .from("repository-files")
+      .download(uploaded.path);
+
+    if (error || !data) {
+      toast.error("Failed to download file.");
+      return;
+    }
+
+    const url = URL.createObjectURL(data);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = uploaded.name;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const filteredPhases = useMemo(() => {
     return repositoryPhases
@@ -194,7 +346,6 @@ export default function Repository() {
     { label: "Not Started", value: stats.notStarted, icon: Circle, color: "text-slate-400" },
   ];
 
-  // Group Phase 3 items by domain
   const getDomainGroups = (items: RepositoryItem[]) => {
     const groups: Record<string, RepositoryItem[]> = {};
     items.forEach((item) => {
@@ -203,6 +354,19 @@ export default function Repository() {
       groups[domain].push(item);
     });
     return Object.entries(groups);
+  };
+
+  const sharedTableProps = {
+    itemStatuses,
+    itemNotes,
+    uploadedFiles,
+    uploadingId,
+    onStatusChange: (id: string, s: string) => setItemStatuses((prev) => ({ ...prev, [id]: s })),
+    onNotesChange: (id: string, n: string) => setItemNotes((prev) => ({ ...prev, [id]: n })),
+    onViewTemplate: setSelectedItem,
+    onUploadFile: handleUploadFile,
+    onDeleteFile: handleDeleteFile,
+    onDownloadFile: handleDownloadFile,
   };
 
   return (
@@ -287,33 +451,19 @@ export default function Repository() {
                             className="flex items-center gap-2 mb-2 hover:opacity-80 transition-opacity"
                             onClick={() => toggleDomain(domain)}
                           >
-                            <FolderOpen className="h-4 w-4 text-indigo-400" />
+                            <FolderOpen className="h-4 w-4 text-primary" />
                             <span className="text-sm font-semibold text-muted-foreground">{domain}</span>
                             <Badge variant="outline" className="text-xs">{items.length}</Badge>
                             {domainExpanded ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
                           </button>
                           {domainExpanded && (
-                            <ItemTable
-                              items={items}
-                              itemStatuses={itemStatuses}
-                              itemNotes={itemNotes}
-                              onStatusChange={(id, s) => setItemStatuses((prev) => ({ ...prev, [id]: s }))}
-                              onNotesChange={(id, n) => setItemNotes((prev) => ({ ...prev, [id]: n }))}
-                              onViewTemplate={setSelectedItem}
-                            />
+                            <ItemTable items={items} {...sharedTableProps} />
                           )}
                         </div>
                       );
                     })
                   ) : (
-                    <ItemTable
-                      items={phase.items}
-                      itemStatuses={itemStatuses}
-                      itemNotes={itemNotes}
-                      onStatusChange={(id, s) => setItemStatuses((prev) => ({ ...prev, [id]: s }))}
-                      onNotesChange={(id, n) => setItemNotes((prev) => ({ ...prev, [id]: n }))}
-                      onViewTemplate={setSelectedItem}
-                    />
+                    <ItemTable items={phase.items} {...sharedTableProps} />
                   )}
                 </div>
               )}
