@@ -112,7 +112,7 @@ export function AppSidebar() {
             <p className="text-xs text-muted-foreground truncate">{profile.role}</p>
           </div>
         )}
-        <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground hover:text-destructive" onClick={signOut}>
+        <Button variant="ghost" size="sm" className="w-full justify-start text-sidebar-foreground hover:text-destructive" onClick={signOut}>
           <LogOut className="h-4 w-4 mr-2 shrink-0" />
           {!collapsed && "Sign Out"}
         </Button>
