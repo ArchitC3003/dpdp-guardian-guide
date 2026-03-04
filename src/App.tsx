@@ -5,11 +5,15 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { AppLayout } from "@/components/AppLayout";
+import { CookieBanner } from "@/components/CookieBanner";
 import Auth from "./pages/Auth";
 import ProfileSetup from "./pages/ProfileSetup";
 import Dashboard from "./pages/Dashboard";
 import SharedReports from "./pages/SharedReports";
 import Repository from "./pages/Repository";
+import AccountSettings from "./pages/AccountSettings";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import PhaseOrgProfile from "./pages/PhaseOrgProfile";
 import PhasePolicyMatrix from "./pages/PhasePolicyMatrix";
 import PhaseRapidAssessment from "./pages/PhaseRapidAssessment";
@@ -29,9 +33,7 @@ function ProtectedRoutes() {
   if (!session) return <Navigate to="/auth" replace />;
   if (profile && !profile.full_name) return <Navigate to="/profile-setup" replace />;
 
-  return (
-    <AppLayout />
-  );
+  return <AppLayout />;
 }
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -48,14 +50,18 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <CookieBanner />
           <Routes>
             <Route path="/auth" element={<AuthGuard><Auth /></AuthGuard>} />
             <Route path="/profile-setup" element={<ProfileSetup />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
             <Route element={<ProtectedRoutes />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/assessments" element={<Dashboard />} />
               <Route path="/shared" element={<SharedReports />} />
               <Route path="/repository" element={<Repository />} />
+              <Route path="/settings" element={<AccountSettings />} />
               <Route path="/assessment/:assessmentId/org-profile" element={<PhaseOrgProfile />} />
               <Route path="/assessment/:assessmentId/policy-matrix" element={<PhasePolicyMatrix />} />
               <Route path="/assessment/:assessmentId/rapid-assessment" element={<PhaseRapidAssessment />} />

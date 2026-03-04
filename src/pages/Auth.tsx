@@ -1,21 +1,53 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Cog } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+
+function PasswordStrength({ password }: { password: string }) {
+  const score = useMemo(() => {
+    let s = 0;
+    if (password.length >= 8) s++;
+    if (password.length >= 12) s++;
+    if (/\d/.test(password)) s++;
+    if (/[!@#$%^&*]/.test(password)) s++;
+    return s;
+  }, [password]);
+
+  const colors = ["bg-slate-600", "bg-red-500", "bg-orange-500", "bg-yellow-500", "bg-green-500"];
+  const labels = ["", "Weak", "Fair", "Good", "Strong"];
+
+  return (
+    <div className="space-y-1">
+      <div className="flex gap-1 items-center">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className={`h-1 flex-1 rounded ${i < score ? colors[score] : "bg-slate-700"}`} />
+        ))}
+        {score > 0 && <span className="text-xs ml-2 text-muted-foreground">{labels[score]}</span>}
+      </div>
+      {password.length > 0 && password.length < 8 && (
+        <p className="text-xs text-slate-500">Minimum 8 characters required</p>
+      )}
+    </div>
+  );
+}
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [consentChecked, setConsentChecked] = useState(false);
   const navigate = useNavigate();
+
+  const signUpDisabled = !isLogin && (!consentChecked || password.length < 8);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +76,7 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md border-border bg-card">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto flex items-center gap-2">
@@ -60,36 +92,37 @@ export default function Auth() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@company.com"
-                required
-              />
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                minLength={6}
-              />
+              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} />
+              {!isLogin && <PasswordStrength password={password} />}
             </div>
-            <Button type="submit" className="w-full gradient-primary" disabled={loading}>
+
+            {!isLogin && (
+              <div className="flex items-start space-x-2">
+                <Checkbox id="consent" checked={consentChecked} onCheckedChange={(v) => setConsentChecked(v === true)} />
+                <Label htmlFor="consent" className="text-sm leading-5">
+                  I have read and agree to the{" "}
+                  <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline">Privacy Policy</a>
+                  {" "}and{" "}
+                  <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline">Terms of Service</a>
+                </Label>
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              className={`w-full gradient-primary ${signUpDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+              disabled={loading || signUpDisabled}
+            >
               {loading ? "Loading..." : isLogin ? "Sign In" : "Sign Up"}
             </Button>
           </form>
           <div className="relative my-4">
             <Separator />
-            <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
-              OR
-            </span>
+            <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">OR</span>
           </div>
           <Button
             type="button"
@@ -106,16 +139,21 @@ export default function Auth() {
             Continue with Google
           </Button>
           <div className="mt-4 text-center">
-            <button
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-muted-foreground hover:text-primary transition-colors"
-            >
+            <button type="button" onClick={() => { setIsLogin(!isLogin); setConsentChecked(false); }} className="text-sm text-muted-foreground hover:text-primary transition-colors">
               {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
             </button>
           </div>
         </CardContent>
       </Card>
+
+      {/* A6 — Privacy footer */}
+      <p className="mt-6 text-xs text-muted-foreground text-center max-w-md">
+        By signing in you acknowledge our{" "}
+        <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline">Privacy Policy</a>
+        {" "}and{" "}
+        <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline">Terms of Service</a>
+        . PrivcybHub uses essential cookies only.
+      </p>
     </div>
   );
 }

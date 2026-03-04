@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Cog } from "lucide-react";
+import { Cog, Info } from "lucide-react";
 
 export default function ProfileSetup() {
   const { user, refreshProfile } = useAuth();
@@ -73,6 +73,15 @@ export default function ProfileSetup() {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* A9 — Data disclosure */}
+            <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/30 p-3">
+              <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+              <p className="text-xs text-muted-foreground">
+                Your profile information is used to personalise your compliance dashboard. It is stored securely, not shared with third parties, and you can delete it at any time from Settings.
+              </p>
+            </div>
+
             <Button type="submit" className="w-full gradient-primary" disabled={loading || !role}>
               {loading ? "Saving..." : "Continue to Dashboard"}
             </Button>
