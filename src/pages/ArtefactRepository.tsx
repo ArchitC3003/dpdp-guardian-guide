@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { FolderOpen, FileText, Download, ChevronDown, ChevronRight, Archive } from "lucide-react";
+import { FolderOpen, FileText, Download, ChevronDown, ChevronRight, Archive, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { AdminUploadPanel } from "@/components/AdminUploadPanel";
 
 const FOLDERS = [
   { key: "Checklist", label: "Checklist", icon: "✅", description: "Compliance checklists and verification documents" },
@@ -25,6 +27,7 @@ export default function ArtefactRepository() {
   const [files, setFiles] = useState<ArtefactFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(FOLDERS.map((f) => f.key)));
+  const { isAdmin } = useIsAdmin();
 
   useEffect(() => {
     fetchFiles();
@@ -61,6 +64,14 @@ export default function ArtefactRepository() {
     a.click();
     URL.revokeObjectURL(url);
     toast.success(`Downloaded "${file.file_name}"`);
+  };
+
+  const handleDelete = async (file: ArtefactFile) => {
+    if (!confirm(`Delete "${file.file_name}"?`)) return;
+    await supabase.storage.from("artefact-files").remove([file.file_path]);
+    const { error } = await supabase.from("artefact_files").delete().eq("id", file.id);
+    if (error) toast.error("Failed to delete file.");
+    else { toast.success(`Deleted "${file.file_name}"`); fetchFiles(); }
   };
 
   const toggleFolder = (key: string) => {
@@ -108,6 +119,9 @@ export default function ArtefactRepository() {
           </div>
         ))}
       </div>
+
+      {/* Admin Upload */}
+      {isAdmin && <AdminUploadPanel onUploaded={fetchFiles} />}
 
       {/* Folders */}
       {loading ? (
@@ -177,7 +191,7 @@ export default function ArtefactRepository() {
                                 <td className="py-2.5 px-2 text-muted-foreground text-xs">
                                   {new Date(file.uploaded_at).toLocaleDateString()}
                                 </td>
-                                <td className="py-2.5 px-2">
+                                <td className="py-2.5 px-2 flex items-center gap-1">
                                   <Button
                                     variant="ghost"
                                     size="sm"
@@ -187,6 +201,16 @@ export default function ArtefactRepository() {
                                     <Download className="h-3.5 w-3.5 mr-1" />
                                     Download
                                   </Button>
+                                  {isAdmin && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 text-xs text-destructive hover:text-destructive/80 hover:bg-destructive/10"
+                                      onClick={() => handleDelete(file)}
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                  )}
                                 </td>
                               </tr>
                             ))}
