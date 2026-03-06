@@ -21,6 +21,7 @@ const mainNav = [
   { title: "Assessments", url: "/assessments", icon: ClipboardList },
   { title: "Shared Reports", url: "/shared", icon: Share2 },
   { title: "Assessment Repository", url: "/repository", icon: FolderOpen },
+  { title: "Artefact Repository", url: "/artefacts", icon: Building2 },
   { title: "Settings", url: "/settings", icon: Settings2 },
 ];
 

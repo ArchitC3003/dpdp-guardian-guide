@@ -339,6 +339,37 @@ export default function Repository() {
     URL.revokeObjectURL(url);
   };
 
+  const handleExportChecklist = () => {
+    const allItems = repositoryPhases.flatMap((phase) =>
+      phase.items.map((item) => ({
+        phase: `Phase ${phase.phase}: ${phase.title}`,
+        domain: item.domain || "",
+        requirement: item.requirement,
+        dpdpRef: item.dpdpRef,
+        template: item.templateTitle,
+        status: STATUS_LABELS[getStatus(item)] || getStatus(item),
+        notes: itemNotes[item.id] ?? item.notes,
+      }))
+    );
+
+    const header = "Phase,Domain,Requirement,DPDP Reference,Template,Status,Notes";
+    const csvRows = allItems.map((row) =>
+      [row.phase, row.domain, row.requirement, row.dpdpRef, row.template, row.status, row.notes]
+        .map((v) => `"${(v || "").replace(/"/g, '""')}"`)
+        .join(",")
+    );
+    const csv = [header, ...csvRows].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `DPDP_Assessment_Checklist_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Checklist exported successfully.");
+  };
+
   const statCards = [
     { label: "Total Requirements", value: stats.total, icon: FileText, color: "text-primary" },
     { label: "Completed", value: stats.completed, icon: CheckCircle, color: "text-green-400" },
@@ -377,7 +408,7 @@ export default function Repository() {
           <h1 className="text-3xl font-bold text-primary">Assessment Repository</h1>
           <p className="text-muted-foreground">Requirement-wise checklists and downloadable artefact templates for DPDP Act, 2023 compliance</p>
         </div>
-        <Button variant="outline" className="shrink-0">
+        <Button variant="outline" className="shrink-0" onClick={handleExportChecklist}>
           <Download className="h-4 w-4 mr-2" /> Export Checklist
         </Button>
       </div>

@@ -11,6 +11,7 @@ import ProfileSetup from "./pages/ProfileSetup";
 import Dashboard from "./pages/Dashboard";
 import SharedReports from "./pages/SharedReports";
 import Repository from "./pages/Repository";
+import ArtefactRepository from "./pages/ArtefactRepository";
 import AccountSettings from "./pages/AccountSettings";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
@@ -61,6 +62,7 @@ const App = () => (
               <Route path="/assessments" element={<Dashboard />} />
               <Route path="/shared" element={<SharedReports />} />
               <Route path="/repository" element={<Repository />} />
+              <Route path="/artefacts" element={<ArtefactRepository />} />
               <Route path="/settings" element={<AccountSettings />} />
               <Route path="/assessment/:assessmentId/org-profile" element={<PhaseOrgProfile />} />
               <Route path="/assessment/:assessmentId/policy-matrix" element={<PhasePolicyMatrix />} />
