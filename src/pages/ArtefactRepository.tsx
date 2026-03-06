@@ -27,6 +27,7 @@ export default function ArtefactRepository() {
   const [files, setFiles] = useState<ArtefactFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(FOLDERS.map((f) => f.key)));
+  const { isAdmin } = useIsAdmin();
 
   useEffect(() => {
     fetchFiles();
