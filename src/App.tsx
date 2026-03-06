@@ -11,6 +11,7 @@ import ProfileSetup from "./pages/ProfileSetup";
 import Dashboard from "./pages/Dashboard";
 import SharedReports from "./pages/SharedReports";
 import Repository from "./pages/Repository";
+import ArtefactRepository from "./pages/ArtefactRepository";
 import AccountSettings from "./pages/AccountSettings";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
