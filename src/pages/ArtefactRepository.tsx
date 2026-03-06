@@ -66,6 +66,14 @@ export default function ArtefactRepository() {
     toast.success(`Downloaded "${file.file_name}"`);
   };
 
+  const handleDelete = async (file: ArtefactFile) => {
+    if (!confirm(`Delete "${file.file_name}"?`)) return;
+    await supabase.storage.from("artefact-files").remove([file.file_path]);
+    const { error } = await supabase.from("artefact_files").delete().eq("id", file.id);
+    if (error) toast.error("Failed to delete file.");
+    else { toast.success(`Deleted "${file.file_name}"`); fetchFiles(); }
+  };
+
   const toggleFolder = (key: string) => {
     setExpandedFolders((prev) => {
       const next = new Set(prev);
