@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      artefact_files: {
+        Row: {
+          description: string | null
+          file_name: string
+          file_path: string
+          folder: string
+          id: string
+          uploaded_at: string
+        }
+        Insert: {
+          description?: string | null
+          file_name: string
+          file_path: string
+          folder: string
+          id?: string
+          uploaded_at?: string
+        }
+        Update: {
+          description?: string | null
+          file_name?: string
+          file_path?: string
+          folder?: string
+          id?: string
+          uploaded_at?: string
+        }
+        Relationships: []
+      }
       assessment_checks: {
         Row: {
           assessment_id: string
