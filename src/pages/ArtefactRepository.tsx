@@ -191,7 +191,7 @@ export default function ArtefactRepository() {
                                 <td className="py-2.5 px-2 text-muted-foreground text-xs">
                                   {new Date(file.uploaded_at).toLocaleDateString()}
                                 </td>
-                                <td className="py-2.5 px-2">
+                                <td className="py-2.5 px-2 flex items-center gap-1">
                                   <Button
                                     variant="ghost"
                                     size="sm"
@@ -201,6 +201,16 @@ export default function ArtefactRepository() {
                                     <Download className="h-3.5 w-3.5 mr-1" />
                                     Download
                                   </Button>
+                                  {isAdmin && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 text-xs text-destructive hover:text-destructive/80 hover:bg-destructive/10"
+                                      onClick={() => handleDelete(file)}
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                  )}
                                 </td>
                               </tr>
                             ))}
