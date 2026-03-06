@@ -120,6 +120,9 @@ export default function ArtefactRepository() {
         ))}
       </div>
 
+      {/* Admin Upload */}
+      {isAdmin && <AdminUploadPanel onUploaded={fetchFiles} />}
+
       {/* Folders */}
       {loading ? (
         <div className="text-center py-12 text-muted-foreground">Loading artefacts...</div>
