@@ -377,7 +377,7 @@ export default function Repository() {
           <h1 className="text-3xl font-bold text-primary">Assessment Repository</h1>
           <p className="text-muted-foreground">Requirement-wise checklists and downloadable artefact templates for DPDP Act, 2023 compliance</p>
         </div>
-        <Button variant="outline" className="shrink-0">
+        <Button variant="outline" className="shrink-0" onClick={handleExportChecklist}>
           <Download className="h-4 w-4 mr-2" /> Export Checklist
         </Button>
       </div>
