@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { toast } from "sonner";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -183,6 +184,7 @@ function ItemTable({
 
 export default function Repository() {
   const { session } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [phaseFilter, setPhaseFilter] = useState("all");
@@ -406,7 +408,10 @@ export default function Repository() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-primary">Assessment Repository</h1>
-          <p className="text-muted-foreground">Requirement-wise checklists and downloadable artefact templates for DPDP Act, 2023 compliance</p>
+          <p className="text-muted-foreground">
+            Requirement-wise checklists and downloadable artefact templates for DPDP Act, 2023 compliance
+            {isAdmin && <span className="ml-2 inline-flex items-center gap-1 text-xs text-primary font-semibold">🛡️ Admin</span>}
+          </p>
         </div>
         <Button variant="outline" className="shrink-0" onClick={handleExportChecklist}>
           <Download className="h-4 w-4 mr-2" /> Export Checklist

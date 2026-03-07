@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/StatusBadge";
-import { Plus, Trash2, ExternalLink, ClipboardList, BarChart3, CheckCircle2, Layers } from "lucide-react";
+import { Plus, Trash2, ExternalLink, ClipboardList, BarChart3, CheckCircle2, Layers, Shield } from "lucide-react";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -13,6 +14,7 @@ type Assessment = Tables<"assessments">;
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const navigate = useNavigate();
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,9 +22,10 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user) return;
     loadAssessments();
-  }, [user]);
+  }, [user, isAdmin]);
 
   const loadAssessments = async () => {
+    // Admin sees all assessments; regular users see only their own (enforced by RLS)
     const { data } = await supabase
       .from("assessments")
       .select("*")
@@ -71,7 +74,10 @@ export default function Dashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">DPDP Act, 2023 Compliance Overview</p>
+          <p className="text-muted-foreground">
+            DPDP Act, 2023 Compliance Overview
+            {isAdmin && <span className="ml-2 inline-flex items-center gap-1 text-xs text-primary font-semibold"><Shield className="h-3 w-3" /> Admin View</span>}
+          </p>
         </div>
         <Button onClick={createAssessment} className="gradient-primary">
           <Plus className="h-4 w-4 mr-2" /> New Assessment
