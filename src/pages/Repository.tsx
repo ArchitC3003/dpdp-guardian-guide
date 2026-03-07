@@ -184,6 +184,7 @@ function ItemTable({
 
 export default function Repository() {
   const { session } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [phaseFilter, setPhaseFilter] = useState("all");
