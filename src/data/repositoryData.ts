@@ -26,10 +26,10 @@ export const repositoryPhases: RepositoryPhase[] = [
     items: [
       {
         id: "p1-1",
-        requirement: "Obtain and file Certificate of Incorporation / Registration",
+        requirement: "Statement on Applicability (Role as Data Fiduciary, Significant Data Fiduciary, Joint/Independent Data Fiduciary, Data Processor)",
         dpdpRef: "Rule 3(1)",
-        templateTitle: "Certificate Filing Checklist",
-        templateContent: "CERTIFICATE OF INCORPORATION FILING CHECKLIST\n\n[Organisation Name] | Date: [Date]\n\nItem 1: Original Certificate of Incorporation / Registration obtained from RoC\nItem 2: Certified copy stored in compliance repository\nItem 3: Digital scan uploaded to secure document management system\nItem 4: CIN / Registration Number recorded: [Number]\nItem 5: Date of Incorporation: [Date]\nItem 6: Registered Address verified and current\nItem 7: Any amendments to MoA/AoA documented\n\nVerified by: [Name] | [Designation]\nDate of Verification: [Date]",
+        templateTitle: "Statement on Applicability Template",
+        templateContent: "STATEMENT ON APPLICABILITY\n\n[Organisation Name] | Date: [Date]\n\n1. Organisation Role Classification:\n   ☐ Data Fiduciary\n   ☐ Significant Data Fiduciary\n   ☐ Joint Data Fiduciary\n   ☐ Independent Data Fiduciary\n   ☐ Data Processor\n\n2. Basis for Classification:\n   [Provide rationale for the selected role based on DPDP Act, 2023 definitions]\n\n3. Volume of Personal Data Processed: [Details]\n4. Categories of Data Principals Served: [Details]\n5. Cross-border Data Transfer Applicability: [Yes/No — Details]\n6. Significant Data Fiduciary Criteria Assessment:\n   ☐ Volume of personal data processed\n   ☐ Risk of harm to Data Principals\n   ☐ Impact on sovereignty and integrity of India\n   ☐ Risk to electoral democracy\n   ☐ Security of the State\n   ☐ Public order\n\n7. Data Processor Engagement (if applicable):\n   [List Data Processors engaged and scope of processing]\n\nPrepared by: [Name] | [Designation]\nReviewed by: [Name] | [Designation]\nDate of Assessment: [Date]",
         status: "not-started",
         notes: ""
       },
