@@ -14,12 +14,29 @@ import type { Tables } from "@/integrations/supabase/types";
 
 type Assessment = Tables<"assessments">;
 
+interface PolicyDocRow {
+  id: string;
+  title: string;
+  status: string;
+  review_date: string | null;
+  updated_at: string;
+}
+
+const STATUS_COLORS: Record<string, string> = {
+  Draft: "border-amber-500/40 text-amber-400 bg-amber-500/10",
+  "Under Review": "border-orange-500/40 text-orange-400 bg-orange-500/10",
+  Approved: "border-emerald-500/40 text-emerald-400 bg-emerald-500/10",
+  Published: "border-primary/40 text-primary bg-primary/10",
+  Retired: "border-muted-foreground/40 text-muted-foreground bg-muted/20",
+};
+
 export default function Dashboard() {
   const { user } = useAuth();
   const { isAdmin } = useIsAdmin();
   const navigate = useNavigate();
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [policyDocs, setPolicyDocs] = useState<PolicyDocRow[]>([]);
 
   useEffect(() => {
     if (!user) return;
