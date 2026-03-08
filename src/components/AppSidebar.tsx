@@ -1,5 +1,6 @@
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import {
   Sidebar,
   SidebarContent,
@@ -13,8 +14,10 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { NavLink } from "@/components/NavLink";
-import { Cog, LayoutDashboard, ClipboardList, Share2, FolderOpen, Building2, FileText, Search, Grid3X3, Paperclip, BarChart3, LogOut, Settings2, Bot } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Cog, LayoutDashboard, ClipboardList, Share2, FolderOpen, Building2, FileText, Search, Grid3X3, Paperclip, BarChart3, LogOut, Settings2, Bot, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const mainNav = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -39,10 +42,10 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { profile, signOut } = useAuth();
+  const { userRoleLabel, userRoleColor, canManageUsers } = usePermissions();
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Detect if we're inside an assessment
   const assessmentMatch = location.pathname.match(/\/assessment\/([^/]+)/);
   const assessmentId = assessmentMatch?.[1];
 
@@ -75,6 +78,17 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              {/* User Management — admin only */}
+              {canManageUsers && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink to="/settings/users" className="hover:bg-sidebar-accent" activeClassName="bg-sidebar-accent text-primary font-medium">
+                      <Users className="h-4 w-4 mr-2 shrink-0" />
+                      {!collapsed && <span>User Management</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -108,10 +122,12 @@ export function AppSidebar() {
       {/* Footer */}
       <SidebarFooter className="border-t border-border p-3">
         {!collapsed && profile && (
-          <div className="mb-2 space-y-0.5">
+          <div className="mb-2 space-y-1">
             <p className="text-sm font-medium truncate">{profile.full_name || "User"}</p>
             <p className="text-xs text-muted-foreground truncate">{profile.organisation}</p>
-            <p className="text-xs text-muted-foreground truncate">{profile.role}</p>
+            <Badge variant="outline" className={cn("text-[9px] px-1.5 py-0", userRoleColor)}>
+              {userRoleLabel}
+            </Badge>
           </div>
         )}
         <Button variant="ghost" size="sm" className="w-full justify-start text-sidebar-foreground hover:text-destructive" onClick={signOut}>

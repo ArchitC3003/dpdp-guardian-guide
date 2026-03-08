@@ -67,6 +67,7 @@ const App = () => (
               <Route path="/artefacts" element={<ArtefactRepository />} />
               <Route path="/policy-sop-builder" element={<PolicySopBuilder />} />
               <Route path="/settings" element={<AccountSettings />} />
+              <Route path="/settings/users" element={<UserManagement />} />
               <Route path="/assessment/:assessmentId/org-profile" element={<PhaseOrgProfile />} />
               <Route path="/assessment/:assessmentId/policy-matrix" element={<PhasePolicyMatrix />} />
               <Route path="/assessment/:assessmentId/rapid-assessment" element={<PhaseRapidAssessment />} />
