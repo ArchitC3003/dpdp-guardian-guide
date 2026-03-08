@@ -241,6 +241,120 @@ export type Database = {
           },
         ]
       }
+      policy_audit_log: {
+        Row: {
+          action: string
+          action_detail: string | null
+          document_id: string
+          id: string
+          ip_address: string | null
+          performed_at: string
+          performed_by: string
+          performed_by_name: string | null
+          version_id: string | null
+        }
+        Insert: {
+          action: string
+          action_detail?: string | null
+          document_id: string
+          id?: string
+          ip_address?: string | null
+          performed_at?: string
+          performed_by: string
+          performed_by_name?: string | null
+          version_id?: string | null
+        }
+        Update: {
+          action?: string
+          action_detail?: string | null
+          document_id?: string
+          id?: string
+          ip_address?: string | null
+          performed_at?: string
+          performed_by?: string
+          performed_by_name?: string | null
+          version_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "policy_audit_log_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "policy_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "policy_audit_log_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "policy_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      policy_documents: {
+        Row: {
+          approver_name: string | null
+          classification: string
+          created_at: string
+          current_version: string
+          document_ref: string
+          document_type: string
+          effective_date: string | null
+          id: string
+          industry_vertical: string | null
+          maturity_level: number | null
+          org_size: string | null
+          owner_name: string | null
+          review_date: string | null
+          selected_frameworks: string[] | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          approver_name?: string | null
+          classification?: string
+          created_at?: string
+          current_version?: string
+          document_ref: string
+          document_type?: string
+          effective_date?: string | null
+          id?: string
+          industry_vertical?: string | null
+          maturity_level?: number | null
+          org_size?: string | null
+          owner_name?: string | null
+          review_date?: string | null
+          selected_frameworks?: string[] | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          approver_name?: string | null
+          classification?: string
+          created_at?: string
+          current_version?: string
+          document_ref?: string
+          document_type?: string
+          effective_date?: string | null
+          id?: string
+          industry_vertical?: string | null
+          maturity_level?: number | null
+          org_size?: string | null
+          owner_name?: string | null
+          review_date?: string | null
+          selected_frameworks?: string[] | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       policy_items: {
         Row: {
           approved: string | null
@@ -278,6 +392,53 @@ export type Database = {
             columns: ["assessment_id"]
             isOneToOne: false
             referencedRelation: "assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      policy_versions: {
+        Row: {
+          ai_model: string | null
+          change_summary: string | null
+          content: string
+          created_at: string
+          created_by: string
+          document_id: string
+          generated_by: string
+          id: string
+          is_current: boolean
+          version: string
+        }
+        Insert: {
+          ai_model?: string | null
+          change_summary?: string | null
+          content: string
+          created_at?: string
+          created_by: string
+          document_id: string
+          generated_by?: string
+          id?: string
+          is_current?: boolean
+          version?: string
+        }
+        Update: {
+          ai_model?: string | null
+          change_summary?: string | null
+          content?: string
+          created_at?: string
+          created_by?: string
+          document_id?: string
+          generated_by?: string
+          id?: string
+          is_current?: boolean
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "policy_versions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "policy_documents"
             referencedColumns: ["id"]
           },
         ]
