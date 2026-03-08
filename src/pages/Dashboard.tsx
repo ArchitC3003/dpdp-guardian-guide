@@ -6,8 +6,10 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/StatusBadge";
-import { Plus, Trash2, ExternalLink, ClipboardList, BarChart3, CheckCircle2, Layers, Shield } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Trash2, ExternalLink, ClipboardList, BarChart3, CheckCircle2, Layers, Shield, FileText, AlertTriangle, BookMarked, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Assessment = Tables<"assessments">;
