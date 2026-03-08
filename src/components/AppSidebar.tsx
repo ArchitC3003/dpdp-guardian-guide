@@ -13,7 +13,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { NavLink } from "@/components/NavLink";
-import { Cog, LayoutDashboard, ClipboardList, Share2, FolderOpen, Building2, FileText, Search, Grid3X3, Paperclip, BarChart3, LogOut, Settings2 } from "lucide-react";
+import { Cog, LayoutDashboard, ClipboardList, Share2, FolderOpen, Building2, FileText, Search, Grid3X3, Paperclip, BarChart3, LogOut, Settings2, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const mainNav = [
@@ -22,6 +22,7 @@ const mainNav = [
   { title: "Shared Reports", url: "/shared", icon: Share2 },
   { title: "Assessment Repository", url: "/repository", icon: FolderOpen },
   { title: "Artefact Repository", url: "/artefacts", icon: Building2 },
+  { title: "Policy & SOP Builder", url: "/policy-sop-builder", icon: Bot },
   { title: "Settings", url: "/settings", icon: Settings2 },
 ];
 
