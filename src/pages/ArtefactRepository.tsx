@@ -96,6 +96,14 @@ export default function ArtefactRepository() {
         </p>
       </div>
 
+      {/* Privacy Notice Banner */}
+      <div className="flex items-center gap-2.5 rounded-lg border border-primary/20 bg-primary/5 px-4 py-2.5">
+        <Info className="h-4 w-4 text-primary shrink-0" />
+        <p className="text-xs text-muted-foreground">
+          <span className="font-semibold text-foreground">Your Data, Your Control</span> — All documents in this repository are private to your workspace. They are never shared with other organisations. Delete any document at any time using the trash icon.
+        </p>
+      </div>
+
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="bg-card border border-border rounded-xl p-4">
