@@ -61,6 +61,12 @@ export default function PolicySopBuilder() {
     sendMessage(`Generate a comprehensive ${docLabel} for our organization.`);
   };
 
+  const handleClearChat = () => {
+    setMessages([]);
+    setLatestResponse(null);
+    setPreviewExpanded(false);
+  };
+
   return (
     <div className="flex flex-col min-h-screen w-full">
       {/* SECTION 1 — Sticky Page Header */}
@@ -92,27 +98,18 @@ export default function PolicySopBuilder() {
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-7xl mx-auto px-6 py-6 space-y-8">
-          {/* SECTION 2 — How-To Guide */}
           <HowToGuide />
-
           <Separator />
-
-          {/* SECTION 3 — Document Configuration */}
           <DocumentConfigSection config={config} onChange={setConfig} onGenerate={handleGenerate} />
-
           <Separator />
-
-          {/* SECTION 4 — AI Chat Workspace */}
           <FullWidthChat
             messages={messages}
             isTyping={isTyping}
             onSend={sendMessage}
+            onClear={handleClearChat}
             activeFrameworks={config.frameworks}
           />
-
           <Separator />
-
-          {/* SECTION 5 — Document Preview */}
           <FullWidthPreview
             config={config}
             latestResponse={latestResponse}

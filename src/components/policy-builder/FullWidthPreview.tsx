@@ -38,9 +38,19 @@ function nextYear() {
   return new Date(Date.now() + 365 * 86400000).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 
+/* ── Render control refs as teal badges inline ── */
+function processInlinePreview(text: string): string {
+  let out = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  out = out.replace(
+    /\[([A-Z][^\]]+)\]/g,
+    '<span class="inline-flex items-center px-1 py-0 rounded text-[8px] font-mono bg-primary/15 text-primary border border-primary/20 mx-0.5 whitespace-nowrap">$1</span>'
+  );
+  return out;
+}
+
 export default function FullWidthPreview({ config, latestResponse, isExpanded, onToggle }: Props) {
   const cls = CLASSIFICATIONS.find((c) => c.value === config.classification);
-  const docTitle = getDocTitle(config);
+  const docTitle = latestResponse ? extractTitleFromResponse(latestResponse, config) : getDocTitle(config);
   const selectedFrameworks = config.frameworks
     .map((f) => FRAMEWORKS.find((fw) => fw.value === f)?.label)
     .filter(Boolean);
@@ -127,14 +137,12 @@ export default function FullWidthPreview({ config, latestResponse, isExpanded, o
                         return (
                           <div key={i} className="flex gap-2 text-[10px] text-foreground/70 py-0.5">
                             {cells.map((cell, ci) => (
-                              <span key={ci} className="flex-1 truncate">{cell}</span>
+                              <span key={ci} className="flex-1 truncate" dangerouslySetInnerHTML={{ __html: processInlinePreview(cell) }} />
                             ))}
                           </div>
                         );
                       }
-                      let processed = line
-                        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                        .replace(/\[([A-Z][^\]]+)\]/g, '<span class="text-primary font-mono text-[9px]">[$1]</span>');
+                      const processed = processInlinePreview(line);
                       return <p key={i} className="text-[11px] text-foreground/70 leading-relaxed" dangerouslySetInnerHTML={{ __html: processed }} />;
                     })}
                   </div>
@@ -181,4 +189,11 @@ export default function FullWidthPreview({ config, latestResponse, isExpanded, o
       </div>
     </section>
   );
+}
+
+/** Extract the document title from the first # heading in the response */
+function extractTitleFromResponse(response: string, config: DocumentConfig): string {
+  const match = response.match(/^# (.+)$/m);
+  if (match) return match[1];
+  return DOCUMENT_TYPES.find((d) => d.value === config.documentType)?.label ?? "Policy Document";
 }
