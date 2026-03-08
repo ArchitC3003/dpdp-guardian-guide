@@ -2,22 +2,29 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Download, LogOut, Trash2, Bot, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Download, LogOut, Trash2, Bot, CheckCircle2, XCircle, Loader2, Save, Lock } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function AccountSettings() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, refreshProfile } = useAuth();
+  const { canConfigureAI, userRoleLabel, userRoleColor } = usePermissions();
   const navigate = useNavigate();
   const [showDelete, setShowDelete] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [exporting, setExporting] = useState(false);
   const [testingAi, setTestingAi] = useState(false);
   const [aiStatus, setAiStatus] = useState<"untested" | "connected" | "failed">("untested");
+  const [editName, setEditName] = useState(profile?.full_name || "");
+  const [editOrg, setEditOrg] = useState(profile?.organisation || "");
+  const [editJob, setEditJob] = useState((profile as any)?.job_title || "");
+  const [saving, setSaving] = useState(false);
 
   const handleDeleteAccount = async () => {
     await supabase.auth.signOut();
