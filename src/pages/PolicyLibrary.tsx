@@ -175,8 +175,8 @@ export default function PolicyLibrary() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Policy Library</h1>
-          <p className="text-muted-foreground text-sm">Manage all generated policies and SOPs</p>
+          <h1 className="text-2xl font-bold">Policy Register</h1>
+          <p className="text-muted-foreground text-sm">Organisation's official policy lifecycle register — Draft, Review, Published</p>
         </div>
         <Button onClick={() => navigate("/policy-sop-builder")} className="gradient-primary">
           <Bot className="h-4 w-4 mr-2" /> Generate New Document
