@@ -374,9 +374,9 @@ export default function AssessmentRepoGenerator() {
                   <CardContent className="px-5 pb-4 pt-0">
                     {matchedArtefacts.length > 0 ? (
                       <div className="space-y-2">
-                        <p className="text-[10px] text-muted-foreground italic">
-                          These existing artefacts have been used to inform this document generation
-                        </p>
+                         <p className="text-[10px] text-muted-foreground italic">
+                           These documents from your private workspace have been referenced to personalise this output
+                         </p>
                         {matchedArtefacts.map((match) => (
                           <div key={match.file.id} className="flex items-center justify-between bg-accent/30 rounded-md px-3 py-2">
                             <div className="flex items-center gap-2 min-w-0">
