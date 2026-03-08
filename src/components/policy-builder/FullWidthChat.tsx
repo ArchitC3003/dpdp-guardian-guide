@@ -32,6 +32,7 @@ interface Props {
   onSend: (text: string) => void;
   onClear: () => void;
   activeFrameworks: string[];
+  aiMode?: "live" | "demo";
 }
 
 const QUICK_STARTERS = [
