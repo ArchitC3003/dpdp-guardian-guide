@@ -194,7 +194,12 @@ export default function ArtefactRepository() {
                                   </div>
                                 </td>
                                 <td className="py-2.5 px-2 text-muted-foreground text-xs">
-                                  {file.description || "—"}
+                                  <div className="flex items-center gap-1.5">
+                                    <Badge className="text-[8px] px-1.5 py-0 bg-muted text-muted-foreground border border-border gap-0.5 shrink-0">
+                                      <Lock className="h-2.5 w-2.5" /> Private
+                                    </Badge>
+                                    <span>{file.description || "—"}</span>
+                                  </div>
                                 </td>
                                 <td className="py-2.5 px-2 text-muted-foreground text-xs">
                                   {new Date(file.uploaded_at).toLocaleDateString()}
