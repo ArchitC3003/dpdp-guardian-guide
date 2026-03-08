@@ -15,6 +15,7 @@ import {
   Users,
   Key,
   Bell,
+  PlusCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,6 +30,7 @@ interface Props {
   messages: ChatMessage[];
   isTyping: boolean;
   onSend: (text: string) => void;
+  onClear: () => void;
   activeFrameworks: string[];
 }
 
@@ -41,46 +43,66 @@ const QUICK_STARTERS = [
   { icon: Bell, text: "Data Breach Notification SOP — Regulatory timelines + obligations" },
 ];
 
+/* ── Render control refs as teal badges ── */
+function processInlineContent(html: string): string {
+  // Bold
+  let out = html.replace(/\*\*(.+?)\*\*/g, '<strong class="text-foreground">$1</strong>');
+  // Control refs → badges
+  out = out.replace(
+    /\[([A-Z][^\]]+)\]/g,
+    '<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-mono bg-primary/15 text-primary border border-primary/20 mx-0.5 whitespace-nowrap">$1</span>'
+  );
+  return out;
+}
+
 function renderMarkdown(content: string) {
   const lines = content.split("\n");
   return lines.map((line, i) => {
-    if (line.startsWith("# ")) return <h2 key={i} className="text-base font-bold text-foreground mt-4 mb-2">{line.slice(2)}</h2>;
-    if (line.startsWith("## ")) return <h3 key={i} className="text-sm font-bold text-foreground mt-3 mb-1.5">{line.slice(3)}</h3>;
-    if (line.startsWith("### ")) return <h4 key={i} className="text-xs font-bold text-foreground mt-2 mb-1">{line.slice(4)}</h4>;
-    if (line.startsWith("---")) return <Separator key={i} className="my-2" />;
+    // Section headings with teal left border
+    if (line.startsWith("# "))
+      return <h2 key={i} className="text-base font-bold text-foreground mt-5 mb-2 pl-3 border-l-2 border-primary">{line.slice(2)}</h2>;
+    if (line.startsWith("## "))
+      return <h3 key={i} className="text-sm font-bold text-foreground mt-4 mb-1.5 pl-3 border-l-2 border-primary/60">{line.slice(3)}</h3>;
+    if (line.startsWith("### "))
+      return (
+        <h4 key={i} className="text-xs font-bold text-foreground mt-3 mb-1 pl-3 border-l-2 border-primary/40 flex items-center gap-1.5">
+          <FileText className="h-3 w-3 text-primary/60 shrink-0" />
+          {line.slice(4)}
+        </h4>
+      );
+    if (line.startsWith("---")) return <Separator key={i} className="my-3" />;
     if (line.trim() === "") return <div key={i} className="h-1.5" />;
 
+    // Tables
     if (line.startsWith("|")) {
       if (line.replace(/[|\-\s]/g, "") === "") return null;
       const cells = line.split("|").filter(Boolean).map((c) => c.trim());
-      const isHeader = lines[i + 1]?.replace(/[|\-\s]/g, "") === "";
+      const nextLine = lines[i + 1] || "";
+      const isHeader = nextLine.replace(/[|\-\s]/g, "") === "";
       return (
-        <div key={i} className={cn("grid gap-2 text-[11px] px-1 py-0.5", `grid-cols-${Math.min(cells.length, 6)}`)}>
+        <div
+          key={i}
+          className={cn(
+            "grid gap-2 text-[11px] px-2 py-1 rounded",
+            isHeader ? "font-bold text-foreground bg-muted/10" : "text-foreground/80"
+          )}
+          style={{ gridTemplateColumns: `repeat(${Math.min(cells.length, 6)}, minmax(0, 1fr))` }}
+        >
           {cells.map((cell, ci) => (
-            <span key={ci} className={cn(isHeader ? "font-bold text-foreground" : "text-foreground/80")}>
-              {cell}
-            </span>
+            <span key={ci} dangerouslySetInnerHTML={{ __html: processInlineContent(cell) }} />
           ))}
         </div>
       );
     }
 
-    // Process bold and control references
-    let processed = line.replace(
-      /\*\*(.+?)\*\*/g,
-      '<strong class="text-foreground">$1</strong>'
-    );
-    // Render control references as inline badges
-    processed = processed.replace(
-      /\[([A-Z][^\]]+)\]/g,
-      '<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-mono bg-primary/10 text-primary border border-primary/20 mx-0.5">$1</span>'
-    );
+    const processed = processInlineContent(line);
 
-    if (line.match(/^\s*[a-d]\)/)) {
-      return <p key={i} className="text-xs text-foreground/80 pl-4 py-0.5" dangerouslySetInnerHTML={{ __html: processed }} />;
+    // Sub-clauses
+    if (line.match(/^\s*[a-f]\)/)) {
+      return <p key={i} className="text-xs text-foreground/80 pl-6 py-0.5" dangerouslySetInnerHTML={{ __html: "• " + processed.replace(/^\s*[a-f]\)\s*/, "") }} />;
     }
     if (line.match(/^\s*-\s/)) {
-      return <p key={i} className="text-xs text-foreground/80 pl-3 py-0.5" dangerouslySetInnerHTML={{ __html: "• " + processed.replace(/^\s*-\s/, "") }} />;
+      return <p key={i} className="text-xs text-foreground/80 pl-5 py-0.5" dangerouslySetInnerHTML={{ __html: "• " + processed.replace(/^\s*-\s/, "") }} />;
     }
 
     return <p key={i} className="text-xs text-foreground/80 py-0.5 leading-relaxed" dangerouslySetInnerHTML={{ __html: processed }} />;
@@ -117,13 +139,15 @@ function MessageToolbar({ content }: { content: string }) {
   );
 }
 
-export default function FullWidthChat({ messages, isTyping, onSend, activeFrameworks }: Props) {
+export default function FullWidthChat({ messages, isTyping, onSend, onClear, activeFrameworks }: Props) {
   const [input, setInput] = useState("");
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const MAX_CHARS = 2000;
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
   }, [messages, isTyping]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -153,18 +177,31 @@ export default function FullWidthChat({ messages, isTyping, onSend, activeFramew
 
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         {/* Top bar */}
-        <div className="px-6 py-3 border-b border-border flex items-center gap-3 bg-card">
-          <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center">
-            <Bot className="h-4 w-4 text-primary" />
+        <div className="px-6 py-3 border-b border-border flex items-center justify-between bg-card">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center">
+              <Bot className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">Policy & SOP Architect</h2>
+              <p className="text-[10px] text-muted-foreground">Powered by NIST Repository & Global Compliance Frameworks</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-sm font-semibold text-foreground">Policy & SOP Architect</h2>
-            <p className="text-[10px] text-muted-foreground">Powered by NIST Repository & Global Compliance Frameworks</p>
-          </div>
+          {hasConversation && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs h-8 gap-1.5"
+              onClick={onClear}
+            >
+              <PlusCircle className="h-3.5 w-3.5" />
+              New Chat
+            </Button>
+          )}
         </div>
 
-        {/* Chat Area */}
-        <div className="min-h-[500px] max-h-[700px] overflow-y-auto">
+        {/* Scrollable Chat Area */}
+        <div ref={scrollRef} className="max-h-[600px] overflow-y-auto">
           <div className="p-6 space-y-4">
             {!hasConversation && (
               <>
@@ -253,7 +290,6 @@ export default function FullWidthChat({ messages, isTyping, onSend, activeFramew
                 </div>
               </div>
             )}
-            <div ref={bottomRef} />
           </div>
         </div>
 
@@ -279,7 +315,6 @@ export default function FullWidthChat({ messages, isTyping, onSend, activeFramew
                 <SendHorizonal className="h-4 w-4" />
               </Button>
             </div>
-            {/* Framework context chips */}
             {activeFrameworkLabels.length > 0 && (
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-[9px] text-muted-foreground">Active frameworks:</span>
