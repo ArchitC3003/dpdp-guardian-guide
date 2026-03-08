@@ -33,6 +33,8 @@ import { PolicyDocument, PolicyVersion, AuditEntry } from "@/hooks/usePolicyVers
 import VersionHistoryPanel from "./VersionHistoryPanel";
 import AuditTrailPanel from "./AuditTrailPanel";
 import { toast } from "sonner";
+import { exportToDOCX, exportToPDF, ExportDocument } from "@/utils/exportUtils";
+import { Loader2 } from "lucide-react";
 
 interface Props {
   config: DocumentConfig;
