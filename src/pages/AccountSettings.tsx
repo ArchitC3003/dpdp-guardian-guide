@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Download, LogOut, Trash2 } from "lucide-react";
+import { Download, LogOut, Trash2, Bot, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 
 export default function AccountSettings() {
   const { user, profile, signOut } = useAuth();
@@ -15,11 +16,45 @@ export default function AccountSettings() {
   const [showDelete, setShowDelete] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [testingAi, setTestingAi] = useState(false);
+  const [aiStatus, setAiStatus] = useState<"untested" | "connected" | "failed">("untested");
 
   const handleDeleteAccount = async () => {
     await supabase.auth.signOut();
     toast.success("Account deletion requested. Your data will be removed within 30 days.");
     navigate("/auth");
+  };
+
+  const handleTestAiConnection = async () => {
+    setTestingAi(true);
+    setAiStatus("untested");
+    try {
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/policy-chat`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            messages: [{ role: "user", content: "Respond with: CONNECTION_OK" }],
+            config: { documentType: "Test", frameworks: "NIST CSF 2.0", industry: "Technology", orgSize: "enterprise", maturity: 2, outputFormat: "docx", classification: "internal" },
+          }),
+        }
+      );
+      if (resp.ok) {
+        setAiStatus("connected");
+        toast.success("AI connection verified successfully.");
+      } else {
+        setAiStatus("failed");
+        toast.error("AI connection test failed. Demo mode will be used.");
+      }
+    } catch {
+      setAiStatus("failed");
+      toast.error("Could not reach AI service.");
+    }
+    setTestingAi(false);
   };
 
   const handleExport = async () => {
@@ -72,6 +107,70 @@ export default function AccountSettings() {
           <div><span className="text-muted-foreground">Organisation:</span> <span className="ml-2">{profile?.organisation || "—"}</span></div>
           <div><span className="text-muted-foreground">Role:</span> <span className="ml-2">{profile?.role || "—"}</span></div>
           <div><span className="text-muted-foreground">Account Created:</span> <span className="ml-2">{user?.created_at ? new Date(user.created_at).toLocaleDateString() : "—"}</span></div>
+        </CardContent>
+      </Card>
+
+      {/* AI Configuration */}
+      <Card className="bg-slate-800/50 border-slate-700/50">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Bot className="h-5 w-5 text-primary" />
+            AI Configuration
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-foreground">AI Engine Status</p>
+              <p className="text-xs text-muted-foreground">Lovable AI powers the Policy & SOP Builder with enterprise-grade GRC drafting capabilities.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              {aiStatus === "connected" && (
+                <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/20 gap-1">
+                  <CheckCircle2 className="h-3 w-3" /> Connected
+                </Badge>
+              )}
+              {aiStatus === "failed" && (
+                <Badge variant="outline" className="border-amber-500/30 text-amber-400 gap-1">
+                  <XCircle className="h-3 w-3" /> Demo Mode
+                </Badge>
+              )}
+              {aiStatus === "untested" && (
+                <Badge variant="outline" className="text-muted-foreground gap-1">Not tested</Badge>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            <div className="rounded-lg border border-border p-3 space-y-1">
+              <p className="text-xs font-medium text-muted-foreground">Model</p>
+              <p className="text-sm text-foreground">Gemini 2.5 Flash (Recommended)</p>
+            </div>
+            <div className="rounded-lg border border-border p-3 space-y-1">
+              <p className="text-xs font-medium text-muted-foreground">Capabilities</p>
+              <p className="text-sm text-foreground">Streaming, Multi-turn, 13+ Doc Types</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleTestAiConnection}
+              disabled={testingAi}
+              className="text-xs"
+            >
+              {testingAi ? (
+                <><Loader2 className="h-3 w-3 mr-1.5 animate-spin" /> Testing...</>
+              ) : (
+                <><Bot className="h-3 w-3 mr-1.5" /> Test Connection</>
+              )}
+            </Button>
+          </div>
+
+          <p className="text-[10px] text-muted-foreground">
+            AI is powered by Lovable Cloud. No API key configuration needed. If the AI service is temporarily unavailable, the builder automatically falls back to demo mode with pre-built compliance templates.
+          </p>
         </CardContent>
       </Card>
 

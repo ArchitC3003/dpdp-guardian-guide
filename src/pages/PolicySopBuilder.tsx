@@ -179,6 +179,7 @@ export default function PolicySopBuilder() {
             onSend={sendMessage}
             onClear={handleClearChat}
             activeFrameworks={config.frameworks}
+            aiMode={aiMode}
           />
           <Separator />
           <FullWidthPreview
