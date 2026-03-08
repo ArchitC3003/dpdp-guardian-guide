@@ -9,6 +9,7 @@ import FullWidthPreview from "@/components/policy-builder/FullWidthPreview";
 import { DocumentConfig, ChatMessage, DOCUMENT_TYPES } from "@/components/policy-builder/types";
 import { streamPolicyChat } from "@/components/policy-builder/streamChat";
 import { generateMockResponse } from "@/components/policy-builder/mockResponses";
+import { usePolicyVersioning } from "@/hooks/usePolicyVersioning";
 import { toast } from "sonner";
 
 const DEFAULT_CONFIG: DocumentConfig = {
@@ -30,6 +31,30 @@ export default function PolicySopBuilder() {
   const [aiMode, setAiMode] = useState<"live" | "demo">("live");
   const abortRef = useRef<AbortController | null>(null);
 
+  const {
+    currentDoc,
+    versions,
+    auditLog,
+    loading: versionsLoading,
+    saveDocument,
+    changeStatus,
+    loadVersions,
+    loadAuditLog,
+    restoreVersion,
+    logExport,
+  } = usePolicyVersioning();
+
+  const autoSave = useCallback(
+    async (content: string, mode: "live" | "demo") => {
+      try {
+        await saveDocument(content, config, mode);
+      } catch {
+        // Graceful — don't block the user
+      }
+    },
+    [saveDocument, config]
+  );
+
   const sendMessage = useCallback(
     (text: string) => {
       if (!text.trim() || isTyping) return;
@@ -43,7 +68,6 @@ export default function PolicySopBuilder() {
       setMessages((prev) => [...prev, userMsg]);
       setIsTyping(true);
 
-      // Build messages for API (full conversation history)
       const apiMessages = [
         ...messages.map((m) => ({ role: m.role, content: m.content })),
         { role: "user" as const, content: text.trim() },
@@ -52,7 +76,6 @@ export default function PolicySopBuilder() {
       const assistantId = crypto.randomUUID();
       let assistantContent = "";
 
-      // Create abort controller for this request
       const controller = new AbortController();
       abortRef.current = controller;
 
@@ -79,7 +102,6 @@ export default function PolicySopBuilder() {
               },
             ];
           });
-          // Continuously update the preview
           setLatestResponse(assistantContent);
         },
         onDone: () => {
@@ -88,13 +110,15 @@ export default function PolicySopBuilder() {
           if (assistantContent) {
             setLatestResponse(assistantContent);
             setPreviewExpanded(true);
+            setAiMode("live");
+            // Auto-save to version control
+            autoSave(assistantContent, "live");
           }
         },
         onError: (error) => {
           setIsTyping(false);
           abortRef.current = null;
-          
-          // Fall back to demo mode with mock responses
+
           if (!assistantContent) {
             setAiMode("demo");
             const mockContent = generateMockResponse(text.trim(), config);
@@ -110,6 +134,8 @@ export default function PolicySopBuilder() {
             });
             setLatestResponse(mockContent);
             setPreviewExpanded(true);
+            // Auto-save demo response too
+            autoSave(mockContent, "demo");
             toast.warning("AI is running in demo mode. Live AI generation will resume when available.", { duration: 6000 });
           } else {
             toast.error(error);
@@ -117,7 +143,7 @@ export default function PolicySopBuilder() {
         },
       });
     },
-    [config, isTyping, messages]
+    [config, isTyping, messages, autoSave]
   );
 
   const handleGenerate = () => {
@@ -127,7 +153,6 @@ export default function PolicySopBuilder() {
   };
 
   const handleClearChat = () => {
-    // Abort any ongoing stream
     if (abortRef.current) {
       abortRef.current.abort();
       abortRef.current = null;
@@ -138,9 +163,31 @@ export default function PolicySopBuilder() {
     setIsTyping(false);
   };
 
+  const handleSaveToRepo = async () => {
+    if (!latestResponse) return;
+    await saveDocument(latestResponse, config, aiMode);
+    toast.success("Saved to repository");
+  };
+
+  const handleExport = (format: string) => {
+    logExport(format);
+    toast.info(`${format} export coming soon`);
+  };
+
+  const handleViewVersion = (content: string) => {
+    setLatestResponse(content);
+  };
+
+  const handleRestoreVersion = async (versionId: string) => {
+    const content = await restoreVersion(versionId);
+    if (content) {
+      setLatestResponse(content);
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen w-full">
-      {/* SECTION 1 — Sticky Page Header */}
+      {/* Sticky Page Header */}
       <div className="sticky top-0 z-30 bg-card border-b border-border" style={{ borderBottomWidth: 2, borderImage: "linear-gradient(to right, hsl(161 93% 30%), hsl(158 64% 51%), transparent) 1" }}>
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -187,6 +234,17 @@ export default function PolicySopBuilder() {
             latestResponse={latestResponse}
             isExpanded={previewExpanded}
             onToggle={() => setPreviewExpanded(!previewExpanded)}
+            currentDoc={currentDoc}
+            versions={versions}
+            auditLog={auditLog}
+            versionsLoading={versionsLoading}
+            onStatusChange={changeStatus}
+            onLoadVersions={loadVersions}
+            onLoadAuditLog={loadAuditLog}
+            onViewVersion={handleViewVersion}
+            onRestoreVersion={handleRestoreVersion}
+            onSaveToRepo={handleSaveToRepo}
+            onExport={handleExport}
           />
         </div>
       </div>
