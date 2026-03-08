@@ -105,15 +105,58 @@ export default function AccountSettings() {
         <p className="text-muted-foreground">Manage your account and personal data</p>
       </div>
 
-      {/* Profile */}
+      {/* My Profile — editable */}
       <Card className="bg-slate-800/50 border-slate-700/50">
-        <CardHeader><CardTitle className="text-lg">Profile</CardTitle></CardHeader>
-        <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-          <div><span className="text-muted-foreground">Full Name:</span> <span className="ml-2">{profile?.full_name || "—"}</span></div>
-          <div><span className="text-muted-foreground">Email:</span> <span className="ml-2">{user?.email || "—"}</span></div>
-          <div><span className="text-muted-foreground">Organisation:</span> <span className="ml-2">{profile?.organisation || "—"}</span></div>
-          <div><span className="text-muted-foreground">Role:</span> <span className="ml-2">{profile?.role || "—"}</span></div>
-          <div><span className="text-muted-foreground">Account Created:</span> <span className="ml-2">{user?.created_at ? new Date(user.created_at).toLocaleDateString() : "—"}</span></div>
+        <CardHeader><CardTitle className="text-lg">My Profile</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Full Name</label>
+              <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Email</label>
+              <Input value={user?.email || ""} disabled className="opacity-60" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Organisation</label>
+              <Input value={editOrg} onChange={(e) => setEditOrg(e.target.value)} />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Job Title</label>
+              <Input value={editJob} onChange={(e) => setEditJob(e.target.value)} placeholder="e.g. CISO, DPO, GRC Lead" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Role</label>
+              <Badge variant="outline" className={cn("text-xs", userRoleColor)}>
+                {userRoleLabel}
+              </Badge>
+              <p className="text-[10px] text-muted-foreground mt-1">Role is assigned by your administrator</p>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Account Created</label>
+              <p className="text-sm">{user?.created_at ? new Date(user.created_at).toLocaleDateString() : "—"}</p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            disabled={saving}
+            onClick={async () => {
+              if (!user) return;
+              setSaving(true);
+              await supabase.from("profiles").update({
+                full_name: editName,
+                organisation: editOrg,
+                job_title: editJob,
+              }).eq("id", user.id);
+              await refreshProfile();
+              toast.success("Profile saved");
+              setSaving(false);
+            }}
+          >
+            <Save className="h-3.5 w-3.5 mr-1.5" />
+            {saving ? "Saving..." : "Save Profile"}
+          </Button>
         </CardContent>
       </Card>
 
