@@ -8,6 +8,7 @@ import FullWidthChat from "@/components/policy-builder/FullWidthChat";
 import FullWidthPreview from "@/components/policy-builder/FullWidthPreview";
 import { DocumentConfig, ChatMessage, DOCUMENT_TYPES } from "@/components/policy-builder/types";
 import { streamPolicyChat } from "@/components/policy-builder/streamChat";
+import { generateMockResponse } from "@/components/policy-builder/mockResponses";
 import { toast } from "sonner";
 
 const DEFAULT_CONFIG: DocumentConfig = {
