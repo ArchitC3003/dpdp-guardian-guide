@@ -110,7 +110,7 @@ serve(async (req) => {
     const configContext = config
       ? `\n\n## CURRENT DOCUMENT CONFIGURATION
 - Document Type: ${config.documentType || "Information Security Policy"}
-- Aligned Frameworks: ${config.frameworks?.join(", ") || "NIST CSF 2.0"}
+- Aligned Frameworks: ${Array.isArray(config.frameworks) ? config.frameworks.join(", ") : (config.frameworks || "NIST CSF 2.0")}
 - Industry: ${config.industry || "Technology"}
 - Organization Size: ${config.orgSize || "Enterprise"}
 - Compliance Maturity Level: ${(config.maturity ?? 2) + 1} of 5 (${["Initial", "Developing", "Defined", "Managed", "Optimizing"][config.maturity ?? 2]})
