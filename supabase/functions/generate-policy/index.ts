@@ -25,10 +25,10 @@ serve(async (req) => {
       conversationHistory,
     } = await req.json();
 
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) {
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
       return new Response(
-        JSON.stringify({ error: "GEMINI_API_KEY is not configured. Please add it in your project secrets." }),
+        JSON.stringify({ error: "LOVABLE_API_KEY is not configured." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -36,72 +36,59 @@ serve(async (req) => {
     // Build the user prompt
     const userPrompt = `Generate a ${documentType || "Information Security Policy"} for ${orgName || "the organisation"}, a ${industry || "Technology"} organisation with ${orgSize || "Enterprise"} employees at ${maturityLevel || "Defined"} maturity level. Frameworks: ${frameworks || "NIST CSF 2.0"}. User request: ${userMessage}`;
 
-    // Build conversation contents for Gemini API
-    const contents: Array<{ role: string; parts: Array<{ text: string }> }> = [];
+    // Build messages array
+    const messages: Array<{ role: string; content: string }> = [
+      { role: "system", content: SYSTEM_INSTRUCTION },
+    ];
 
-    // Add conversation history if provided
+    // Add conversation history
     if (conversationHistory && Array.isArray(conversationHistory)) {
       for (const msg of conversationHistory) {
-        contents.push({
-          role: msg.role === "assistant" ? "model" : "user",
-          parts: [{ text: msg.content }],
-        });
+        messages.push({ role: msg.role, content: msg.content });
       }
     }
 
-    // Add the current user message
-    contents.push({
-      role: "user",
-      parts: [{ text: userPrompt }],
-    });
+    // Add current user message
+    messages.push({ role: "user", content: userPrompt });
 
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-
-    const geminiResponse = await fetch(geminiUrl, {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
-        system_instruction: {
-          parts: [{ text: SYSTEM_INSTRUCTION }],
-        },
-        contents,
-        generationConfig: {
-          temperature: 0.7,
-          topP: 0.95,
-          topK: 40,
-          maxOutputTokens: 8192,
-        },
+        model: "google/gemini-2.5-flash",
+        messages,
+        stream: true,
       }),
     });
 
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      console.error("Gemini API error:", geminiResponse.status, errorText);
-
-      if (geminiResponse.status === 429) {
+    if (!response.ok) {
+      if (response.status === 429) {
         return new Response(
-          JSON.stringify({ error: "Rate limit exceeded on Gemini API. Please wait a moment and try again." }),
+          JSON.stringify({ error: "Rate limit exceeded. Please wait a moment and try again." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: "AI usage credits exhausted. Please add credits in Settings → Workspace → Usage." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const errorText = await response.text();
+      console.error("AI gateway error:", response.status, errorText);
       return new Response(
-        JSON.stringify({ error: "AI service temporarily unavailable. Please try again shortly." }),
+        JSON.stringify({ error: "AI service temporarily unavailable. Please try again." }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const geminiData = await geminiResponse.json();
-
-    // Extract text from Gemini response
-    const content =
-      geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "Unable to generate content. Please try again with a more specific request.";
-
-    return new Response(
-      JSON.stringify({ content }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    // Stream the response back to the client
+    return new Response(response.body, {
+      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+    });
   } catch (e) {
     console.error("generate-policy error:", e);
     return new Response(
