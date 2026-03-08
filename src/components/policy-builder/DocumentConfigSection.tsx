@@ -278,6 +278,7 @@ export default function DocumentConfigSection({ config, onChange, onGenerate }: 
               Generate Document
             </Button>
           </div>
+          )}
         </div>
       </div>
     </section>
