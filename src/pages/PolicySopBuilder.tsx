@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Bot, FileText, Shield, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -7,7 +7,8 @@ import DocumentConfigSection from "@/components/policy-builder/DocumentConfigSec
 import FullWidthChat from "@/components/policy-builder/FullWidthChat";
 import FullWidthPreview from "@/components/policy-builder/FullWidthPreview";
 import { DocumentConfig, ChatMessage, DOCUMENT_TYPES } from "@/components/policy-builder/types";
-import { generateMockResponse } from "@/components/policy-builder/mockResponses";
+import { streamPolicyChat } from "@/components/policy-builder/streamChat";
+import { toast } from "sonner";
 
 const DEFAULT_CONFIG: DocumentConfig = {
   documentType: "info-security-policy",
@@ -25,10 +26,12 @@ export default function PolicySopBuilder() {
   const [isTyping, setIsTyping] = useState(false);
   const [latestResponse, setLatestResponse] = useState<string | null>(null);
   const [previewExpanded, setPreviewExpanded] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
 
   const sendMessage = useCallback(
     (text: string) => {
       if (!text.trim() || isTyping) return;
+
       const userMsg: ChatMessage = {
         id: crypto.randomUUID(),
         role: "user",
@@ -38,21 +41,68 @@ export default function PolicySopBuilder() {
       setMessages((prev) => [...prev, userMsg]);
       setIsTyping(true);
 
-      setTimeout(() => {
-        const responseContent = generateMockResponse(text, config);
-        const aiMsg: ChatMessage = {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          content: responseContent,
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, aiMsg]);
-        setLatestResponse(responseContent);
-        setPreviewExpanded(true);
-        setIsTyping(false);
-      }, 1500);
+      // Build messages for API (full conversation history)
+      const apiMessages = [
+        ...messages.map((m) => ({ role: m.role, content: m.content })),
+        { role: "user" as const, content: text.trim() },
+      ];
+
+      const assistantId = crypto.randomUUID();
+      let assistantContent = "";
+
+      // Create abort controller for this request
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      streamPolicyChat({
+        messages: apiMessages,
+        config,
+        signal: controller.signal,
+        onDelta: (chunk) => {
+          assistantContent += chunk;
+          setMessages((prev) => {
+            const last = prev[prev.length - 1];
+            if (last?.role === "assistant" && last.id === assistantId) {
+              return prev.map((m, i) =>
+                i === prev.length - 1 ? { ...m, content: assistantContent } : m
+              );
+            }
+            return [
+              ...prev,
+              {
+                id: assistantId,
+                role: "assistant",
+                content: assistantContent,
+                timestamp: new Date(),
+              },
+            ];
+          });
+          // Continuously update the preview
+          setLatestResponse(assistantContent);
+        },
+        onDone: () => {
+          setIsTyping(false);
+          abortRef.current = null;
+          if (assistantContent) {
+            setLatestResponse(assistantContent);
+            setPreviewExpanded(true);
+          }
+        },
+        onError: (error) => {
+          setIsTyping(false);
+          abortRef.current = null;
+          toast.error(error);
+          // If we got partial content, keep it
+          if (!assistantContent) {
+            // Remove the empty assistant message if any
+            setMessages((prev) =>
+              prev.filter((m) => m.id !== assistantId)
+            );
+          }
+        },
+      });
     },
-    [config, isTyping]
+    [config, isTyping, messages]
   );
 
   const handleGenerate = () => {
@@ -62,9 +112,15 @@ export default function PolicySopBuilder() {
   };
 
   const handleClearChat = () => {
+    // Abort any ongoing stream
+    if (abortRef.current) {
+      abortRef.current.abort();
+      abortRef.current = null;
+    }
     setMessages([]);
     setLatestResponse(null);
     setPreviewExpanded(false);
+    setIsTyping(false);
   };
 
   return (
