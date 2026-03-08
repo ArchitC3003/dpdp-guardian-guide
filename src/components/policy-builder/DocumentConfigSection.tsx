@@ -268,7 +268,8 @@ export default function DocumentConfigSection({ config, onChange, onGenerate }: 
             </div>
           </div>
 
-          <div className="ml-auto">
+          {onGenerate && (
+            <div className="ml-auto">
             <Button
               onClick={onGenerate}
               className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-8"
