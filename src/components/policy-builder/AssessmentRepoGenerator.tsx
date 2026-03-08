@@ -12,8 +12,12 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import {
   Building2, Search, Star, FileCheck, Download, Save, BookOpen,
   ChevronRight, Sparkles, FileText, ClipboardList, FolderOpen,
-  RefreshCw, Upload, ExternalLink, ChevronDown, Circle
+  RefreshCw, Upload, ExternalLink, ChevronDown, Circle, Lock, Shield
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useArtefactContext, ArtefactFile } from "@/hooks/useArtefactContext";
 import { supabase } from "@/integrations/supabase/client";
