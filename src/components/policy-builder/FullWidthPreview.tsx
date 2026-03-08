@@ -33,6 +33,8 @@ import { PolicyDocument, PolicyVersion, AuditEntry } from "@/hooks/usePolicyVers
 import VersionHistoryPanel from "./VersionHistoryPanel";
 import AuditTrailPanel from "./AuditTrailPanel";
 import { toast } from "sonner";
+import { exportToDOCX, exportToPDF, ExportDocument } from "@/utils/exportUtils";
+import { Loader2 } from "lucide-react";
 
 interface Props {
   config: DocumentConfig;
@@ -100,6 +102,8 @@ export default function FullWidthPreview({
 }: Props) {
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("document");
+  const [exportingDocx, setExportingDocx] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   const cls = CLASSIFICATIONS.find((c) => c.value === config.classification);
   const docTitle = latestResponse ? extractTitleFromResponse(latestResponse, config) : getDocTitle(config);
@@ -126,6 +130,20 @@ export default function FullWidthPreview({
     setActiveTab(val);
     if (val === "audit") onLoadAuditLog();
   };
+
+  const buildExportDoc = (): ExportDocument => ({
+    title: docTitle,
+    documentRef: currentDoc?.document_ref ?? "POL-GEN-001",
+    version: docVersion,
+    status: docStatus,
+    classification: config.classification,
+    effectiveDate: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+    reviewDate: new Date(Date.now() + 365 * 86400000).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+    selectedFrameworks: selectedFrameworks as string[],
+    industryVertical: config.industry,
+    orgSize: config.orgSize,
+    content: latestResponse ?? "",
+  });
 
   return (
     <>
@@ -291,12 +309,46 @@ export default function FullWidthPreview({
 
               {/* Action Bar */}
               {latestResponse && (
-                <div className="px-6 py-3 border-t border-border flex items-center gap-2">
-                  <Button variant="outline" size="sm" className="text-xs h-8" onClick={() => onExport("DOCX")}>
-                    <Download className="h-3 w-3 mr-1.5" /> Export DOCX
+              <div className="px-6 py-3 border-t border-border flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-8"
+                    disabled={exportingDocx}
+                    onClick={async () => {
+                      setExportingDocx(true);
+                      try {
+                        await exportToDOCX(buildExportDoc());
+                        onExport("DOCX");
+                        toast.success("Document exported as DOCX");
+                      } catch (e) {
+                        toast.error("DOCX export failed");
+                      } finally {
+                        setExportingDocx(false);
+                      }
+                    }}
+                  >
+                    {exportingDocx ? <Loader2 className="h-3 w-3 mr-1.5 animate-spin" /> : <Download className="h-3 w-3 mr-1.5" />} Export DOCX
                   </Button>
-                  <Button variant="outline" size="sm" className="text-xs h-8" onClick={() => onExport("PDF")}>
-                    <Download className="h-3 w-3 mr-1.5" /> Export PDF
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-8"
+                    disabled={exportingPdf}
+                    onClick={async () => {
+                      setExportingPdf(true);
+                      try {
+                        await exportToPDF(buildExportDoc());
+                        onExport("PDF");
+                        toast.success("Document exported as PDF");
+                      } catch (e) {
+                        toast.error("PDF export failed");
+                      } finally {
+                        setExportingPdf(false);
+                      }
+                    }}
+                  >
+                    {exportingPdf ? <Loader2 className="h-3 w-3 mr-1.5 animate-spin" /> : <Download className="h-3 w-3 mr-1.5" />} Export PDF
                   </Button>
                   <Button variant="outline" size="sm" className="text-xs h-8" onClick={onSaveToRepo}>
                     <Save className="h-3 w-3 mr-1.5" /> Save to Repository
