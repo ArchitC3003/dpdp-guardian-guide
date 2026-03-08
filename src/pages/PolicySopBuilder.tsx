@@ -217,59 +217,76 @@ export default function PolicySopBuilder() {
         </div>
       </div>
 
-      {/* Scrollable Content */}
+      {/* Mode Tabs */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-7xl mx-auto px-6 py-6 space-y-8">
-          <HowToGuide />
-          <Separator />
-          <DocumentConfigSection config={config} onChange={setConfig} onGenerate={canGenerate ? handleGenerate : undefined} />
-          <Separator />
-          {!canGenerate && (
-            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 flex items-center gap-2">
-              <Lock className="h-4 w-4 text-amber-400 shrink-0" />
-              <p className="text-xs text-amber-300">
-                You have view-only access ({userRoleLabel}). Contact your GRC Manager to request document generation.
-              </p>
-            </div>
-          )}
-          {canGenerate && (
-            <FullWidthChat
-              messages={messages}
-              isTyping={isTyping}
-              onSend={sendMessage}
-              onClear={handleClearChat}
-              activeFrameworks={config.frameworks}
-              aiMode={aiMode}
-            />
-          )}
-          {!canGenerate && messages.length > 0 && (
-            <FullWidthChat
-              messages={messages}
-              isTyping={false}
-              onSend={() => {}}
-              onClear={() => {}}
-              activeFrameworks={config.frameworks}
-              aiMode={aiMode}
-            />
-          )}
-          <Separator />
-          <FullWidthPreview
-            config={config}
-            latestResponse={latestResponse}
-            isExpanded={previewExpanded}
-            onToggle={() => setPreviewExpanded(!previewExpanded)}
-            currentDoc={currentDoc}
-            versions={versions}
-            auditLog={auditLog}
-            versionsLoading={versionsLoading}
-            onStatusChange={changeStatus}
-            onLoadVersions={loadVersions}
-            onLoadAuditLog={loadAuditLog}
-            onViewVersion={handleViewVersion}
-            onRestoreVersion={handleRestoreVersion}
-            onSaveToRepo={handleSaveToRepo}
-            onExport={handleExport}
-          />
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          <Tabs defaultValue="builder" className="space-y-6">
+            <TabsList className="h-10">
+              <TabsTrigger value="builder" className="gap-1.5 text-xs">
+                <Bot className="h-3.5 w-3.5" /> Policy & SOP Builder
+              </TabsTrigger>
+              <TabsTrigger value="repo-gen" className="gap-1.5 text-xs">
+                <ClipboardList className="h-3.5 w-3.5" /> Assessment Repository Generator
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="builder" className="space-y-8 mt-0">
+              <HowToGuide />
+              <Separator />
+              <DocumentConfigSection config={config} onChange={setConfig} onGenerate={canGenerate ? handleGenerate : undefined} />
+              <Separator />
+              {!canGenerate && (
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 flex items-center gap-2">
+                  <Lock className="h-4 w-4 text-amber-400 shrink-0" />
+                  <p className="text-xs text-amber-300">
+                    You have view-only access ({userRoleLabel}). Contact your GRC Manager to request document generation.
+                  </p>
+                </div>
+              )}
+              {canGenerate && (
+                <FullWidthChat
+                  messages={messages}
+                  isTyping={isTyping}
+                  onSend={sendMessage}
+                  onClear={handleClearChat}
+                  activeFrameworks={config.frameworks}
+                  aiMode={aiMode}
+                />
+              )}
+              {!canGenerate && messages.length > 0 && (
+                <FullWidthChat
+                  messages={messages}
+                  isTyping={false}
+                  onSend={() => {}}
+                  onClear={() => {}}
+                  activeFrameworks={config.frameworks}
+                  aiMode={aiMode}
+                />
+              )}
+              <Separator />
+              <FullWidthPreview
+                config={config}
+                latestResponse={latestResponse}
+                isExpanded={previewExpanded}
+                onToggle={() => setPreviewExpanded(!previewExpanded)}
+                currentDoc={currentDoc}
+                versions={versions}
+                auditLog={auditLog}
+                versionsLoading={versionsLoading}
+                onStatusChange={changeStatus}
+                onLoadVersions={loadVersions}
+                onLoadAuditLog={loadAuditLog}
+                onViewVersion={handleViewVersion}
+                onRestoreVersion={handleRestoreVersion}
+                onSaveToRepo={handleSaveToRepo}
+                onExport={handleExport}
+              />
+            </TabsContent>
+
+            <TabsContent value="repo-gen" className="mt-0">
+              <AssessmentRepoGenerator />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>
