@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useArtefactContext, ArtefactFile } from "@/hooks/useArtefactContext";
+import { exportToDOCX, exportToPDF, ExportDocument } from "@/utils/exportUtils";
 import { supabase } from "@/integrations/supabase/client";
 import ArtefactIndexPanel from "./ArtefactIndexPanel";
 
