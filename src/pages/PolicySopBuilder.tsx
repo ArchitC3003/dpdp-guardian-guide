@@ -8,6 +8,7 @@ import FullWidthChat from "@/components/policy-builder/FullWidthChat";
 import FullWidthPreview from "@/components/policy-builder/FullWidthPreview";
 import { DocumentConfig, ChatMessage, DOCUMENT_TYPES } from "@/components/policy-builder/types";
 import { streamPolicyChat } from "@/components/policy-builder/streamChat";
+import { generateMockResponse } from "@/components/policy-builder/mockResponses";
 import { toast } from "sonner";
 
 const DEFAULT_CONFIG: DocumentConfig = {
@@ -26,6 +27,7 @@ export default function PolicySopBuilder() {
   const [isTyping, setIsTyping] = useState(false);
   const [latestResponse, setLatestResponse] = useState<string | null>(null);
   const [previewExpanded, setPreviewExpanded] = useState(false);
+  const [aiMode, setAiMode] = useState<"live" | "demo">("live");
   const abortRef = useRef<AbortController | null>(null);
 
   const sendMessage = useCallback(
@@ -91,13 +93,26 @@ export default function PolicySopBuilder() {
         onError: (error) => {
           setIsTyping(false);
           abortRef.current = null;
-          toast.error(error);
-          // If we got partial content, keep it
+          
+          // Fall back to demo mode with mock responses
           if (!assistantContent) {
-            // Remove the empty assistant message if any
-            setMessages((prev) =>
-              prev.filter((m) => m.id !== assistantId)
-            );
+            setAiMode("demo");
+            const mockContent = generateMockResponse(text.trim(), config);
+            const mockMsg: ChatMessage = {
+              id: assistantId,
+              role: "assistant",
+              content: mockContent,
+              timestamp: new Date(),
+            };
+            setMessages((prev) => {
+              const filtered = prev.filter((m) => m.id !== assistantId);
+              return [...filtered, mockMsg];
+            });
+            setLatestResponse(mockContent);
+            setPreviewExpanded(true);
+            toast.warning("AI is running in demo mode. Live AI generation will resume when available.", { duration: 6000 });
+          } else {
+            toast.error(error);
           }
         },
       });
@@ -164,6 +179,7 @@ export default function PolicySopBuilder() {
             onSend={sendMessage}
             onClear={handleClearChat}
             activeFrameworks={config.frameworks}
+            aiMode={aiMode}
           />
           <Separator />
           <FullWidthPreview
