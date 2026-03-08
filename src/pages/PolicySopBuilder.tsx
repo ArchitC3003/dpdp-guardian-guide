@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { Bot, FileText, Shield, Sparkles } from "lucide-react";
+import { Bot, FileText, Shield, Sparkles, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import HowToGuide from "@/components/policy-builder/HowToGuide";
@@ -10,6 +10,7 @@ import { DocumentConfig, ChatMessage, DOCUMENT_TYPES } from "@/components/policy
 import { streamPolicyChat } from "@/components/policy-builder/streamChat";
 import { generateMockResponse } from "@/components/policy-builder/mockResponses";
 import { usePolicyVersioning } from "@/hooks/usePolicyVersioning";
+import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "sonner";
 
 const DEFAULT_CONFIG: DocumentConfig = {
