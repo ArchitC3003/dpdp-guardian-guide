@@ -140,7 +140,7 @@ function MessageToolbar({ content }: { content: string }) {
   );
 }
 
-export default function FullWidthChat({ messages, isTyping, onSend, onClear, activeFrameworks }: Props) {
+export default function FullWidthChat({ messages, isTyping, onSend, onClear, activeFrameworks, aiMode = "live" }: Props) {
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const MAX_CHARS = 2000;
