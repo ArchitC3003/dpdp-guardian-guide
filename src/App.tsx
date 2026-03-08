@@ -23,6 +23,7 @@ import PhaseDeptGrid from "./pages/PhaseDeptGrid";
 import PhaseFileReferences from "./pages/PhaseFileReferences";
 import PhaseDashboard from "./pages/PhaseDashboard";
 import PolicySopBuilder from "./pages/PolicySopBuilder";
+import PolicyLibrary from "./pages/PolicyLibrary";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
