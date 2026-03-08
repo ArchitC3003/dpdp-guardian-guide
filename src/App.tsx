@@ -48,6 +48,13 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function LandingGuard() {
+  const { session, loading } = useAuth();
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">Loading...</div>;
+  if (session) return <Navigate to="/dashboard" replace />;
+  return <LandingPage />;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
