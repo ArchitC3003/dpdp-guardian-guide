@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { FolderOpen, FileText, Download, ChevronDown, ChevronRight, Archive, Trash2 } from "lucide-react";
+import { FolderOpen, FileText, Download, ChevronDown, ChevronRight, Archive, Trash2, Info, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
