@@ -36,7 +36,7 @@ import {
 interface Props {
   config: DocumentConfig;
   onChange: (config: DocumentConfig) => void;
-  onGenerate: () => void;
+  onGenerate?: () => void;
 }
 
 const DOC_TYPE_ICONS: Record<string, typeof FileText> = {};
