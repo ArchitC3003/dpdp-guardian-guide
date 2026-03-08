@@ -85,6 +85,8 @@ export default function AssessmentRepoGenerator() {
   const [artefactPanelOpen, setArtefactPanelOpen] = useState(false);
   const [indexPanelOpen, setIndexPanelOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [consentModalOpen, setConsentModalOpen] = useState(false);
+  const [consentChecked, setConsentChecked] = useState(false);
 
   const {
     artefactFiles,
