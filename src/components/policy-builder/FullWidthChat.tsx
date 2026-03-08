@@ -340,9 +340,15 @@ export default function FullWidthChat({ messages, isTyping, onSend, onClear, act
               </div>
             )}
             <div className="flex items-center justify-between">
-              <p className="text-[9px] text-muted-foreground">
-                AI responses reference NIST, ISO, DPDP Act, GDPR source controls. Always review with qualified legal counsel.
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-[9px] text-muted-foreground">
+                  AI responses reference NIST, ISO, DPDP Act, GDPR source controls. Always review with qualified legal counsel.
+                </p>
+                <Badge variant="outline" className="text-[8px] px-1.5 py-0 border-primary/20 text-muted-foreground gap-1 shrink-0">
+                  <Sparkles className="h-2.5 w-2.5 text-primary" />
+                  Powered by Gemini 1.5
+                </Badge>
+              </div>
               <span className="text-[9px] text-muted-foreground tabular-nums">{input.length}/{MAX_CHARS}</span>
             </div>
           </form>
