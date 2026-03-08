@@ -131,26 +131,43 @@ export default function DocumentConfigSection({ config, onChange, onGenerate, or
       {/* Row 2 — Context Configuration */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Frameworks */}
-        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+        <div className="rounded-xl border border-border bg-card p-4 space-y-3 col-span-1 md:col-span-2">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
             <Shield className="h-3.5 w-3.5 text-primary" /> Frameworks
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            {FRAMEWORKS.map((fw) => (
-              <button
-                key={fw.value}
-                onClick={() => toggleFramework(fw.value)}
-                className={cn(
-                  "px-2 py-1 rounded-full text-[10px] font-medium border transition-all",
-                  config.frameworks.includes(fw.value)
-                    ? "bg-primary/20 border-primary/50 text-primary"
-                    : "border-border text-foreground/60 hover:border-primary/30"
-                )}
-              >
-                {fw.label}
-              </button>
+          <TooltipProvider delayDuration={200}>
+            {(["Global Frameworks", "Indian Regulatory Frameworks"] as const).map((group) => (
+              <div key={group} className="space-y-1.5">
+                <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold mt-1">{group}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {FRAMEWORKS.filter((fw) => fw.group === group).map((fw) => {
+                    const desc = (fw as any).description;
+                    const btn = (
+                      <button
+                        key={fw.value}
+                        onClick={() => toggleFramework(fw.value)}
+                        className={cn(
+                          "px-2 py-1 rounded-full text-[10px] font-medium border transition-all",
+                          config.frameworks.includes(fw.value)
+                            ? "bg-primary/20 border-primary/50 text-primary"
+                            : "border-border text-foreground/60 hover:border-primary/30"
+                        )}
+                      >
+                        {fw.label}
+                      </button>
+                    );
+                    if (!desc) return <span key={fw.value}>{btn}</span>;
+                    return (
+                      <Tooltip key={fw.value}>
+                        <TooltipTrigger asChild>{btn}</TooltipTrigger>
+                        <TooltipContent side="bottom" className="max-w-xs text-xs">{desc}</TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
+                </div>
+              </div>
             ))}
-          </div>
+          </TooltipProvider>
         </div>
 
         {/* Industry */}
