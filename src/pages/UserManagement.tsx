@@ -66,21 +66,14 @@ export default function UserManagement() {
   const fetchUsers = useCallback(async () => {
     if (!user) return;
     setLoading(true);
+    try {
+      const [{ data: profiles }, { data: roles }] = await Promise.all([
+        supabase.from("profiles").select("*"),
+        supabase.from("user_roles").select("*"),
+      ]);
 
-    // Get all profiles (admin can see all via RLS)
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("*");
-
-    // Get all roles
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("*");
-
-    if (profiles) {
       const roleMap = new Map<string, AppRoleKey>();
       roles?.forEach((r: any) => {
-        // Prioritize highest role
         const current = roleMap.get(r.user_id);
         const priority: AppRoleKey[] = ["admin", "moderator", "auditor", "user"];
         if (!current || priority.indexOf(r.role) < priority.indexOf(current)) {
@@ -88,7 +81,7 @@ export default function UserManagement() {
         }
       });
 
-      const enriched: UserRow[] = profiles.map((p: any) => ({
+      const enriched: UserRow[] = (profiles ?? []).map((p: any) => ({
         id: p.id,
         full_name: p.full_name,
         organisation: p.organisation,
@@ -96,11 +89,14 @@ export default function UserManagement() {
         is_active: p.is_active ?? true,
         last_login: p.last_login,
         created_at: p.created_at,
-        email: null, // Can't access auth.users email directly
+        email: null,
         role: roleMap.get(p.id) || "user",
       }));
 
       setUsers(enriched);
+    } catch (err) {
+      console.error("Failed to fetch users:", err);
+      toast.error("Failed to load users");
     }
     setLoading(false);
   }, [user]);
