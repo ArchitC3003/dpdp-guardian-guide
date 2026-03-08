@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/sidebar";
 import { NavLink } from "@/components/NavLink";
 import { Badge } from "@/components/ui/badge";
-import { Cog, LayoutDashboard, ClipboardList, Share2, FolderOpen, Building2, FileText, Search, Grid3X3, Paperclip, BarChart3, LogOut, Settings2, Bot, Users } from "lucide-react";
+import { Cog, LayoutDashboard, ClipboardList, Share2, FolderOpen, Building2, FileText, Search, Grid3X3, Paperclip, BarChart3, LogOut, Settings2, Bot, Users, BookMarked } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +26,7 @@ const mainNav = [
   { title: "Assessment Repository", url: "/repository", icon: FolderOpen },
   { title: "Artefact Repository", url: "/artefacts", icon: Building2 },
   { title: "Policy & SOP Builder", url: "/policy-sop-builder", icon: Bot },
+  { title: "Policy Library", url: "/policy-library", icon: BookMarked },
   { title: "Settings", url: "/settings", icon: Settings2 },
 ];
 

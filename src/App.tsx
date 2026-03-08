@@ -23,6 +23,7 @@ import PhaseDeptGrid from "./pages/PhaseDeptGrid";
 import PhaseFileReferences from "./pages/PhaseFileReferences";
 import PhaseDashboard from "./pages/PhaseDashboard";
 import PolicySopBuilder from "./pages/PolicySopBuilder";
+import PolicyLibrary from "./pages/PolicyLibrary";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -66,6 +67,7 @@ const App = () => (
               <Route path="/repository" element={<Repository />} />
               <Route path="/artefacts" element={<ArtefactRepository />} />
               <Route path="/policy-sop-builder" element={<PolicySopBuilder />} />
+              <Route path="/policy-library" element={<PolicyLibrary />} />
               <Route path="/settings" element={<AccountSettings />} />
               <Route path="/settings/users" element={<UserManagement />} />
               <Route path="/assessment/:assessmentId/org-profile" element={<PhaseOrgProfile />} />

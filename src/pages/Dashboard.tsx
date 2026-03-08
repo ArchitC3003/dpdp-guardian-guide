@@ -6,11 +6,29 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/StatusBadge";
-import { Plus, Trash2, ExternalLink, ClipboardList, BarChart3, CheckCircle2, Layers, Shield } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Trash2, ExternalLink, ClipboardList, BarChart3, CheckCircle2, Layers, Shield, FileText, AlertTriangle, BookMarked, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Assessment = Tables<"assessments">;
+
+interface PolicyDocRow {
+  id: string;
+  title: string;
+  status: string;
+  review_date: string | null;
+  updated_at: string;
+}
+
+const STATUS_COLORS: Record<string, string> = {
+  Draft: "border-amber-500/40 text-amber-400 bg-amber-500/10",
+  "Under Review": "border-orange-500/40 text-orange-400 bg-orange-500/10",
+  Approved: "border-emerald-500/40 text-emerald-400 bg-emerald-500/10",
+  Published: "border-primary/40 text-primary bg-primary/10",
+  Retired: "border-muted-foreground/40 text-muted-foreground bg-muted/20",
+};
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -18,10 +36,12 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [policyDocs, setPolicyDocs] = useState<PolicyDocRow[]>([]);
 
   useEffect(() => {
     if (!user) return;
     loadAssessments();
+    loadPolicyDocs();
   }, [user, isAdmin]);
 
   const loadAssessments = async () => {
@@ -32,6 +52,15 @@ export default function Dashboard() {
       .order("updated_at", { ascending: false });
     setAssessments(data || []);
     setLoading(false);
+  };
+
+  const loadPolicyDocs = async () => {
+    const { data } = await supabase
+      .from("policy_documents")
+      .select("id, title, status, review_date, updated_at")
+      .order("updated_at", { ascending: false })
+      .limit(5);
+    setPolicyDocs((data as PolicyDocRow[]) ?? []);
   };
 
   const createAssessment = async () => {
@@ -143,6 +172,59 @@ export default function Dashboard() {
               ))}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Policy Library Widget */}
+      <Card className="border-border bg-card">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <BookMarked className="h-5 w-5 text-primary" /> Policy Library Status
+          </CardTitle>
+          <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate("/policy-library")}>
+            View All <ChevronRight className="h-3 w-3 ml-1" />
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {(() => {
+            const expiring = policyDocs.filter((d) => {
+              if (!d.review_date) return false;
+              const diff = new Date(d.review_date).getTime() - Date.now();
+              return diff > 0 && diff <= 30 * 86400000;
+            });
+            return (
+              <>
+                {expiring.length > 0 && (
+                  <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 mb-3 flex items-center gap-2">
+                    <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                    <p className="text-[11px] text-amber-300">{expiring.length} polic{expiring.length === 1 ? "y" : "ies"} due for review</p>
+                  </div>
+                )}
+                {policyDocs.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">No policies generated yet</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {policyDocs.map((d) => (
+                      <div key={d.id} className="flex items-center justify-between p-2.5 rounded-lg bg-secondary/50">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
+                          <span className="text-sm font-medium truncate">{d.title}</span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Badge variant="outline" className={cn("text-[8px]", STATUS_COLORS[d.status] ?? "")}>{d.status}</Badge>
+                          {d.review_date && (
+                            <span className="text-[10px] text-muted-foreground">
+                              {new Date(d.review_date).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </CardContent>
       </Card>
     </div>
