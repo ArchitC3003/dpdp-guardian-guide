@@ -209,7 +209,7 @@ export default function PolicySopBuilder() {
               <FileText className="h-3 w-3" /> 13 Document Types
             </Badge>
             <Badge variant="outline" className="text-[10px] border-primary/30 text-primary gap-1">
-              <Shield className="h-3 w-3" /> 7 Frameworks
+              <Shield className="h-3 w-3" /> 13 Frameworks
             </Badge>
             <Badge variant="outline" className="text-[10px] border-primary/30 text-primary gap-1">
               <Sparkles className="h-3 w-3" /> NIST-Aligned
