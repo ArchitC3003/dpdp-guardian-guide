@@ -57,12 +57,13 @@ const App = () => (
         <AuthProvider>
           <CookieBanner />
           <Routes>
+            <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<AuthGuard><Auth /></AuthGuard>} />
             <Route path="/profile-setup" element={<ProfileSetup />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
             <Route element={<ProtectedRoutes />}>
-              <Route path="/" element={<Dashboard />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/assessments" element={<Dashboard />} />
               <Route path="/shared" element={<SharedReports />} />
               <Route path="/repository" element={<Repository />} />
