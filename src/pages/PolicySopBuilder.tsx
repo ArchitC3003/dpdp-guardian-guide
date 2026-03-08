@@ -220,16 +220,36 @@ export default function PolicySopBuilder() {
         <div className="max-w-7xl mx-auto px-6 py-6 space-y-8">
           <HowToGuide />
           <Separator />
-          <DocumentConfigSection config={config} onChange={setConfig} onGenerate={handleGenerate} />
+          <DocumentConfigSection config={config} onChange={setConfig} onGenerate={canGenerate ? handleGenerate : undefined} />
           <Separator />
-          <FullWidthChat
-            messages={messages}
-            isTyping={isTyping}
-            onSend={sendMessage}
-            onClear={handleClearChat}
-            activeFrameworks={config.frameworks}
-            aiMode={aiMode}
-          />
+          {!canGenerate && (
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 flex items-center gap-2">
+              <Lock className="h-4 w-4 text-amber-400 shrink-0" />
+              <p className="text-xs text-amber-300">
+                You have view-only access ({userRoleLabel}). Contact your GRC Manager to request document generation.
+              </p>
+            </div>
+          )}
+          {canGenerate && (
+            <FullWidthChat
+              messages={messages}
+              isTyping={isTyping}
+              onSend={sendMessage}
+              onClear={handleClearChat}
+              activeFrameworks={config.frameworks}
+              aiMode={aiMode}
+            />
+          )}
+          {!canGenerate && messages.length > 0 && (
+            <FullWidthChat
+              messages={messages}
+              isTyping={false}
+              onSend={() => {}}
+              onClear={() => {}}
+              activeFrameworks={config.frameworks}
+              aiMode={aiMode}
+            />
+          )}
           <Separator />
           <FullWidthPreview
             config={config}
