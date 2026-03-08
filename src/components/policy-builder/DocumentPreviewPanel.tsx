@@ -18,6 +18,7 @@ import {
   CLASSIFICATIONS,
 } from "./types";
 import { toast } from "sonner";
+import { exportToDOCX, exportToPDF, ExportDocument } from "@/utils/exportUtils";
 
 interface Props {
   config: DocumentConfig;
@@ -153,10 +154,42 @@ export default function DocumentPreviewPanel({ config, latestResponse, isOpen, o
 
       {/* Bottom Action Bar */}
       <div className="p-3 border-t border-border flex gap-2">
-        <Button variant="outline" size="sm" className="flex-1 text-[10px] h-8" onClick={() => toast.info("DOCX export coming soon")}>
+        <Button variant="outline" size="sm" className="flex-1 text-[10px] h-8" onClick={async () => {
+          if (!latestResponse) { toast.info("No content to export"); return; }
+          const exportDoc: ExportDocument = {
+            title: getDocTitle(config),
+            documentRef: "POL-001",
+            version: "1.0",
+            status: "Draft",
+            classification: config.classification || "Confidential",
+            effectiveDate: new Date().toISOString().split("T")[0],
+            reviewDate: new Date(Date.now() + 365 * 86400000).toISOString().split("T")[0],
+            selectedFrameworks: config.frameworks || [],
+            industryVertical: "General",
+            orgSize: "enterprise",
+            content: latestResponse,
+          };
+          try { toast.success("Downloading DOCX..."); await exportToDOCX(exportDoc); } catch { toast.error("DOCX export failed"); }
+        }}>
           <Download className="h-3 w-3 mr-1" /> Export DOCX
         </Button>
-        <Button variant="outline" size="sm" className="flex-1 text-[10px] h-8" onClick={() => toast.info("PDF export coming soon")}>
+        <Button variant="outline" size="sm" className="flex-1 text-[10px] h-8" onClick={async () => {
+          if (!latestResponse) { toast.info("No content to export"); return; }
+          const exportDoc: ExportDocument = {
+            title: getDocTitle(config),
+            documentRef: "POL-001",
+            version: "1.0",
+            status: "Draft",
+            classification: config.classification || "Confidential",
+            effectiveDate: new Date().toISOString().split("T")[0],
+            reviewDate: new Date(Date.now() + 365 * 86400000).toISOString().split("T")[0],
+            selectedFrameworks: config.frameworks || [],
+            industryVertical: "General",
+            orgSize: "enterprise",
+            content: latestResponse,
+          };
+          try { toast.success("Downloading PDF..."); await exportToPDF(exportDoc); } catch { toast.error("PDF export failed"); }
+        }}>
           <Download className="h-3 w-3 mr-1" /> Export PDF
         </Button>
         <Button variant="outline" size="sm" className="flex-1 text-[10px] h-8" onClick={() => toast.info("Save to repository coming soon")}>
