@@ -41,13 +41,21 @@ export const DOCUMENT_TYPES = [
 ] as const;
 
 export const FRAMEWORKS = [
-  { value: "nist-csf-2", label: "NIST CSF 2.0" },
-  { value: "nist-sp-800-53", label: "NIST SP 800-53 Rev 5" },
-  { value: "nist-sp-800-171", label: "NIST SP 800-171" },
-  { value: "nist-privacy", label: "NIST Privacy Framework" },
-  { value: "iso-27001", label: "ISO/IEC 27001:2022" },
-  { value: "dpdp-act", label: "DPDP Act 2023" },
-  { value: "gdpr", label: "GDPR" },
+  // Global Frameworks
+  { value: "nist-csf-2", label: "NIST CSF 2.0", group: "Global Frameworks" },
+  { value: "nist-sp-800-53", label: "NIST SP 800-53 Rev 5", group: "Global Frameworks" },
+  { value: "nist-sp-800-171", label: "NIST SP 800-171", group: "Global Frameworks" },
+  { value: "nist-privacy", label: "NIST Privacy Framework", group: "Global Frameworks" },
+  { value: "iso-27001", label: "ISO/IEC 27001:2022", group: "Global Frameworks" },
+  { value: "gdpr", label: "GDPR", group: "Global Frameworks" },
+  // Indian Regulatory Frameworks
+  { value: "dpdp-act", label: "DPDP Act 2023 + Rules 2025", group: "Indian Regulatory Frameworks", description: "Digital Personal Data Protection Act 2023 + DPDP Rules 2025 — India's primary data protection law" },
+  { value: "cert-in-2022", label: "CERT-In Directions 2022", group: "Indian Regulatory Frameworks", description: "MeitY/CERT-In Directions on Information Security Practices (April 2022) — 6-hour incident reporting, log retention, VPN/cloud provider obligations" },
+  { value: "cert-in-guidelines", label: "CERT-In Guidelines & Advisories", group: "Indian Regulatory Frameworks", description: "CERT-In Security Guidelines, Vulnerability Notes, and Sector-Specific Advisories" },
+  { value: "it-act-2000", label: "IT Act 2000 & IT Amendment Act 2008", group: "Indian Regulatory Frameworks", description: "Section 43A (Reasonable Security Practices), Section 66, Section 72A, IT (Reasonable Security Practices and Procedures) Rules 2011" },
+  { value: "rbi-cyber", label: "RBI Cybersecurity Framework & Master Directions", group: "Indian Regulatory Frameworks", description: "RBI Master Direction on IT Governance, Risk, Controls & Assurance Practices 2023 + RBI Cybersecurity Framework for Banks 2016" },
+  { value: "sebi-cscrf", label: "SEBI CSCRF 2024", group: "Indian Regulatory Frameworks", description: "SEBI Cybersecurity and Cyber Resilience Framework (August 2024) — applicable to all SEBI-regulated entities" },
+  { value: "irdai-cyber", label: "IRDAI Cyber Security Guidelines 2023", group: "Indian Regulatory Frameworks", description: "IRDAI Information and Cyber Security Guidelines for Insurance companies and intermediaries" },
 ] as const;
 
 export const INDUSTRIES = [

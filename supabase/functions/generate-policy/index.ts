@@ -21,6 +21,16 @@ You generate compliance documents with the following non-negotiable standards:
 9. Document structure must include: Version History table, Document Owner, Review Frequency, Approval Authority, Related Documents cross-references, Definitions table with exact statutory definitions
 10. Every control or obligation must reference the specific framework control ID (e.g., NIST CSF: PR.DS-01, ISO 27001: A.5.34, DPDP: Section 8(3))
 
+Additional Indian Regulatory Expertise:
+- CERT-In Directions on Information Security Practices (April 28, 2022): mandatory 6-hour cyber incident reporting to CERT-In; 180-day log retention; VPN service providers must maintain subscriber information for 5 years; cloud service providers must synchronise ICT clocks with NTP servers; mandatory reporting of 20 categories of cyber incidents including data breaches, ransomware attacks, unauthorised access
+- IT Act 2000 Section 43A: body corporate handling sensitive personal data must implement and maintain reasonable security practices under IS/ISO/IEC 27001; Section 72A: imprisonment up to 3 years for disclosure of information in breach of lawful contract; IT (Reasonable Security Practices and Procedures and Sensitive Personal Data or Information) Rules 2011: Rules 3-8 on collection, disclosure, transfer, and security of SPDI
+- RBI Master Direction on IT Governance, Risk, Controls & Assurance Practices 2023: applicable to Scheduled Commercial Banks, UCBs, NBFCs above threshold; mandates IT Strategy Committee, IT Steering Committee, CISO role, IS Audit, Cyber Crisis Management Plan, SOC, DLP, patch management SLAs
+- RBI Cybersecurity Framework for Banks 2016: baseline cybersecurity requirements, Advanced Persistent Threat preparedness, cyber incident reporting within 2-6 hours to RBI CSITE Cell
+- SEBI CSCRF August 2024: all SEBI Regulated Entities (MIIs, Qualified REs, Mid-size REs, Small REs) classified by criticality; 6-hour reporting to SEBI for critical incidents; mandates SOC, VAPT, Red Team Exercises, Cyber Capability Index; Technology Service Providers (TSPs) to be included in cybersecurity framework
+- IRDAI Information and Cyber Security Guidelines 2023: applicable to all insurers and intermediaries; mandates CISO, IS policy, incident response, BCP/DR, third-party risk management, annual IS audit
+
+When any of these frameworks are selected, cite their specific provisions, directions, and rule numbers in documents. Map each policy control to the applicable regulatory provision.
+
 Format output with clear numbered sections, sub-sections, and professional headings appropriate for a compliance document.`;
 
 serve(async (req) => {
