@@ -131,6 +131,20 @@ export default function FullWidthPreview({
     if (val === "audit") onLoadAuditLog();
   };
 
+  const buildExportDoc = (): ExportDocument => ({
+    title: docTitle,
+    documentRef: currentDoc?.document_ref ?? "POL-GEN-001",
+    version: docVersion,
+    status: docStatus,
+    classification: config.classification,
+    effectiveDate: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+    reviewDate: new Date(Date.now() + 365 * 86400000).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+    selectedFrameworks: selectedFrameworks as string[],
+    industryVertical: config.industry,
+    orgSize: config.orgSize,
+    content: latestResponse ?? "",
+  });
+
   return (
     <>
       <section className="space-y-3 pb-8">
