@@ -35,7 +35,7 @@ function ProtectedRoutes() {
   if (loading || profileLoading) {
     return <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">Loading...</div>;
   }
-  if (!session) return <Navigate to="/auth" replace />;
+  if (!session) return <Navigate to="/" replace />;
   if (profile && !profile.full_name) return <Navigate to="/profile-setup" replace />;
 
   return <AppLayout />;
