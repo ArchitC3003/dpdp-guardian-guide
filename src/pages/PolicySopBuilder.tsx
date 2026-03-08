@@ -93,13 +93,26 @@ export default function PolicySopBuilder() {
         onError: (error) => {
           setIsTyping(false);
           abortRef.current = null;
-          toast.error(error);
-          // If we got partial content, keep it
+          
+          // Fall back to demo mode with mock responses
           if (!assistantContent) {
-            // Remove the empty assistant message if any
-            setMessages((prev) =>
-              prev.filter((m) => m.id !== assistantId)
-            );
+            setAiMode("demo");
+            const mockContent = generateMockResponse(text.trim(), config);
+            const mockMsg: ChatMessage = {
+              id: assistantId,
+              role: "assistant",
+              content: mockContent,
+              timestamp: new Date(),
+            };
+            setMessages((prev) => {
+              const filtered = prev.filter((m) => m.id !== assistantId);
+              return [...filtered, mockMsg];
+            });
+            setLatestResponse(mockContent);
+            setPreviewExpanded(true);
+            toast.warning("AI is running in demo mode. Live AI generation will resume when available.", { duration: 6000 });
+          } else {
+            toast.error(error);
           }
         },
       });
