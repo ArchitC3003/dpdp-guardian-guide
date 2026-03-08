@@ -73,8 +73,13 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} end className="hover:bg-sidebar-accent" activeClassName="bg-sidebar-accent text-primary font-medium">
-                      <item.icon className="h-4 w-4 mr-2 shrink-0" />
-                      {!collapsed && <span>{item.title}</span>}
+                      <item.icon className="h-4 w-4 mr-2 shrink-0 self-start mt-0.5" />
+                      {!collapsed && (
+                        <div className="flex flex-col">
+                          <span>{item.title}</span>
+                          <span className="text-[10px] text-muted-foreground leading-tight">{item.subtitle}</span>
+                        </div>
+                      )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
