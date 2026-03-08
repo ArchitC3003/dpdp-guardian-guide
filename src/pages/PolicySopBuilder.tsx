@@ -27,6 +27,7 @@ export default function PolicySopBuilder() {
   const [isTyping, setIsTyping] = useState(false);
   const [latestResponse, setLatestResponse] = useState<string | null>(null);
   const [previewExpanded, setPreviewExpanded] = useState(false);
+  const [aiMode, setAiMode] = useState<"live" | "demo">("live");
   const abortRef = useRef<AbortController | null>(null);
 
   const sendMessage = useCallback(
