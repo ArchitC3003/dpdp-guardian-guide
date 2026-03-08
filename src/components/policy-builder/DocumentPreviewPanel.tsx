@@ -18,6 +18,7 @@ import {
   CLASSIFICATIONS,
 } from "./types";
 import { toast } from "sonner";
+import { exportToDOCX, exportToPDF, ExportDocument } from "@/utils/exportUtils";
 
 interface Props {
   config: DocumentConfig;
