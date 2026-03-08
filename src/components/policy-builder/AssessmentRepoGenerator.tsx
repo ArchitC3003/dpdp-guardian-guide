@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useArtefactContext, ArtefactFile } from "@/hooks/useArtefactContext";
+import { exportToDOCX, exportToPDF, ExportDocument } from "@/utils/exportUtils";
 import { supabase } from "@/integrations/supabase/client";
 import ArtefactIndexPanel from "./ArtefactIndexPanel";
 
@@ -138,8 +139,31 @@ export default function AssessmentRepoGenerator() {
     toast.success("Saved to Policy Register");
   };
 
-  const handleExport = (fmt: string) => {
-    toast.info(`${fmt.toUpperCase()} export coming soon`);
+  const handleExport = async (fmt: string) => {
+    if (!generatedContent || !selectedItem) return;
+    const exportDoc: ExportDocument = {
+      title: selectedItem.templateTitle,
+      documentRef: selectedItem.dpdpRef,
+      version: "1.0",
+      status: "Draft",
+      classification: "Confidential",
+      effectiveDate: orgCtx.date || new Date().toISOString().split("T")[0],
+      reviewDate: new Date(Date.now() + 365 * 86400000).toISOString().split("T")[0],
+      selectedFrameworks: ["DPDP Act 2023"],
+      industryVertical: orgCtx.industry || "General",
+      orgSize: "enterprise",
+      content: generatedContent,
+    };
+    try {
+      toast.success(`Downloading ${fmt.toUpperCase()}...`);
+      if (fmt === "docx") {
+        await exportToDOCX(exportDoc);
+      } else if (fmt === "pdf") {
+        await exportToPDF(exportDoc);
+      }
+    } catch {
+      toast.error(`${fmt.toUpperCase()} export failed`);
+    }
   };
 
   const handleUploadToRepo = async () => {
