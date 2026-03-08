@@ -6,6 +6,15 @@ export interface DocumentConfig {
   maturity: number; // 0-4
   outputFormat: string;
   classification: string;
+  // Extended org context
+  orgName?: string;
+  dpoName?: string;
+  date?: string;
+  sdfClassification?: string;
+  geographies?: string;
+  processingActivities?: string[];
+  maturityLevel?: string;
+  sector?: string;
 }
 
 export interface ChatMessage {

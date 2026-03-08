@@ -32,18 +32,22 @@ import {
   OUTPUT_FORMATS,
   CLASSIFICATIONS,
 } from "./types";
+import OrgProfileForm from "./OrgProfileForm";
+import ComplianceProfileSummary from "./ComplianceProfileSummary";
+import { OrgContext, DEFAULT_ORG_CONTEXT } from "./orgContextTypes";
 
 interface Props {
   config: DocumentConfig;
   onChange: (config: DocumentConfig) => void;
   onGenerate?: () => void;
+  orgContext?: OrgContext;
+  onOrgContextChange?: (ctx: OrgContext) => void;
 }
 
-const DOC_TYPE_ICONS: Record<string, typeof FileText> = {};
-
-export default function DocumentConfigSection({ config, onChange, onGenerate }: Props) {
+export default function DocumentConfigSection({ config, onChange, onGenerate, orgContext, onOrgContextChange }: Props) {
   const policies = DOCUMENT_TYPES.filter((d) => d.category === "Policy");
   const sops = DOCUMENT_TYPES.filter((d) => d.category === "SOP");
+  const ctx = orgContext || DEFAULT_ORG_CONTEXT;
 
   const toggleFramework = (value: string) => {
     const next = config.frameworks.includes(value)
@@ -217,6 +221,14 @@ export default function DocumentConfigSection({ config, onChange, onGenerate }: 
         </div>
       </div>
 
+      {/* Organisation Profile */}
+      {onOrgContextChange && (
+        <>
+          <ComplianceProfileSummary ctx={ctx} />
+          <OrgProfileForm ctx={ctx} onChange={onOrgContextChange} />
+        </>
+      )}
+
       {/* Row 3 — Output Options */}
       <div className="rounded-xl border border-border bg-card p-4">
         <div className="flex flex-wrap items-center gap-6">
@@ -270,14 +282,14 @@ export default function DocumentConfigSection({ config, onChange, onGenerate }: 
 
           {onGenerate && (
             <div className="ml-auto">
-            <Button
-              onClick={onGenerate}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-8"
-            >
-              <Sparkles className="h-4 w-4 mr-2" />
-              Generate Document
-            </Button>
-          </div>
+              <Button
+                onClick={onGenerate}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-8"
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                Generate Document
+              </Button>
+            </div>
           )}
         </div>
       </div>

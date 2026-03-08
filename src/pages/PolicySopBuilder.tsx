@@ -11,6 +11,7 @@ import FullWidthPreview from "@/components/policy-builder/FullWidthPreview";
 import { DocumentConfig, ChatMessage, DOCUMENT_TYPES } from "@/components/policy-builder/types";
 import { streamPolicyChat } from "@/components/policy-builder/streamChat";
 import { generateMockResponse } from "@/components/policy-builder/mockResponses";
+import { OrgContext, DEFAULT_ORG_CONTEXT } from "@/components/policy-builder/orgContextTypes";
 import { usePolicyVersioning } from "@/hooks/usePolicyVersioning";
 import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "sonner";
@@ -27,6 +28,7 @@ const DEFAULT_CONFIG: DocumentConfig = {
 
 export default function PolicySopBuilder() {
   const [config, setConfig] = useState<DocumentConfig>(DEFAULT_CONFIG);
+  const [orgContext, setOrgContext] = useState<OrgContext>(DEFAULT_ORG_CONTEXT);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [latestResponse, setLatestResponse] = useState<string | null>(null);
@@ -86,6 +88,7 @@ export default function PolicySopBuilder() {
       streamPolicyChat({
         messages: apiMessages,
         config,
+        orgContext,
         signal: controller.signal,
         onDelta: (chunk) => {
           assistantContent += chunk;
@@ -115,7 +118,6 @@ export default function PolicySopBuilder() {
             setLatestResponse(assistantContent);
             setPreviewExpanded(true);
             setAiMode("live");
-            // Auto-save to version control
             autoSave(assistantContent, "live");
           }
         },
@@ -138,7 +140,6 @@ export default function PolicySopBuilder() {
             });
             setLatestResponse(mockContent);
             setPreviewExpanded(true);
-            // Auto-save demo response too
             autoSave(mockContent, "demo");
             toast.warning("AI is running in demo mode. Live AI generation will resume when available.", { duration: 6000 });
           } else {
@@ -147,7 +148,7 @@ export default function PolicySopBuilder() {
         },
       });
     },
-    [config, isTyping, messages, autoSave]
+    [config, orgContext, isTyping, messages, autoSave]
   );
 
   const handleGenerate = () => {
@@ -233,7 +234,13 @@ export default function PolicySopBuilder() {
             <TabsContent value="builder" className="space-y-8 mt-0">
               <HowToGuide />
               <Separator />
-              <DocumentConfigSection config={config} onChange={setConfig} onGenerate={canGenerate ? handleGenerate : undefined} />
+              <DocumentConfigSection
+                config={config}
+                onChange={setConfig}
+                onGenerate={canGenerate ? handleGenerate : undefined}
+                orgContext={orgContext}
+                onOrgContextChange={setOrgContext}
+              />
               <Separator />
               {!canGenerate && (
                 <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 flex items-center gap-2">
