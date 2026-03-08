@@ -92,7 +92,7 @@ export default function ArtefactRepository() {
       <div>
         <h1 className="text-3xl font-bold text-primary">Artefact Repository</h1>
         <p className="text-muted-foreground">
-          Download compliance artefacts, templates, checklists, and policies for DPDP Act implementation
+          Organisation-wide compliance documents — managed by Admin, accessible to all team members
         </p>
       </div>
 

@@ -267,7 +267,7 @@ export default function PolicyLibrary() {
           <div className="h-14 w-14 rounded-xl bg-muted/20 flex items-center justify-center">
             <FileText className="h-7 w-7 text-muted-foreground/50" />
           </div>
-          <p className="text-sm font-medium text-muted-foreground">No policies generated yet</p>
+          <p className="text-sm font-medium text-muted-foreground">No policies in the register yet</p>
           <p className="text-xs text-muted-foreground/70 max-w-md">
             Use the Policy & SOP Builder to create your first document.
           </p>

@@ -89,8 +89,13 @@ export function AppSidebar() {
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <NavLink to="/settings/users" className="hover:bg-sidebar-accent" activeClassName="bg-sidebar-accent text-primary font-medium">
-                      <Users className="h-4 w-4 mr-2 shrink-0" />
-                      {!collapsed && <span>User Management</span>}
+                      <Users className="h-4 w-4 mr-2 shrink-0 self-start mt-0.5" />
+                      {!collapsed && (
+                        <div className="flex flex-col">
+                          <span>User Management</span>
+                          <span className="text-[10px] text-muted-foreground leading-tight">Manage team roles & access</span>
+                        </div>
+                      )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
