@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { FolderOpen, FileText, Download, ChevronDown, ChevronRight, Archive, Trash2 } from "lucide-react";
+import { FolderOpen, FileText, Download, ChevronDown, ChevronRight, Archive, Trash2, Info, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -96,6 +96,14 @@ export default function ArtefactRepository() {
         </p>
       </div>
 
+      {/* Privacy Notice Banner */}
+      <div className="flex items-center gap-2.5 rounded-lg border border-primary/20 bg-primary/5 px-4 py-2.5">
+        <Info className="h-4 w-4 text-primary shrink-0" />
+        <p className="text-xs text-muted-foreground">
+          <span className="font-semibold text-foreground">Your Data, Your Control</span> — All documents in this repository are private to your workspace. They are never shared with other organisations. Delete any document at any time using the trash icon.
+        </p>
+      </div>
+
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="bg-card border border-border rounded-xl p-4">
@@ -186,7 +194,12 @@ export default function ArtefactRepository() {
                                   </div>
                                 </td>
                                 <td className="py-2.5 px-2 text-muted-foreground text-xs">
-                                  {file.description || "—"}
+                                  <div className="flex items-center gap-1.5">
+                                    <Badge className="text-[8px] px-1.5 py-0 bg-muted text-muted-foreground border border-border gap-0.5 shrink-0">
+                                      <Lock className="h-2.5 w-2.5" /> Private
+                                    </Badge>
+                                    <span>{file.description || "—"}</span>
+                                  </div>
                                 </td>
                                 <td className="py-2.5 px-2 text-muted-foreground text-xs">
                                   {new Date(file.uploaded_at).toLocaleDateString()}

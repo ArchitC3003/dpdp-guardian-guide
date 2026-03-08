@@ -12,8 +12,12 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import {
   Building2, Search, Star, FileCheck, Download, Save, BookOpen,
   ChevronRight, Sparkles, FileText, ClipboardList, FolderOpen,
-  RefreshCw, Upload, ExternalLink, ChevronDown, Circle
+  RefreshCw, Upload, ExternalLink, ChevronDown, Circle, Lock, Shield
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useArtefactContext, ArtefactFile } from "@/hooks/useArtefactContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -81,6 +85,8 @@ export default function AssessmentRepoGenerator() {
   const [artefactPanelOpen, setArtefactPanelOpen] = useState(false);
   const [indexPanelOpen, setIndexPanelOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [consentModalOpen, setConsentModalOpen] = useState(false);
+  const [consentChecked, setConsentChecked] = useState(false);
 
   const {
     artefactFiles,
@@ -368,9 +374,9 @@ export default function AssessmentRepoGenerator() {
                   <CardContent className="px-5 pb-4 pt-0">
                     {matchedArtefacts.length > 0 ? (
                       <div className="space-y-2">
-                        <p className="text-[10px] text-muted-foreground italic">
-                          These existing artefacts have been used to inform this document generation
-                        </p>
+                         <p className="text-[10px] text-muted-foreground italic">
+                           These documents from your private workspace have been referenced to personalise this output
+                         </p>
                         {matchedArtefacts.map((match) => (
                           <div key={match.file.id} className="flex items-center justify-between bg-accent/30 rounded-md px-3 py-2">
                             <div className="flex items-center gap-2 min-w-0">
@@ -473,27 +479,84 @@ export default function AssessmentRepoGenerator() {
             </Card>
           )}
 
-          {/* Smart Suggestion: Upload to Artefact Repository */}
+          {/* Smart Suggestion: Save to Artefact Repository */}
           {generatedContent && (
             <Card className="border-primary/20 bg-primary/5">
               <CardContent className="p-4 flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold text-foreground">Upload to Artefact Repository</p>
-                  <p className="text-[10px] text-muted-foreground">Strengthen future document generations by adding this to your repository</p>
+                  <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <Lock className="h-3 w-3 text-primary" /> Save to My Artefact Repository
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">Saved privately to your workspace only — never shared with other organisations</p>
                 </div>
                 <Button
                   size="sm"
                   variant="outline"
                   className="gap-1.5 shrink-0"
-                  onClick={handleUploadToRepo}
+                  onClick={() => { setConsentChecked(false); setConsentModalOpen(true); }}
                   disabled={uploading}
                 >
-                  <Upload className="h-3.5 w-3.5" />
-                  {uploading ? "Uploading..." : "Upload to Policies"}
+                  <Lock className="h-3.5 w-3.5" />
+                  {uploading ? "Saving..." : "Save to My Artefact Repository"}
                 </Button>
               </CardContent>
             </Card>
           )}
+
+          {/* Consent Modal */}
+          <Dialog open={consentModalOpen} onOpenChange={setConsentModalOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-base">
+                  <Shield className="h-4 w-4 text-primary" />
+                  Save to Your Private Artefact Repository
+                </DialogTitle>
+                <DialogDescription className="sr-only">Privacy consent for saving document</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3 py-2">
+                <div className="flex items-start gap-2.5">
+                  <Shield className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                  <p className="text-xs text-muted-foreground">Stored privately in your workspace — visible only to you and your organisation's admins</p>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <Shield className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                  <p className="text-xs text-muted-foreground">Never shared with other organisations or used to train shared models</p>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <Shield className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                  <p className="text-xs text-muted-foreground">You can delete this document from your Artefact Repository at any time</p>
+                </div>
+                <Separator />
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="consent-check"
+                    checked={consentChecked}
+                    onCheckedChange={(v) => setConsentChecked(v === true)}
+                  />
+                  <label htmlFor="consent-check" className="text-xs text-foreground cursor-pointer">
+                    I understand this document will be stored in my private workspace
+                  </label>
+                </div>
+              </div>
+              <DialogFooter className="gap-2 sm:gap-0">
+                <Button variant="ghost" size="sm" onClick={() => setConsentModalOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={!consentChecked || uploading}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+                  onClick={async () => {
+                    setConsentModalOpen(false);
+                    await handleUploadToRepo();
+                  }}
+                >
+                  <Save className="h-3.5 w-3.5" />
+                  {uploading ? "Saving..." : "Save to Repository"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </div>
