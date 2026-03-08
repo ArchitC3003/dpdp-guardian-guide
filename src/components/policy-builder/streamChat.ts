@@ -1,4 +1,5 @@
 import { DocumentConfig, FRAMEWORKS, DOCUMENT_TYPES, MATURITY_LEVELS } from "./types";
+import { OrgContext } from "./orgContextTypes";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -7,6 +8,7 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-pol
 export interface StreamChatOptions {
   messages: Msg[];
   config: DocumentConfig;
+  orgContext?: OrgContext;
   onDelta: (text: string) => void;
   onDone: () => void;
   onError: (error: string) => void;
@@ -16,6 +18,7 @@ export interface StreamChatOptions {
 export async function streamPolicyChat({
   messages,
   config,
+  orgContext,
   onDelta,
   onDone,
   onError,
@@ -41,12 +44,19 @@ export async function streamPolicyChat({
       body: JSON.stringify({
         documentType: docLabel,
         frameworks: frameworkLabels.join(", ") || "NIST CSF 2.0",
-        orgName: config.industry,
-        industry: config.industry,
-        orgSize: config.orgSize,
-        maturityLevel: maturityLabel,
+        orgName: orgContext?.orgName || config.orgName || config.industry,
+        industry: orgContext?.industry || config.industry,
+        orgSize: orgContext?.orgSize || config.orgSize,
+        maturityLevel: orgContext?.maturityLevel || maturityLabel,
         userMessage: lastMessage?.content || "",
         conversationHistory,
+        // Extended org context
+        sdfClassification: orgContext?.sdfClassification || config.sdfClassification || "",
+        geographies: orgContext?.geographies || config.geographies || "",
+        processingActivities: orgContext?.processingActivities || config.processingActivities || [],
+        sector: orgContext?.sector || config.sector || "",
+        dpoName: orgContext?.dpoName || config.dpoName || "",
+        date: orgContext?.date || config.date || "",
       }),
       signal,
     });

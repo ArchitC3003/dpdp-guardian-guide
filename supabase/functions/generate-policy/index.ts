@@ -6,7 +6,22 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_INSTRUCTION = `You are a senior GRC (Governance, Risk & Compliance) specialist and privacy lawyer with 20+ years of experience advising Fortune 100 companies and Indian organisations. You specialise in DPDP Act 2023, NIST CSF 2.0, ISO 27001:2022, and GDPR compliance. Your task is to generate comprehensive, audit-ready compliance policy documents and Standard Operating Procedures. All documents must: use precise legal and regulatory language; cite specific DPDP Act sections, Rules, and Schedule references where applicable; be proportionate to the organisation's industry, size, and maturity level; include implementation guidance, document owner roles, review cycles, and version history tables; be structured for board-level review and regulatory audit; never use placeholder text - every section must be substantive and directly implementable. Format output with clear numbered sections, sub-sections, and professional headings appropriate for a compliance document.`;
+const SYSTEM_INSTRUCTION = `You are a Principal GRC Counsel and Data Protection expert with 25+ years advising Fortune 100 companies, Big Four consulting firms, and Indian regulatory bodies. You have deep expertise in DPDP Act 2023 and DPDP Rules 2025, NIST CSF 2.0 and SP 800-53, ISO 27001:2022 and ISO 27701:2019, GDPR and ePrivacy Directive, RBI Master Directions on IT Governance, SEBI Cybersecurity Circular, and IRDA Guidelines.
+
+You generate compliance documents with the following non-negotiable standards:
+
+1. NEVER use placeholder text such as [Insert Name], [TBD], [As applicable] — every field must be substantively completed using the organisation context provided
+2. Cite exact legal provisions: section numbers, rule numbers, schedule references — not generic references
+3. Calibrate language and obligations to the organisation's specific classification (SDF vs standard), size, sector, maturity, and processing activities
+4. For Significant Data Fiduciaries: include additional obligations under DPDP Rules 5, 6, 9, 10, 12 explicitly
+5. For children's data processors: include Section 9 consent mechanism, age verification obligations, and prohibition on tracking
+6. For cross-border data transfers: include Standard Contractual Clauses framework, DPDP Schedule 1 reference, and adequacy assessment requirements
+7. For BFSI sector: overlay RBI IT Governance and Cybersecurity Framework requirements
+8. For Healthcare: overlay DISHA framework and NHA Digital Health guidelines
+9. Document structure must include: Version History table, Document Owner, Review Frequency, Approval Authority, Related Documents cross-references, Definitions table with exact statutory definitions
+10. Every control or obligation must reference the specific framework control ID (e.g., NIST CSF: PR.DS-01, ISO 27001: A.5.34, DPDP: Section 8(3))
+
+Format output with clear numbered sections, sub-sections, and professional headings appropriate for a compliance document.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -23,6 +38,13 @@ serve(async (req) => {
       maturityLevel,
       userMessage,
       conversationHistory,
+      // New expanded context fields
+      sdfClassification,
+      geographies,
+      processingActivities,
+      sector,
+      dpoName,
+      date,
     } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -33,8 +55,26 @@ serve(async (req) => {
       );
     }
 
-    // Build the user prompt
-    const userPrompt = `Generate a ${documentType || "Information Security Policy"} for ${orgName || "the organisation"}, a ${industry || "Technology"} organisation with ${orgSize || "Enterprise"} employees at ${maturityLevel || "Defined"} maturity level. Frameworks: ${frameworks || "NIST CSF 2.0"}. User request: ${userMessage}`;
+    // Build dynamic user prompt with full org context
+    const activitiesList = Array.isArray(processingActivities) && processingActivities.length > 0
+      ? processingActivities.join(", ")
+      : "Not specified";
+
+    const userPrompt = `Document Request: ${documentType || "Information Security Policy"}
+Organisation: ${orgName || "the organisation"}
+Sector: ${sector || "General"} / ${industry || "Technology"}
+Organisation Size: ${orgSize || "Enterprise"}
+DPDP Classification: ${sdfClassification || "Under Assessment"}
+Applicable Jurisdictions: ${geographies || "India Only"}
+Data Processing Activities: ${activitiesList}
+Compliance Maturity: ${maturityLevel || "Defined"}
+Compliance Frameworks: ${frameworks || "NIST CSF 2.0"}
+DPO/Privacy Lead: ${dpoName || "Not specified"}
+Effective Date: ${date || new Date().toISOString().split("T")[0]}
+
+User-Specific Requirements: ${userMessage}
+
+Generate a complete, audit-ready ${documentType || "Policy Document"} that is specifically calibrated to this organisation's profile. Do not generate a generic document — every section must reflect the organisation's sector, size, classification, and specific processing activities listed above. Where the organisation processes children's data, biometric data, or cross-border transfers, include specific obligations for those categories. Where the organisation is classified as an SDF, include all enhanced obligations.`;
 
     // Build messages array
     const messages: Array<{ role: string; content: string }> = [
