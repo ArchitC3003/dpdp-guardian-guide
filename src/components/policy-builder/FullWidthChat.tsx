@@ -184,7 +184,20 @@ export default function FullWidthChat({ messages, isTyping, onSend, onClear, act
               <Bot className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-foreground">Policy & SOP Architect</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-semibold text-foreground">Policy & SOP Architect</h2>
+                {aiMode === "live" ? (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Live AI
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-amber-500/15 text-amber-400 border border-amber-500/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                    Demo Mode
+                  </span>
+                )}
+              </div>
               <p className="text-[10px] text-muted-foreground">Powered by NIST Repository & Global Compliance Frameworks</p>
             </div>
           </div>
