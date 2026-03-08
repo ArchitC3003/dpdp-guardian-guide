@@ -224,6 +224,19 @@ export default function AccountSettings() {
           </p>
         </CardContent>
       </Card>
+      ) : (
+      <Card className="bg-slate-800/50 border-slate-700/50">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Lock className="h-5 w-5 text-muted-foreground" />
+            AI Configuration
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">AI configuration is only available to Super Admins.</p>
+        </CardContent>
+      </Card>
+      )}
 
       {/* Delete Account */}
       <Card className="border-red-900/30 bg-red-950/20">
