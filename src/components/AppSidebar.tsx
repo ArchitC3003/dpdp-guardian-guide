@@ -20,14 +20,14 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const mainNav = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Assessments", url: "/assessments", icon: ClipboardList },
-  { title: "Shared Reports", url: "/shared", icon: Share2 },
-  { title: "Assessment Repository", url: "/repository", icon: FolderOpen },
-  { title: "Artefact Repository", url: "/artefacts", icon: Building2 },
-  { title: "Policy & SOP Builder", url: "/policy-sop-builder", icon: Bot },
-  { title: "Policy Library", url: "/policy-library", icon: BookMarked },
-  { title: "Settings", url: "/settings", icon: Settings2 },
+  { title: "Dashboard", subtitle: "Compliance overview & risk summary", url: "/", icon: LayoutDashboard },
+  { title: "Assessments", subtitle: "Run DPDP gap & risk assessments", url: "/assessments", icon: ClipboardList },
+  { title: "Shared Reports", subtitle: "Export & share compliance reports", url: "/shared", icon: Share2 },
+  { title: "Assessment Repository", subtitle: "88 DPDP requirements with AI templates", url: "/repository", icon: FolderOpen },
+  { title: "Artefact Repository", subtitle: "Org documents — Admin managed", url: "/artefacts", icon: Building2 },
+  { title: "Policy & SOP Builder", subtitle: "AI-powered policy & SOP generator", url: "/policy-sop-builder", icon: Bot },
+  { title: "Policy Register", subtitle: "Official policy lifecycle register", url: "/policy-library", icon: BookMarked },
+  { title: "Settings", subtitle: "App configuration & preferences", url: "/settings", icon: Settings2 },
 ];
 
 const phases = [
@@ -73,8 +73,13 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} end className="hover:bg-sidebar-accent" activeClassName="bg-sidebar-accent text-primary font-medium">
-                      <item.icon className="h-4 w-4 mr-2 shrink-0" />
-                      {!collapsed && <span>{item.title}</span>}
+                      <item.icon className="h-4 w-4 mr-2 shrink-0 self-start mt-0.5" />
+                      {!collapsed && (
+                        <div className="flex flex-col">
+                          <span>{item.title}</span>
+                          <span className="text-[10px] text-muted-foreground leading-tight">{item.subtitle}</span>
+                        </div>
+                      )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -84,8 +89,13 @@ export function AppSidebar() {
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <NavLink to="/settings/users" className="hover:bg-sidebar-accent" activeClassName="bg-sidebar-accent text-primary font-medium">
-                      <Users className="h-4 w-4 mr-2 shrink-0" />
-                      {!collapsed && <span>User Management</span>}
+                      <Users className="h-4 w-4 mr-2 shrink-0 self-start mt-0.5" />
+                      {!collapsed && (
+                        <div className="flex flex-col">
+                          <span>User Management</span>
+                          <span className="text-[10px] text-muted-foreground leading-tight">Manage team roles & access</span>
+                        </div>
+                      )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

@@ -92,7 +92,7 @@ export default function ArtefactRepository() {
       <div>
         <h1 className="text-3xl font-bold text-primary">Artefact Repository</h1>
         <p className="text-muted-foreground">
-          Download compliance artefacts, templates, checklists, and policies for DPDP Act implementation
+          Organisation-wide compliance documents — managed by Admin, accessible to all team members
         </p>
       </div>
 
@@ -128,8 +128,17 @@ export default function ArtefactRepository() {
         ))}
       </div>
 
-      {/* Admin Upload */}
-      {isAdmin && <AdminUploadPanel onUploaded={fetchFiles} />}
+      {/* Admin Upload / Non-admin notice */}
+      {isAdmin ? (
+        <AdminUploadPanel onUploaded={fetchFiles} />
+      ) : (
+        <div className="flex items-center gap-2.5 rounded-lg border border-border bg-muted/10 px-4 py-3">
+          <Info className="h-4 w-4 text-muted-foreground shrink-0" />
+          <p className="text-xs text-muted-foreground">
+            Documents in this repository are managed by your organisation's Admin. Contact your Admin to add or update files.
+          </p>
+        </div>
+      )}
 
       {/* Folders */}
       {loading ? (

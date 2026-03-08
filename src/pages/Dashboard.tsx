@@ -175,11 +175,11 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* Policy Library Widget */}
+      {/* Policy Register Widget */}
       <Card className="border-border bg-card">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-lg flex items-center gap-2">
-            <BookMarked className="h-5 w-5 text-primary" /> Policy Library Status
+            <BookMarked className="h-5 w-5 text-primary" /> Policy Register Status
           </CardTitle>
           <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate("/policy-library")}>
             View All <ChevronRight className="h-3 w-3 ml-1" />

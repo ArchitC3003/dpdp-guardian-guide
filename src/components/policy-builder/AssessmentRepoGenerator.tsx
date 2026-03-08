@@ -135,7 +135,7 @@ export default function AssessmentRepoGenerator() {
   };
 
   const handleSave = () => {
-    toast.success("Saved to Policy Library");
+    toast.success("Saved to Policy Register");
   };
 
   const handleExport = (fmt: string) => {
