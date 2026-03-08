@@ -20,14 +20,14 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const mainNav = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Assessments", url: "/assessments", icon: ClipboardList },
-  { title: "Shared Reports", url: "/shared", icon: Share2 },
-  { title: "Assessment Repository", url: "/repository", icon: FolderOpen },
-  { title: "Artefact Repository", url: "/artefacts", icon: Building2 },
-  { title: "Policy & SOP Builder", url: "/policy-sop-builder", icon: Bot },
-  { title: "Policy Library", url: "/policy-library", icon: BookMarked },
-  { title: "Settings", url: "/settings", icon: Settings2 },
+  { title: "Dashboard", subtitle: "Compliance overview & risk summary", url: "/", icon: LayoutDashboard },
+  { title: "Assessments", subtitle: "Run DPDP gap & risk assessments", url: "/assessments", icon: ClipboardList },
+  { title: "Shared Reports", subtitle: "Export & share compliance reports", url: "/shared", icon: Share2 },
+  { title: "Assessment Repository", subtitle: "88 DPDP requirements with AI templates", url: "/repository", icon: FolderOpen },
+  { title: "Artefact Repository", subtitle: "Org documents — Admin managed", url: "/artefacts", icon: Building2 },
+  { title: "Policy & SOP Builder", subtitle: "AI-powered policy & SOP generator", url: "/policy-sop-builder", icon: Bot },
+  { title: "Policy Register", subtitle: "Official policy lifecycle register", url: "/policy-library", icon: BookMarked },
+  { title: "Settings", subtitle: "App configuration & preferences", url: "/settings", icon: Settings2 },
 ];
 
 const phases = [
