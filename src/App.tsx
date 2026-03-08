@@ -13,6 +13,7 @@ import SharedReports from "./pages/SharedReports";
 import Repository from "./pages/Repository";
 import ArtefactRepository from "./pages/ArtefactRepository";
 import AccountSettings from "./pages/AccountSettings";
+import UserManagement from "./pages/UserManagement";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import PhaseOrgProfile from "./pages/PhaseOrgProfile";
@@ -66,6 +67,7 @@ const App = () => (
               <Route path="/artefacts" element={<ArtefactRepository />} />
               <Route path="/policy-sop-builder" element={<PolicySopBuilder />} />
               <Route path="/settings" element={<AccountSettings />} />
+              <Route path="/settings/users" element={<UserManagement />} />
               <Route path="/assessment/:assessmentId/org-profile" element={<PhaseOrgProfile />} />
               <Route path="/assessment/:assessmentId/policy-matrix" element={<PhasePolicyMatrix />} />
               <Route path="/assessment/:assessmentId/rapid-assessment" element={<PhaseRapidAssessment />} />

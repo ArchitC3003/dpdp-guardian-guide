@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { Bot, FileText, Shield, Sparkles } from "lucide-react";
+import { Bot, FileText, Shield, Sparkles, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import HowToGuide from "@/components/policy-builder/HowToGuide";
@@ -10,6 +10,7 @@ import { DocumentConfig, ChatMessage, DOCUMENT_TYPES } from "@/components/policy
 import { streamPolicyChat } from "@/components/policy-builder/streamChat";
 import { generateMockResponse } from "@/components/policy-builder/mockResponses";
 import { usePolicyVersioning } from "@/hooks/usePolicyVersioning";
+import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "sonner";
 
 const DEFAULT_CONFIG: DocumentConfig = {
@@ -30,6 +31,7 @@ export default function PolicySopBuilder() {
   const [previewExpanded, setPreviewExpanded] = useState(false);
   const [aiMode, setAiMode] = useState<"live" | "demo">("live");
   const abortRef = useRef<AbortController | null>(null);
+  const { canGenerate, canExport, canEdit, userRoleLabel } = usePermissions();
 
   const {
     currentDoc,
@@ -218,16 +220,36 @@ export default function PolicySopBuilder() {
         <div className="max-w-7xl mx-auto px-6 py-6 space-y-8">
           <HowToGuide />
           <Separator />
-          <DocumentConfigSection config={config} onChange={setConfig} onGenerate={handleGenerate} />
+          <DocumentConfigSection config={config} onChange={setConfig} onGenerate={canGenerate ? handleGenerate : undefined} />
           <Separator />
-          <FullWidthChat
-            messages={messages}
-            isTyping={isTyping}
-            onSend={sendMessage}
-            onClear={handleClearChat}
-            activeFrameworks={config.frameworks}
-            aiMode={aiMode}
-          />
+          {!canGenerate && (
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 flex items-center gap-2">
+              <Lock className="h-4 w-4 text-amber-400 shrink-0" />
+              <p className="text-xs text-amber-300">
+                You have view-only access ({userRoleLabel}). Contact your GRC Manager to request document generation.
+              </p>
+            </div>
+          )}
+          {canGenerate && (
+            <FullWidthChat
+              messages={messages}
+              isTyping={isTyping}
+              onSend={sendMessage}
+              onClear={handleClearChat}
+              activeFrameworks={config.frameworks}
+              aiMode={aiMode}
+            />
+          )}
+          {!canGenerate && messages.length > 0 && (
+            <FullWidthChat
+              messages={messages}
+              isTyping={false}
+              onSend={() => {}}
+              onClear={() => {}}
+              activeFrameworks={config.frameworks}
+              aiMode={aiMode}
+            />
+          )}
           <Separator />
           <FullWidthPreview
             config={config}

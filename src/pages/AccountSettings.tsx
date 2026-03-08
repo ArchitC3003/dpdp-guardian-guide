@@ -2,22 +2,29 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Download, LogOut, Trash2, Bot, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Download, LogOut, Trash2, Bot, CheckCircle2, XCircle, Loader2, Save, Lock } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function AccountSettings() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, refreshProfile } = useAuth();
+  const { canConfigureAI, userRoleLabel, userRoleColor } = usePermissions();
   const navigate = useNavigate();
   const [showDelete, setShowDelete] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [exporting, setExporting] = useState(false);
   const [testingAi, setTestingAi] = useState(false);
   const [aiStatus, setAiStatus] = useState<"untested" | "connected" | "failed">("untested");
+  const [editName, setEditName] = useState(profile?.full_name || "");
+  const [editOrg, setEditOrg] = useState(profile?.organisation || "");
+  const [editJob, setEditJob] = useState((profile as any)?.job_title || "");
+  const [saving, setSaving] = useState(false);
 
   const handleDeleteAccount = async () => {
     await supabase.auth.signOut();
@@ -98,19 +105,63 @@ export default function AccountSettings() {
         <p className="text-muted-foreground">Manage your account and personal data</p>
       </div>
 
-      {/* Profile */}
+      {/* My Profile — editable */}
       <Card className="bg-slate-800/50 border-slate-700/50">
-        <CardHeader><CardTitle className="text-lg">Profile</CardTitle></CardHeader>
-        <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-          <div><span className="text-muted-foreground">Full Name:</span> <span className="ml-2">{profile?.full_name || "—"}</span></div>
-          <div><span className="text-muted-foreground">Email:</span> <span className="ml-2">{user?.email || "—"}</span></div>
-          <div><span className="text-muted-foreground">Organisation:</span> <span className="ml-2">{profile?.organisation || "—"}</span></div>
-          <div><span className="text-muted-foreground">Role:</span> <span className="ml-2">{profile?.role || "—"}</span></div>
-          <div><span className="text-muted-foreground">Account Created:</span> <span className="ml-2">{user?.created_at ? new Date(user.created_at).toLocaleDateString() : "—"}</span></div>
+        <CardHeader><CardTitle className="text-lg">My Profile</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Full Name</label>
+              <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Email</label>
+              <Input value={user?.email || ""} disabled className="opacity-60" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Organisation</label>
+              <Input value={editOrg} onChange={(e) => setEditOrg(e.target.value)} />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Job Title</label>
+              <Input value={editJob} onChange={(e) => setEditJob(e.target.value)} placeholder="e.g. CISO, DPO, GRC Lead" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Role</label>
+              <Badge variant="outline" className={cn("text-xs", userRoleColor)}>
+                {userRoleLabel}
+              </Badge>
+              <p className="text-[10px] text-muted-foreground mt-1">Role is assigned by your administrator</p>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Account Created</label>
+              <p className="text-sm">{user?.created_at ? new Date(user.created_at).toLocaleDateString() : "—"}</p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            disabled={saving}
+            onClick={async () => {
+              if (!user) return;
+              setSaving(true);
+              await supabase.from("profiles").update({
+                full_name: editName,
+                organisation: editOrg,
+                job_title: editJob,
+              }).eq("id", user.id);
+              await refreshProfile();
+              toast.success("Profile saved");
+              setSaving(false);
+            }}
+          >
+            <Save className="h-3.5 w-3.5 mr-1.5" />
+            {saving ? "Saving..." : "Save Profile"}
+          </Button>
         </CardContent>
       </Card>
 
-      {/* AI Configuration */}
+      {/* AI Configuration — admin/manager only */}
+      {canConfigureAI ? (
       <Card className="bg-slate-800/50 border-slate-700/50">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
@@ -173,6 +224,19 @@ export default function AccountSettings() {
           </p>
         </CardContent>
       </Card>
+      ) : (
+      <Card className="bg-slate-800/50 border-slate-700/50">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Lock className="h-5 w-5 text-muted-foreground" />
+            AI Configuration
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">AI configuration is only available to Super Admins.</p>
+        </CardContent>
+      </Card>
+      )}
 
       {/* Delete Account */}
       <Card className="border-red-900/30 bg-red-950/20">

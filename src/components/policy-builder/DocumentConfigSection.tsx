@@ -36,7 +36,7 @@ import {
 interface Props {
   config: DocumentConfig;
   onChange: (config: DocumentConfig) => void;
-  onGenerate: () => void;
+  onGenerate?: () => void;
 }
 
 const DOC_TYPE_ICONS: Record<string, typeof FileText> = {};
@@ -268,7 +268,8 @@ export default function DocumentConfigSection({ config, onChange, onGenerate }: 
             </div>
           </div>
 
-          <div className="ml-auto">
+          {onGenerate && (
+            <div className="ml-auto">
             <Button
               onClick={onGenerate}
               className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-8"
@@ -277,6 +278,7 @@ export default function DocumentConfigSection({ config, onChange, onGenerate }: 
               Generate Document
             </Button>
           </div>
+          )}
         </div>
       </div>
     </section>
