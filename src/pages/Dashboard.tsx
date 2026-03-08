@@ -41,6 +41,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user) return;
     loadAssessments();
+    loadPolicyDocs();
   }, [user, isAdmin]);
 
   const loadAssessments = async () => {
