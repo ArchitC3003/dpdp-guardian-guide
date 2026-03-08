@@ -102,6 +102,8 @@ export default function FullWidthPreview({
 }: Props) {
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("document");
+  const [exportingDocx, setExportingDocx] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   const cls = CLASSIFICATIONS.find((c) => c.value === config.classification);
   const docTitle = latestResponse ? extractTitleFromResponse(latestResponse, config) : getDocTitle(config);
