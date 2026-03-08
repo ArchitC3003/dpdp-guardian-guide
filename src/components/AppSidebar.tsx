@@ -22,6 +22,7 @@ const mainNav = [
   { title: "Shared Reports", url: "/shared", icon: Share2 },
   { title: "Assessment Repository", url: "/repository", icon: FolderOpen },
   { title: "Artefact Repository", url: "/artefacts", icon: Building2 },
+  { title: "Policy & SOP Builder", url: "/policy-sop-builder", icon: Bot },
   { title: "Settings", url: "/settings", icon: Settings2 },
 ];
 
