@@ -160,7 +160,8 @@ export default function AccountSettings() {
         </CardContent>
       </Card>
 
-      {/* AI Configuration */}
+      {/* AI Configuration — admin/manager only */}
+      {canConfigureAI ? (
       <Card className="bg-slate-800/50 border-slate-700/50">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
