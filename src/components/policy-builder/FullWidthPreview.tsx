@@ -295,12 +295,46 @@ export default function FullWidthPreview({
 
               {/* Action Bar */}
               {latestResponse && (
-                <div className="px-6 py-3 border-t border-border flex items-center gap-2">
-                  <Button variant="outline" size="sm" className="text-xs h-8" onClick={() => onExport("DOCX")}>
-                    <Download className="h-3 w-3 mr-1.5" /> Export DOCX
+              <div className="px-6 py-3 border-t border-border flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-8"
+                    disabled={exportingDocx}
+                    onClick={async () => {
+                      setExportingDocx(true);
+                      try {
+                        await exportToDOCX(buildExportDoc());
+                        onExport("DOCX");
+                        toast.success("Document exported as DOCX");
+                      } catch (e) {
+                        toast.error("DOCX export failed");
+                      } finally {
+                        setExportingDocx(false);
+                      }
+                    }}
+                  >
+                    {exportingDocx ? <Loader2 className="h-3 w-3 mr-1.5 animate-spin" /> : <Download className="h-3 w-3 mr-1.5" />} Export DOCX
                   </Button>
-                  <Button variant="outline" size="sm" className="text-xs h-8" onClick={() => onExport("PDF")}>
-                    <Download className="h-3 w-3 mr-1.5" /> Export PDF
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-8"
+                    disabled={exportingPdf}
+                    onClick={async () => {
+                      setExportingPdf(true);
+                      try {
+                        await exportToPDF(buildExportDoc());
+                        onExport("PDF");
+                        toast.success("Document exported as PDF");
+                      } catch (e) {
+                        toast.error("PDF export failed");
+                      } finally {
+                        setExportingPdf(false);
+                      }
+                    }}
+                  >
+                    {exportingPdf ? <Loader2 className="h-3 w-3 mr-1.5 animate-spin" /> : <Download className="h-3 w-3 mr-1.5" />} Export PDF
                   </Button>
                   <Button variant="outline" size="sm" className="text-xs h-8" onClick={onSaveToRepo}>
                     <Save className="h-3 w-3 mr-1.5" /> Save to Repository
