@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { AppLayout } from "@/components/AppLayout";
 import { CookieBanner } from "@/components/CookieBanner";
+import LandingPage from "./pages/LandingPage";
 import Auth from "./pages/Auth";
 import ProfileSetup from "./pages/ProfileSetup";
 import Dashboard from "./pages/Dashboard";
@@ -34,7 +35,7 @@ function ProtectedRoutes() {
   if (loading || profileLoading) {
     return <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">Loading...</div>;
   }
-  if (!session) return <Navigate to="/auth" replace />;
+  if (!session) return <Navigate to="/" replace />;
   if (profile && !profile.full_name) return <Navigate to="/profile-setup" replace />;
 
   return <AppLayout />;
@@ -43,7 +44,7 @@ function ProtectedRoutes() {
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth();
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">Loading...</div>;
-  if (session) return <Navigate to="/" replace />;
+  if (session) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }
 
@@ -56,12 +57,13 @@ const App = () => (
         <AuthProvider>
           <CookieBanner />
           <Routes>
+            <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<AuthGuard><Auth /></AuthGuard>} />
             <Route path="/profile-setup" element={<ProfileSetup />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
             <Route element={<ProtectedRoutes />}>
-              <Route path="/" element={<Dashboard />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/assessments" element={<Dashboard />} />
               <Route path="/shared" element={<SharedReports />} />
               <Route path="/repository" element={<Repository />} />

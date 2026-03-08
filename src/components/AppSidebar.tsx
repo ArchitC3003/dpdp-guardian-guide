@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const mainNav = [
-  { title: "Dashboard", subtitle: "Compliance overview & risk summary", url: "/", icon: LayoutDashboard },
+  { title: "Dashboard", subtitle: "Compliance overview & risk summary", url: "/dashboard", icon: LayoutDashboard },
   { title: "Assessments", subtitle: "Run DPDP gap & risk assessments", url: "/assessments", icon: ClipboardList },
   { title: "Shared Reports", subtitle: "Export & share compliance reports", url: "/shared", icon: Share2 },
   { title: "Assessment Repository", subtitle: "88 DPDP requirements with AI templates", url: "/repository", icon: FolderOpen },

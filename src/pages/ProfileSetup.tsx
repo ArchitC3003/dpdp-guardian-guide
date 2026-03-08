@@ -33,7 +33,7 @@ export default function ProfileSetup() {
     } else {
       await refreshProfile();
       toast.success("Profile saved!");
-      navigate("/");
+      navigate("/dashboard");
     }
     setLoading(false);
   };
