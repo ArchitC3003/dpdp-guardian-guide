@@ -21,6 +21,7 @@ import PhaseRapidAssessment from "./pages/PhaseRapidAssessment";
 import PhaseDeptGrid from "./pages/PhaseDeptGrid";
 import PhaseFileReferences from "./pages/PhaseFileReferences";
 import PhaseDashboard from "./pages/PhaseDashboard";
+import PolicySopBuilder from "./pages/PolicySopBuilder";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
