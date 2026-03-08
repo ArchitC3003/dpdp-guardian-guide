@@ -25,6 +25,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { cn } from "@/lib/utils";
 import { ChatMessage, FRAMEWORKS } from "./types";
 import { toast } from "sonner";
+import { exportToDOCX, exportToPDF, ExportDocument } from "@/utils/exportUtils";
 
 interface Props {
   messages: ChatMessage[];
