@@ -1,7 +1,9 @@
 import { useState, useCallback, useRef } from "react";
-import { Bot, FileText, Shield, Sparkles, Lock } from "lucide-react";
+import { Bot, FileText, Shield, Sparkles, Lock, ClipboardList } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import AssessmentRepoGenerator from "@/components/policy-builder/AssessmentRepoGenerator";
 import HowToGuide from "@/components/policy-builder/HowToGuide";
 import DocumentConfigSection from "@/components/policy-builder/DocumentConfigSection";
 import FullWidthChat from "@/components/policy-builder/FullWidthChat";
