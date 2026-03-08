@@ -112,10 +112,33 @@ function renderMarkdown(content: string) {
 }
 
 function MessageToolbar({ content }: { content: string }) {
+  const handleExport = async (fmt: "docx" | "pdf") => {
+    const exportDoc: ExportDocument = {
+      title: "Policy Document",
+      documentRef: "POL-001",
+      version: "1.0",
+      status: "Draft",
+      classification: "Confidential",
+      effectiveDate: new Date().toISOString().split("T")[0],
+      reviewDate: new Date(Date.now() + 365 * 86400000).toISOString().split("T")[0],
+      selectedFrameworks: [],
+      industryVertical: "General",
+      orgSize: "enterprise",
+      content,
+    };
+    try {
+      toast.success(`Downloading ${fmt.toUpperCase()}...`);
+      if (fmt === "docx") await exportToDOCX(exportDoc);
+      else await exportToPDF(exportDoc);
+    } catch {
+      toast.error(`${fmt.toUpperCase()} export failed`);
+    }
+  };
+
   const actions = [
     { icon: Copy, label: "Copy", action: () => { navigator.clipboard.writeText(content); toast.success("Copied"); } },
-    { icon: Download, label: "DOCX", action: () => toast.info("DOCX export coming soon") },
-    { icon: Download, label: "PDF", action: () => toast.info("PDF export coming soon") },
+    { icon: Download, label: "DOCX", action: () => handleExport("docx") },
+    { icon: Download, label: "PDF", action: () => handleExport("pdf") },
     { icon: Save, label: "Save", action: () => toast.info("Save to repository coming soon") },
     { icon: RefreshCw, label: "Regenerate", action: () => toast.info("Regenerate coming soon") },
   ];
