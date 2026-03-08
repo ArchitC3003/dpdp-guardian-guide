@@ -13,6 +13,7 @@ import SharedReports from "./pages/SharedReports";
 import Repository from "./pages/Repository";
 import ArtefactRepository from "./pages/ArtefactRepository";
 import AccountSettings from "./pages/AccountSettings";
+import UserManagement from "./pages/UserManagement";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import PhaseOrgProfile from "./pages/PhaseOrgProfile";
