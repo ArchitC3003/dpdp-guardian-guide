@@ -23,19 +23,30 @@ import { useArtefactContext, ArtefactFile } from "@/hooks/useArtefactContext";
 import { exportToDOCX, exportToPDF, ExportDocument } from "@/utils/exportUtils";
 import { supabase } from "@/integrations/supabase/client";
 import ArtefactIndexPanel from "./ArtefactIndexPanel";
+import OrgProfileForm from "./OrgProfileForm";
+import ComplianceProfileSummary from "./ComplianceProfileSummary";
+import { OrgContext, DEFAULT_ORG_CONTEXT, SDF_OPTIONS, GEOGRAPHY_OPTIONS, MATURITY_OPTIONS, ORG_SIZE_OPTIONS } from "./orgContextTypes";
 
 const CRITICAL_IDS = new Set([
   "p1-1", "p1-4", "p2-1", "p2-4", "p2-7", "p2-11", "p2-13", "p2-19", "p3-a1", "p2-14",
 ]);
 
-interface OrgContext {
-  orgName: string;
-  industry: string;
-  dpoName: string;
-  date: string;
+function getMaturityLanguage(level: string): string {
+  switch (level) {
+    case "initial": return "shall establish";
+    case "developing": return "is in the process of establishing";
+    case "defined": return "has established";
+    case "managed": return "maintains and monitors";
+    case "optimising": return "continuously improves";
+    default: return "shall establish";
+  }
 }
 
-function fillTemplate(template: string, ctx: OrgContext, matchedArtefacts: { file: ArtefactFile; score: number; matchLevel: string }[]): string {
+function fillTemplate(
+  template: string,
+  ctx: OrgContext,
+  matchedArtefacts: { file: ArtefactFile; score: number; matchLevel: string }[]
+): string {
   let filled = template
     .replace(/\[Organisation Name\]/g, ctx.orgName || "[Organisation Name]")
     .replace(/\[Date\]/g, ctx.date || "[Date]")
@@ -48,12 +59,63 @@ function fillTemplate(template: string, ctx: OrgContext, matchedArtefacts: { fil
     .replace(/\[Version\]/g, "v1.0")
     .replace(/\[Year\]/g, new Date().getFullYear().toString());
 
+  // Smart replacements based on expanded context
+
+  // SDF Obligations
+  const sdfBlock = ctx.sdfClassification === "sdf"
+    ? `\n\nSIGNIFICANT DATA FIDUCIARY — ENHANCED OBLIGATIONS\n${"═".repeat(60)}\nAs a Significant Data Fiduciary under the DPDP Act 2023, ${ctx.orgName || "the Organisation"} is subject to enhanced obligations including:\n• Rule 5: Appointment of Data Protection Officer (DPO) resident in India\n• Rule 6: Periodic Data Protection Impact Assessment (DPIA)\n• Rule 9: Enhanced consent management and record-keeping\n• Rule 10: Verification of age and parental consent for children's data\n• Rule 12: Periodic audit by independent data auditor\n• Publication of Data Protection Impact Assessment summary on website\n`
+    : `\n\nAs a Data Fiduciary under the DPDP Act 2023, ${ctx.orgName || "the Organisation"} shall comply with all applicable obligations under Sections 4–17.\n`;
+  filled = filled.replace(/\[SDF_OBLIGATIONS\]/g, sdfBlock);
+
+  // Processing Activities
+  const activitiesList = ctx.processingActivities.length > 0
+    ? ctx.processingActivities.map((a) => `• ${a}`).join("\n")
+    : "• To be determined based on data mapping exercise";
+  filled = filled.replace(/\[PROCESSING_ACTIVITIES_LIST\]/g, activitiesList);
+
+  // Jurisdiction clause
+  const geoLabel = GEOGRAPHY_OPTIONS.find((g) => g.value === ctx.geographies)?.label || "India Only";
+  const jurisdictionClause = ctx.geographies === "india-only"
+    ? `This document applies within the jurisdiction of India under the DPDP Act 2023 and DPDP Rules 2025.`
+    : ctx.geographies === "india-eu"
+    ? `This document applies under dual jurisdiction: India (DPDP Act 2023, DPDP Rules 2025) and European Union (GDPR, ePrivacy Directive). Standard Contractual Clauses (SCCs) shall govern cross-border transfers per DPDP Schedule 1.`
+    : ctx.geographies === "india-us"
+    ? `This document applies under dual jurisdiction: India (DPDP Act 2023) and United States (CCPA/CPRA as applicable). Cross-border transfer mechanisms per DPDP Schedule 1 shall be implemented.`
+    : `This document applies under multi-jurisdictional scope: ${geoLabel}. Data transfer adequacy assessments per DPDP Schedule 1 are required for all cross-border transfers.`;
+  filled = filled.replace(/\[JURISDICTION_CLAUSE\]/g, jurisdictionClause);
+
+  // Sector-specific clause
+  let sectorClause = "";
+  if (ctx.industry?.includes("BFSI") || ctx.industry?.includes("Banking") || ctx.industry?.includes("Insurance")) {
+    sectorClause = `\nSECTOR-SPECIFIC OVERLAY: BFSI\nThis policy incorporates requirements from RBI Master Directions on Information Technology Governance, Risk, Controls and Assurance Practices, SEBI Circular on Cyber Security & Cyber Resilience Framework, and IRDA Guidelines on Information and Cyber Security as applicable.\n`;
+  } else if (ctx.industry?.includes("Health")) {
+    sectorClause = `\nSECTOR-SPECIFIC OVERLAY: HEALTHCARE\nThis policy incorporates requirements from the Digital Information Security in Healthcare Act (DISHA) framework, National Health Authority (NHA) Digital Health Guidelines, and Ayushman Bharat Digital Mission (ABDM) data sharing protocols.\n`;
+  }
+  filled = filled.replace(/\[SECTOR_SPECIFIC_CLAUSE\]/g, sectorClause);
+
+  // Maturity language
+  filled = filled.replace(/\[MATURITY_LANGUAGE\]/g, getMaturityLanguage(ctx.maturityLevel));
+
+  // Children's data clause
+  const childrenClause = ctx.processingActivities.includes("Children's Data (under 18)")
+    ? `\nCHILDREN'S DATA PROCESSING OBLIGATIONS\n${ctx.orgName || "The Organisation"} processes data of children (persons under 18 years of age) and is therefore subject to:\n• Section 9 of DPDP Act 2023: Verifiable consent from parent/lawful guardian before processing\n• Rule 10: Age verification mechanism proportionate to risk\n• Prohibition on tracking, behavioural monitoring, and targeted advertising directed at children\n• Data minimisation: only data reasonably necessary for the specific purpose\n`
+    : `${ctx.orgName || "The Organisation"} does not currently process children's personal data. Should such processing commence, Section 9 and Rule 10 compliance shall be implemented prior to processing.`;
+  filled = filled.replace(/\[CHILDREN_DATA_CLAUSE\]/g, childrenClause);
+
+  // Cross-border clause
+  const crossBorderClause = ctx.processingActivities.includes("Cross-border Data Transfers")
+    ? `\nCROSS-BORDER DATA TRANSFER PROVISIONS\nAll cross-border transfers of personal data shall comply with:\n• DPDP Act 2023 Section 16: Transfer only to countries/territories notified under Schedule 1\n• Adequacy assessment documentation maintained and reviewed annually\n• Standard Contractual Clauses (SCCs) executed with all foreign data recipients\n• Transfer Impact Assessment (TIA) conducted before initiating new transfer arrangements\n`
+    : `Cross-border data transfers are not currently within scope. Prior to any cross-border transfer, DPDP Section 16 and Schedule 1 compliance shall be established.`;
+  filled = filled.replace(/\[CROSS_BORDER_CLAUSE\]/g, crossBorderClause);
+
+  // Org size scope
+  const sizeLabel = ORG_SIZE_OPTIONS.find((s) => s.value === ctx.orgSize)?.label || "Enterprise";
+  filled = filled.replace(/\[ORG_SIZE_SCOPE\]/g, `Organisation Size: ${sizeLabel}`);
+
   // Add artefact references header
   if (matchedArtefacts.length > 0) {
-    const artefactNames = matchedArtefacts.map(a => a.file.file_name).join(", ");
-    const header = `\n════════════════════════════════════════════════════════════════════\nARTEFACT REFERENCES\n════════════════════════════════════════════════════════════════════\n\nGenerated with reference to ${matchedArtefacts.length} artefact(s) from your Artefact Repository:\n${matchedArtefacts.map(a => `• ${a.file.file_name} (${a.file.folder})`).join("\n")}\n`;
+    const header = `\n${"═".repeat(68)}\nARTEFACT REFERENCES\n${"═".repeat(68)}\n\nGenerated with reference to ${matchedArtefacts.length} artefact(s) from your Artefact Repository:\n${matchedArtefacts.map(a => `• ${a.file.file_name} (${a.file.folder})`).join("\n")}\n`;
 
-    // Add cross-references based on folder type
     const policyArtefacts = matchedArtefacts.filter(a => a.file.folder === "Policies");
     const agreementArtefacts = matchedArtefacts.filter(a => a.file.folder === "Agreement Templates");
 
@@ -76,12 +138,7 @@ export default function AssessmentRepoGenerator() {
   const [selectedItem, setSelectedItem] = useState<RepositoryItem | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [generatedContent, setGeneratedContent] = useState<string | null>(null);
-  const [orgCtx, setOrgCtx] = useState<OrgContext>({
-    orgName: "",
-    industry: "",
-    dpoName: "",
-    date: new Date().toISOString().split("T")[0],
-  });
+  const [orgCtx, setOrgCtx] = useState<OrgContext>(DEFAULT_ORG_CONTEXT);
   const [generatedIds, setGeneratedIds] = useState<Set<string>>(new Set());
   const [artefactPanelOpen, setArtefactPanelOpen] = useState(false);
   const [indexPanelOpen, setIndexPanelOpen] = useState(false);
@@ -151,7 +208,7 @@ export default function AssessmentRepoGenerator() {
       reviewDate: new Date(Date.now() + 365 * 86400000).toISOString().split("T")[0],
       selectedFrameworks: ["DPDP Act 2023"],
       industryVertical: orgCtx.industry || "General",
-      orgSize: "enterprise",
+      orgSize: orgCtx.orgSize || "enterprise",
       content: generatedContent,
     };
     try {
@@ -212,7 +269,6 @@ export default function AssessmentRepoGenerator() {
             <CardTitle className="text-sm font-semibold flex items-center gap-2 text-primary">
               <BookOpen className="h-4 w-4" /> How to Use the Assessment Repository Generator
             </CardTitle>
-            {/* Live Sync Indicator */}
             <button
               onClick={() => setIndexPanelOpen(!indexPanelOpen)}
               className="flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-primary transition-colors cursor-pointer bg-background/50 rounded-full px-2.5 py-1 border border-border"
@@ -227,7 +283,7 @@ export default function AssessmentRepoGenerator() {
             {[
               { step: 1, label: "Select your phase from the tabs below" },
               { step: 2, label: "Choose the requirement you need to fulfil" },
-              { step: 3, label: "Enter your organisation details on the right" },
+              { step: 3, label: "Complete your Organisation Profile on the right" },
               { step: 4, label: "Generate, review, and export the document" },
               { step: 5, label: "Upload to Assessment Repository to mark complete" },
             ].map((s) => (
@@ -339,37 +395,16 @@ export default function AssessmentRepoGenerator() {
 
         {/* Right Panel */}
         <div className="space-y-4">
-          {/* Org Context Form */}
-          <Card>
-            <CardHeader className="pb-3 pt-4 px-5">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-primary" /> Organisation Context
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="px-5 pb-4 grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Organisation Name *</label>
-                <Input className="h-8 text-xs" value={orgCtx.orgName} onChange={(e) => setOrgCtx((p) => ({ ...p, orgName: e.target.value }))} placeholder="Acme Corp" />
-              </div>
-              <div>
-                <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Industry</label>
-                <Input className="h-8 text-xs" value={orgCtx.industry} onChange={(e) => setOrgCtx((p) => ({ ...p, industry: e.target.value }))} placeholder="Technology" />
-              </div>
-              <div>
-                <label className="text-[11px] font-medium text-muted-foreground mb-1 block">DPO Name</label>
-                <Input className="h-8 text-xs" value={orgCtx.dpoName} onChange={(e) => setOrgCtx((p) => ({ ...p, dpoName: e.target.value }))} placeholder="Jane Doe" />
-              </div>
-              <div>
-                <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Date</label>
-                <Input type="date" className="h-8 text-xs" value={orgCtx.date} onChange={(e) => setOrgCtx((p) => ({ ...p, date: e.target.value }))} />
-              </div>
-            </CardContent>
-          </Card>
+          {/* Compliance Profile Summary */}
+          <ComplianceProfileSummary ctx={orgCtx} />
+
+          {/* Org Profile Form */}
+          <OrgProfileForm ctx={orgCtx} onChange={setOrgCtx} />
 
           {/* Artefact Context Panel */}
           {selectedItem && (
             <Collapsible open={artefactPanelOpen} onOpenChange={setArtefactPanelOpen}>
-              <Card className={`border-${matchedArtefacts.length > 0 ? (matchedArtefacts.some(a => a.matchLevel === "green") ? "emerald" : "amber") : "muted-foreground"}-500/20`}>
+              <Card>
                 <CollapsibleTrigger asChild>
                   <CardHeader className="pb-2 pt-3 px-5 cursor-pointer hover:bg-accent/30 transition-colors">
                     <div className="flex items-center justify-between">
@@ -380,7 +415,7 @@ export default function AssessmentRepoGenerator() {
                           {matchedArtefacts.length}
                         </Badge>
                         {matchedArtefacts.length > 0 ? (
-                          <Circle className={`h-2 w-2 fill-${matchedArtefacts.some(a => a.matchLevel === "green") ? "emerald" : "amber"}-500 text-${matchedArtefacts.some(a => a.matchLevel === "green") ? "emerald" : "amber"}-500`} />
+                          <Circle className="h-2 w-2 fill-emerald-500 text-emerald-500" />
                         ) : (
                           <Circle className="h-2 w-2 fill-muted-foreground/30 text-muted-foreground/30" />
                         )}
@@ -398,9 +433,9 @@ export default function AssessmentRepoGenerator() {
                   <CardContent className="px-5 pb-4 pt-0">
                     {matchedArtefacts.length > 0 ? (
                       <div className="space-y-2">
-                         <p className="text-[10px] text-muted-foreground italic">
-                           These documents from your private workspace have been referenced to personalise this output
-                         </p>
+                        <p className="text-[10px] text-muted-foreground italic">
+                          These documents from your private workspace have been referenced to personalise this output
+                        </p>
                         {matchedArtefacts.map((match) => (
                           <div key={match.file.id} className="flex items-center justify-between bg-accent/30 rounded-md px-3 py-2">
                             <div className="flex items-center gap-2 min-w-0">
