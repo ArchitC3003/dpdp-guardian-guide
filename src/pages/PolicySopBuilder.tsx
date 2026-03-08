@@ -31,6 +31,7 @@ export default function PolicySopBuilder() {
   const [previewExpanded, setPreviewExpanded] = useState(false);
   const [aiMode, setAiMode] = useState<"live" | "demo">("live");
   const abortRef = useRef<AbortController | null>(null);
+  const { canGenerate, canExport, canEdit, userRoleLabel } = usePermissions();
 
   const {
     currentDoc,
