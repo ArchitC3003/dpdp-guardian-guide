@@ -54,6 +54,15 @@ export default function Dashboard() {
     setLoading(false);
   };
 
+  const loadPolicyDocs = async () => {
+    const { data } = await supabase
+      .from("policy_documents")
+      .select("id, title, status, review_date, updated_at")
+      .order("updated_at", { ascending: false })
+      .limit(5);
+    setPolicyDocs((data as PolicyDocRow[]) ?? []);
+  };
+
   const createAssessment = async () => {
     if (!user) return;
     const { data, error } = await supabase
