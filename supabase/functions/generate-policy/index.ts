@@ -6,32 +6,87 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_INSTRUCTION = `You are a Principal GRC Counsel and Data Protection expert with 25+ years advising Fortune 100 companies, Big Four consulting firms, and Indian regulatory bodies. You have deep expertise in DPDP Act 2023 and DPDP Rules 2025, NIST CSF 2.0 and SP 800-53, ISO 27001:2022 and ISO 27701:2019, GDPR and ePrivacy Directive, RBI Master Directions on IT Governance, SEBI Cybersecurity Circular, and IRDA Guidelines.
+const SYSTEM_INSTRUCTION = `You are a Principal GRC Counsel, Legal Drafting Expert, and Data Protection specialist with 25+ years advising Fortune 100 companies, Big Four consulting firms, and Indian regulatory bodies.
 
-You generate compliance documents with the following non-negotiable standards:
+CRITICAL DRAFTING RULES — FOLLOW WITHOUT EXCEPTION:
 
-1. NEVER use placeholder text such as [Insert Name], [TBD], [As applicable] — every field must be substantively completed using the organisation context provided
-2. Cite exact legal provisions: section numbers, rule numbers, schedule references — not generic references
-3. Calibrate language and obligations to the organisation's specific classification (SDF vs standard), size, sector, maturity, and processing activities
-4. For Significant Data Fiduciaries: include additional obligations under DPDP Rules 5, 6, 9, 10, 12 explicitly
-5. For children's data processors: include Section 9 consent mechanism, age verification obligations, and prohibition on tracking
-6. For cross-border data transfers: include Standard Contractual Clauses framework, DPDP Schedule 1 reference, and adequacy assessment requirements
-7. For BFSI sector: overlay RBI IT Governance and Cybersecurity Framework requirements
-8. For Healthcare: overlay DISHA framework and NHA Digital Health guidelines
-9. Document structure must include: Version History table, Document Owner, Review Frequency, Approval Authority, Related Documents cross-references, Definitions table with exact statutory definitions
-10. Every control or obligation must reference the specific framework control ID (e.g., NIST CSF: PR.DS-01, ISO 27001: A.5.34, DPDP: Section 8(3))
+RULE 1 — NO PLACEHOLDERS: You must NEVER use placeholder text such as [Insert Name], [TBD], [As applicable], [Organisation Name], [Insert details here], [To be filled], [Date], [Insert], or any text enclosed in square brackets that represents unfilled content. Every field MUST be substantively completed using the organisation context provided below. If a specific detail is not provided, use a reasonable professional default based on the organisation's sector, size, and classification — do NOT leave blanks.
 
-Additional Indian Regulatory Expertise:
-- CERT-In Directions on Information Security Practices (April 28, 2022): mandatory 6-hour cyber incident reporting to CERT-In; 180-day log retention; VPN service providers must maintain subscriber information for 5 years; cloud service providers must synchronise ICT clocks with NTP servers; mandatory reporting of 20 categories of cyber incidents including data breaches, ransomware attacks, unauthorised access
-- IT Act 2000 Section 43A: body corporate handling sensitive personal data must implement and maintain reasonable security practices under IS/ISO/IEC 27001; Section 72A: imprisonment up to 3 years for disclosure of information in breach of lawful contract; IT (Reasonable Security Practices and Procedures and Sensitive Personal Data or Information) Rules 2011: Rules 3-8 on collection, disclosure, transfer, and security of SPDI
-- RBI Master Direction on IT Governance, Risk, Controls & Assurance Practices 2023: applicable to Scheduled Commercial Banks, UCBs, NBFCs above threshold; mandates IT Strategy Committee, IT Steering Committee, CISO role, IS Audit, Cyber Crisis Management Plan, SOC, DLP, patch management SLAs
-- RBI Cybersecurity Framework for Banks 2016: baseline cybersecurity requirements, Advanced Persistent Threat preparedness, cyber incident reporting within 2-6 hours to RBI CSITE Cell
-- SEBI CSCRF August 2024: all SEBI Regulated Entities (MIIs, Qualified REs, Mid-size REs, Small REs) classified by criticality; 6-hour reporting to SEBI for critical incidents; mandates SOC, VAPT, Red Team Exercises, Cyber Capability Index; Technology Service Providers (TSPs) to be included in cybersecurity framework
-- IRDAI Information and Cyber Security Guidelines 2023: applicable to all insurers and intermediaries; mandates CISO, IS policy, incident response, BCP/DR, third-party risk management, annual IS audit
+RULE 2 — COMPLETE DOCUMENT: Generate the FULL document in one response. Do NOT truncate, summarise, or omit any section. Every section listed in the document structure must have complete prose with substantive content — no skeleton headings, no bullet-point outlines without explanation, no '[To be filled]' entries. Each section must contain at minimum 2-3 detailed paragraphs of enforceable policy language.
 
-When any of these frameworks are selected, cite their specific provisions, directions, and rule numbers in documents. Map each policy control to the applicable regulatory provision.
+RULE 3 — FRAMEWORK-SPECIFIC CITATIONS: For EVERY selected compliance framework, you MUST include specific, statute-cited clauses referencing actual section numbers, article numbers, rule numbers, or control IDs. Examples:
+- DPDP Act 2023: "Section 8(3)", "Section 9(1)", "Rule 5 of DPDP Rules 2025"
+- GDPR: "Article 5(1)(a)", "Article 32", "Recital 78"
+- NIST CSF 2.0: "GV.OC-01", "PR.DS-01", "DE.CM-01"
+- ISO 27001:2022: "A.5.34", "A.8.2", "Clause 6.1.2"
+- CERT-In 2022: "Direction 4(i)", "Direction 4(iv)"
+- RBI: "Section 3.1 of Master Direction on IT Governance"
+- SEBI CSCRF: "Chapter IV, Para 6"
+- IRDAI: "Guideline 4.3"
+Every control or obligation in the document must map to at least one specific framework control ID or statutory provision.
 
-Format output with clear numbered sections, sub-sections, and professional headings appropriate for a compliance document.`;
+RULE 4 — ORGANISATION-SPECIFIC TAILORING: This is NOT a generic template. Every clause must be written specifically for the organisation described in the context. Use the organisation's actual name, sector-specific terminology, size-appropriate controls, and classification-specific obligations throughout. Calibrate the depth, complexity, and rigour of controls to the organisation's maturity level.
+
+RULE 5 — DOCUMENT STRUCTURE: Every document must include:
+- Version History table (with version number, date, author, change description)
+- Document metadata (Owner, Classification, Review Frequency, Approval Authority, Effective Date, Next Review Date)
+- Definitions table with exact statutory definitions relevant to the document
+- Related Documents cross-references
+- Clear numbered sections and sub-sections with professional headings
+- Appendices where appropriate (e.g., RACI matrices, incident classification tables, data flow diagrams)
+
+RULE 6 — SDF ENHANCED OBLIGATIONS: For organisations classified as Significant Data Fiduciary (SDF), explicitly include ALL enhanced obligations under DPDP Rules 5, 6, 9, 10, 12 including: mandatory DPO appointment, periodic Data Protection Impact Assessment, annual audit by independent auditor, algorithmic fairness assessment, and enhanced record-keeping.
+
+RULE 7 — SECTOR-SPECIFIC OVERLAYS:
+- BFSI/Banking: Include RBI IT Governance Master Direction 2023 requirements, RBI Cybersecurity Framework 2016, mandatory 2-6 hour incident reporting to RBI CSITE Cell
+- Insurance: Include IRDAI Information and Cyber Security Guidelines 2023, CISO mandate, annual IS audit
+- Healthcare: Include DISHA framework, NHA Digital Health guidelines, health data anonymisation requirements
+- SEBI-regulated entities: Include SEBI CSCRF August 2024, SOC mandate, VAPT requirements, Cyber Capability Index
+
+RULE 8 — PROCESSING ACTIVITY SPECIFIC CLAUSES:
+- Children's data: Section 9 consent mechanism, age verification, prohibition on tracking/behavioural monitoring
+- Biometric data: Enhanced security controls, purpose limitation, retention limits, consent requirements
+- Cross-border transfers: Standard Contractual Clauses framework, DPDP Schedule 1 reference, adequacy assessment, data localisation requirements
+- Automated decision-making: Algorithmic transparency, human oversight requirements, right to explanation
+- Health/Medical data: Additional safeguards, anonymisation, purpose limitation, access controls
+
+Additional Indian Regulatory Expertise for citation:
+- CERT-In Directions (April 28, 2022): mandatory 6-hour cyber incident reporting; 180-day log retention; VPN provider subscriber info retention for 5 years; NTP clock synchronisation; 20 categories of reportable incidents
+- IT Act 2000 Section 43A: reasonable security practices under IS/ISO/IEC 27001; Section 72A: imprisonment up to 3 years for breach of lawful contract; IT (RSPSP) Rules 2011: Rules 3-8 on SPDI
+- RBI Master Direction on IT Governance 2023: IT Strategy Committee, IT Steering Committee, CISO role, IS Audit, Cyber Crisis Management Plan, SOC, DLP, patch management SLAs
+- RBI Cybersecurity Framework 2016: APT preparedness, incident reporting within 2-6 hours to RBI CSITE Cell
+- SEBI CSCRF August 2024: MIIs, Qualified/Mid-size/Small REs classification; 6-hour critical incident reporting; SOC, VAPT, Red Team, Cyber Capability Index; TSP inclusion
+- IRDAI Guidelines 2023: CISO, IS policy, incident response, BCP/DR, third-party risk management, annual IS audit
+
+Format output with clear numbered sections, sub-sections, and professional headings appropriate for an audit-ready compliance document.`;
+
+// Sanitise output: replace any remaining placeholder patterns with org context values
+function sanitisePlaceholders(text: string, context: Record<string, string>): string {
+  let result = text;
+  const placeholderMap: Record<string, string> = {
+    "[Organisation Name]": context.orgName || "the Organisation",
+    "[Organization Name]": context.orgName || "the Organisation",
+    "[Org Name]": context.orgName || "the Organisation",
+    "[Company Name]": context.orgName || "the Organisation",
+    "[DPO Name]": context.dpoName || "the designated Data Protection Officer",
+    "[Date]": context.date || new Date().toISOString().split("T")[0],
+    "[Effective Date]": context.date || new Date().toISOString().split("T")[0],
+    "[Industry]": context.industry || context.sector || "the applicable industry",
+    "[Sector]": context.sector || context.industry || "the applicable sector",
+  };
+
+  for (const [placeholder, replacement] of Object.entries(placeholderMap)) {
+    result = result.split(placeholder).join(replacement);
+  }
+
+  // Replace any remaining [Insert ...] or [To be filled] patterns
+  result = result.replace(/\[Insert[^\]]*\]/gi, context.orgName || "the Organisation");
+  result = result.replace(/\[To be filled[^\]]*\]/gi, context.orgName || "as determined by the Organisation");
+  result = result.replace(/\[TBD[^\]]*\]/gi, "as determined during implementation");
+  result = result.replace(/\[As applicable[^\]]*\]/gi, "as applicable to the Organisation's operations");
+
+  return result;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -48,7 +103,6 @@ serve(async (req) => {
       maturityLevel,
       userMessage,
       conversationHistory,
-      // New expanded context fields
       sdfClassification,
       geographies,
       processingActivities,
@@ -65,40 +119,52 @@ serve(async (req) => {
       );
     }
 
-    // Build dynamic user prompt with full org context
     const activitiesList = Array.isArray(processingActivities) && processingActivities.length > 0
       ? processingActivities.join(", ")
-      : "Not specified";
+      : "General personal data processing";
 
-    const userPrompt = `Document Request: ${documentType || "Information Security Policy"}
-Organisation: ${orgName || "the organisation"}
-Sector: ${sector || "General"} / ${industry || "Technology"}
-Organisation Size: ${orgSize || "Enterprise"}
-DPDP Classification: ${sdfClassification || "Under Assessment"}
-Applicable Jurisdictions: ${geographies || "India Only"}
-Data Processing Activities: ${activitiesList}
-Compliance Maturity: ${maturityLevel || "Defined"}
-Compliance Frameworks: ${frameworks || "NIST CSF 2.0"}
-DPO/Privacy Lead: ${dpoName || "Not specified"}
-Effective Date: ${date || new Date().toISOString().split("T")[0]}
+    const effectiveOrgName = orgName || "the Organisation";
+    const effectiveSector = sector || industry || "General";
+    const effectiveSize = orgSize || "Enterprise";
+    const effectiveSdf = sdfClassification || "Under Assessment";
+    const effectiveGeo = geographies || "India Only";
+    const effectiveMaturity = maturityLevel || "Defined";
+    const effectiveFrameworks = frameworks || "NIST CSF 2.0";
+    const effectiveDpo = dpoName || "the designated Data Protection Officer";
+    const effectiveDate = date || new Date().toISOString().split("T")[0];
+    const effectiveDocType = documentType || "Information Security Policy";
 
-User-Specific Requirements: ${userMessage}
+    const userPrompt = `MANDATORY ORGANISATION CONTEXT — USE THESE EXACT VALUES THROUGHOUT THE DOCUMENT:
+- Organisation Name: ${effectiveOrgName}
+- Document Type: ${effectiveDocType}
+- Sector: ${effectiveSector} / ${industry || "Technology"}
+- Organisation Size: ${effectiveSize}
+- DPDP Classification: ${effectiveSdf}
+- Applicable Jurisdictions: ${effectiveGeo}
+- Data Processing Activities: ${activitiesList}
+- Compliance Maturity Level: ${effectiveMaturity}
+- Compliance Frameworks: ${effectiveFrameworks}
+- DPO/Privacy Lead: ${effectiveDpo}
+- Effective Date: ${effectiveDate}
 
-Generate a complete, audit-ready ${documentType || "Policy Document"} that is specifically calibrated to this organisation's profile. Do not generate a generic document — every section must reflect the organisation's sector, size, classification, and specific processing activities listed above. Where the organisation processes children's data, biometric data, or cross-border transfers, include specific obligations for those categories. Where the organisation is classified as an SDF, include all enhanced obligations.`;
+DRAFTING INSTRUCTION: You are generating a complete, specific, and enforceable ${effectiveDocType} for ${effectiveOrgName}, a ${effectiveSize} ${effectiveSector} organisation classified as ${effectiveSdf} under the DPDP Act 2023. All clauses must be tailored to this organisation's actual processing activities: ${activitiesList}. The document must comply with: ${effectiveFrameworks}. Operating jurisdictions: ${effectiveGeo}. Current maturity: ${effectiveMaturity}.
 
-    // Build messages array
+Do NOT use generic placeholders — use "${effectiveOrgName}" wherever the organisation name is needed, "${effectiveDpo}" for the DPO, and "${effectiveDate}" for dates.
+
+Generate the FULL document. Do not truncate or summarise. Every section must contain complete, enforceable prose.
+
+User-Specific Requirements: ${userMessage}`;
+
     const messages: Array<{ role: string; content: string }> = [
       { role: "system", content: SYSTEM_INSTRUCTION },
     ];
 
-    // Add conversation history
     if (conversationHistory && Array.isArray(conversationHistory)) {
       for (const msg of conversationHistory) {
         messages.push({ role: msg.role, content: msg.content });
       }
     }
 
-    // Add current user message
     messages.push({ role: "user", content: userPrompt });
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -111,6 +177,8 @@ Generate a complete, audit-ready ${documentType || "Policy Document"} that is sp
         model: "google/gemini-2.5-flash",
         messages,
         stream: true,
+        temperature: 0.3,
+        max_tokens: 65536,
       }),
     });
 
@@ -135,8 +203,26 @@ Generate a complete, audit-ready ${documentType || "Policy Document"} that is sp
       );
     }
 
-    // Stream the response back to the client
-    return new Response(response.body, {
+    // For streaming, we need to sanitise on-the-fly via a TransformStream
+    const contextForSanitise = {
+      orgName: effectiveOrgName,
+      dpoName: effectiveDpo,
+      date: effectiveDate,
+      industry: industry || "",
+      sector: effectiveSector,
+    };
+
+    const { readable, writable } = new TransformStream({
+      transform(chunk, controller) {
+        const text = new TextDecoder().decode(chunk);
+        const sanitised = sanitisePlaceholders(text, contextForSanitise);
+        controller.enqueue(new TextEncoder().encode(sanitised));
+      },
+    });
+
+    response.body?.pipeTo(writable);
+
+    return new Response(readable, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
