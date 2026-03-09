@@ -86,19 +86,34 @@ export function AppSidebar() {
               ))}
               {/* User Management — admin only */}
               {canManageUsers && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink to="/settings/users" className="hover:bg-sidebar-accent" activeClassName="bg-sidebar-accent text-primary font-medium">
-                      <Users className="h-4 w-4 mr-2 shrink-0 self-start mt-0.5" />
-                      {!collapsed && (
-                        <div className="flex flex-col">
-                          <span>User Management</span>
-                          <span className="text-[10px] text-muted-foreground leading-tight">Manage team roles & access</span>
-                        </div>
-                      )}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                <>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild>
+                      <NavLink to="/settings/users" className="hover:bg-sidebar-accent" activeClassName="bg-sidebar-accent text-primary font-medium">
+                        <Users className="h-4 w-4 mr-2 shrink-0 self-start mt-0.5" />
+                        {!collapsed && (
+                          <div className="flex flex-col">
+                            <span>User Management</span>
+                            <span className="text-[10px] text-muted-foreground leading-tight">Manage team roles & access</span>
+                          </div>
+                        )}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild>
+                      <NavLink to="/admin/ai-config" className="hover:bg-sidebar-accent" activeClassName="bg-sidebar-accent text-primary font-medium">
+                        <Bot className="h-4 w-4 mr-2 shrink-0 self-start mt-0.5" />
+                        {!collapsed && (
+                          <div className="flex flex-col">
+                            <span>AI Configuration</span>
+                            <span className="text-[10px] text-muted-foreground leading-tight">Manage AI prompts & training</span>
+                          </div>
+                        )}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </>
               )}
             </SidebarMenu>
           </SidebarGroupContent>

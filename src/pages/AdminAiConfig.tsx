@@ -148,10 +148,16 @@ export default function AdminAiConfig() {
       const map: Record<string, PromptConfig> = {};
       for (const row of configRes.data) {
         map[row.module_name] = {
-          ...row,
+          id: row.id,
+          module_name: row.module_name,
+          system_prompt: row.system_prompt,
+          model: row.model,
+          temperature: Number(row.temperature),
+          max_tokens: row.max_tokens,
           output_rules: Array.isArray(row.output_rules) ? row.output_rules as string[] : [],
           banned_phrases: Array.isArray(row.banned_phrases) ? row.banned_phrases as string[] : [],
-          temperature: Number(row.temperature),
+          assessment_template: row.assessment_template as Record<string, any> | null,
+          scoring_rubric: row.scoring_rubric as Record<string, any> | null,
         };
       }
       setConfigs(map);
