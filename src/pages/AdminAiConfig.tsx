@@ -331,7 +331,7 @@ export default function AdminAiConfig() {
             Manage AI prompts, training examples, model settings, and output quality rules
           </p>
         </div>
-        <Badge variant="outline" className="bg-red-500/15 text-red-400 border-red-500/20">
+        <Badge variant="outline" className="bg-destructive/15 text-destructive border-destructive/20">
           Super Admin Only
         </Badge>
       </div>
