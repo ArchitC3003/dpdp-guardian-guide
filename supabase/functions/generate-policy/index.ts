@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,7 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_INSTRUCTION = `You are a Principal GRC Counsel, Legal Drafting Expert, and Data Protection specialist with 25+ years advising Fortune 100 companies, Big Four consulting firms, and Indian regulatory bodies.
+const FALLBACK_SYSTEM_INSTRUCTION = `You are a Principal GRC Counsel, Legal Drafting Expert, and Data Protection specialist with 25+ years advising Fortune 100 companies, Big Four consulting firms, and Indian regulatory bodies.
 
 CRITICAL DRAFTING RULES — FOLLOW WITHOUT EXCEPTION:
 
@@ -14,53 +15,14 @@ RULE 1 — NO PLACEHOLDERS: You must NEVER use placeholder text such as [Insert 
 
 RULE 2 — COMPLETE DOCUMENT: Generate the FULL document in one response. Do NOT truncate, summarise, or omit any section. Every section listed in the document structure must have complete prose with substantive content — no skeleton headings, no bullet-point outlines without explanation, no '[To be filled]' entries. Each section must contain at minimum 2-3 detailed paragraphs of enforceable policy language.
 
-RULE 3 — FRAMEWORK-SPECIFIC CITATIONS: For EVERY selected compliance framework, you MUST include specific, statute-cited clauses referencing actual section numbers, article numbers, rule numbers, or control IDs. Examples:
-- DPDP Act 2023: "Section 8(3)", "Section 9(1)", "Rule 5 of DPDP Rules 2025"
-- GDPR: "Article 5(1)(a)", "Article 32", "Recital 78"
-- NIST CSF 2.0: "GV.OC-01", "PR.DS-01", "DE.CM-01"
-- ISO 27001:2022: "A.5.34", "A.8.2", "Clause 6.1.2"
-- CERT-In 2022: "Direction 4(i)", "Direction 4(iv)"
-- RBI: "Section 3.1 of Master Direction on IT Governance"
-- SEBI CSCRF: "Chapter IV, Para 6"
-- IRDAI: "Guideline 4.3"
-Every control or obligation in the document must map to at least one specific framework control ID or statutory provision.
+RULE 3 — FRAMEWORK-SPECIFIC CITATIONS: For EVERY selected compliance framework, you MUST include specific, statute-cited clauses referencing actual section numbers, article numbers, rule numbers, or control IDs.
 
-RULE 4 — ORGANISATION-SPECIFIC TAILORING: This is NOT a generic template. Every clause must be written specifically for the organisation described in the context. Use the organisation's actual name, sector-specific terminology, size-appropriate controls, and classification-specific obligations throughout. Calibrate the depth, complexity, and rigour of controls to the organisation's maturity level.
+RULE 4 — ORGANISATION-SPECIFIC TAILORING: This is NOT a generic template. Every clause must be written specifically for the organisation described in the context.
 
-RULE 5 — DOCUMENT STRUCTURE: Every document must include:
-- Version History table (with version number, date, author, change description)
-- Document metadata (Owner, Classification, Review Frequency, Approval Authority, Effective Date, Next Review Date)
-- Definitions table with exact statutory definitions relevant to the document
-- Related Documents cross-references
-- Clear numbered sections and sub-sections with professional headings
-- Appendices where appropriate (e.g., RACI matrices, incident classification tables, data flow diagrams)
-
-RULE 6 — SDF ENHANCED OBLIGATIONS: For organisations classified as Significant Data Fiduciary (SDF), explicitly include ALL enhanced obligations under DPDP Rules 5, 6, 9, 10, 12 including: mandatory DPO appointment, periodic Data Protection Impact Assessment, annual audit by independent auditor, algorithmic fairness assessment, and enhanced record-keeping.
-
-RULE 7 — SECTOR-SPECIFIC OVERLAYS:
-- BFSI/Banking: Include RBI IT Governance Master Direction 2023 requirements, RBI Cybersecurity Framework 2016, mandatory 2-6 hour incident reporting to RBI CSITE Cell
-- Insurance: Include IRDAI Information and Cyber Security Guidelines 2023, CISO mandate, annual IS audit
-- Healthcare: Include DISHA framework, NHA Digital Health guidelines, health data anonymisation requirements
-- SEBI-regulated entities: Include SEBI CSCRF August 2024, SOC mandate, VAPT requirements, Cyber Capability Index
-
-RULE 8 — PROCESSING ACTIVITY SPECIFIC CLAUSES:
-- Children's data: Section 9 consent mechanism, age verification, prohibition on tracking/behavioural monitoring
-- Biometric data: Enhanced security controls, purpose limitation, retention limits, consent requirements
-- Cross-border transfers: Standard Contractual Clauses framework, DPDP Schedule 1 reference, adequacy assessment, data localisation requirements
-- Automated decision-making: Algorithmic transparency, human oversight requirements, right to explanation
-- Health/Medical data: Additional safeguards, anonymisation, purpose limitation, access controls
-
-Additional Indian Regulatory Expertise for citation:
-- CERT-In Directions (April 28, 2022): mandatory 6-hour cyber incident reporting; 180-day log retention; VPN provider subscriber info retention for 5 years; NTP clock synchronisation; 20 categories of reportable incidents
-- IT Act 2000 Section 43A: reasonable security practices under IS/ISO/IEC 27001; Section 72A: imprisonment up to 3 years for breach of lawful contract; IT (RSPSP) Rules 2011: Rules 3-8 on SPDI
-- RBI Master Direction on IT Governance 2023: IT Strategy Committee, IT Steering Committee, CISO role, IS Audit, Cyber Crisis Management Plan, SOC, DLP, patch management SLAs
-- RBI Cybersecurity Framework 2016: APT preparedness, incident reporting within 2-6 hours to RBI CSITE Cell
-- SEBI CSCRF August 2024: MIIs, Qualified/Mid-size/Small REs classification; 6-hour critical incident reporting; SOC, VAPT, Red Team, Cyber Capability Index; TSP inclusion
-- IRDAI Guidelines 2023: CISO, IS policy, incident response, BCP/DR, third-party risk management, annual IS audit
+RULE 5 — DOCUMENT STRUCTURE: Every document must include Version History table, Document metadata, Definitions table, Related Documents cross-references, Clear numbered sections, Appendices where appropriate.
 
 Format output with clear numbered sections, sub-sections, and professional headings appropriate for an audit-ready compliance document.`;
 
-// Sanitise output: replace any remaining placeholder patterns with org context values
 function sanitisePlaceholders(text: string, context: Record<string, string>): string {
   let result = text;
   const placeholderMap: Record<string, string> = {
@@ -79,12 +41,24 @@ function sanitisePlaceholders(text: string, context: Record<string, string>): st
     result = result.split(placeholder).join(replacement);
   }
 
-  // Replace any remaining [Insert ...] or [To be filled] patterns
   result = result.replace(/\[Insert[^\]]*\]/gi, context.orgName || "the Organisation");
   result = result.replace(/\[To be filled[^\]]*\]/gi, context.orgName || "as determined by the Organisation");
   result = result.replace(/\[TBD[^\]]*\]/gi, "as determined during implementation");
   result = result.replace(/\[As applicable[^\]]*\]/gi, "as applicable to the Organisation's operations");
 
+  return result;
+}
+
+// Also sanitise using dynamic banned phrases from config
+function sanitiseBannedPhrases(text: string, bannedPhrases: string[], context: Record<string, string>): string {
+  let result = text;
+  for (const phrase of bannedPhrases) {
+    if (phrase.startsWith("[") && phrase.endsWith("]")) {
+      result = result.split(phrase).join(context.orgName || "the Organisation");
+    } else {
+      result = result.split(phrase).join("");
+    }
+  }
   return result;
 }
 
@@ -95,20 +69,9 @@ serve(async (req) => {
 
   try {
     const {
-      documentType,
-      frameworks,
-      orgName,
-      industry,
-      orgSize,
-      maturityLevel,
-      userMessage,
-      conversationHistory,
-      sdfClassification,
-      geographies,
-      processingActivities,
-      sector,
-      dpoName,
-      date,
+      documentType, frameworks, orgName, industry, orgSize, maturityLevel,
+      userMessage, conversationHistory, sdfClassification, geographies,
+      processingActivities, sector, dpoName, date,
     } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -117,6 +80,53 @@ serve(async (req) => {
         JSON.stringify({ error: "LOVABLE_API_KEY is not configured." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Fetch dynamic config from ai_prompt_config
+    let systemPrompt = FALLBACK_SYSTEM_INSTRUCTION;
+    let model = "google/gemini-2.5-flash";
+    let temperature = 0.3;
+    let maxTokens = 65536;
+    let outputRules: string[] = [];
+    let bannedPhrases: string[] = [];
+    let fewShotExamples: Array<{ input_context: string; expected_output: string }> = [];
+
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
+      const sb = createClient(supabaseUrl, supabaseKey);
+
+      const { data: configData } = await sb
+        .from("ai_prompt_config")
+        .select("*")
+        .eq("module_name", "policy-generator")
+        .maybeSingle();
+
+      if (configData && configData.system_prompt) {
+        systemPrompt = configData.system_prompt;
+        model = configData.model || model;
+        temperature = Number(configData.temperature) || temperature;
+        maxTokens = configData.max_tokens || maxTokens;
+        outputRules = Array.isArray(configData.output_rules) ? configData.output_rules : [];
+        bannedPhrases = Array.isArray(configData.banned_phrases) ? configData.banned_phrases : [];
+      }
+
+      // Fetch few-shot examples
+      const { data: examplesData } = await sb
+        .from("ai_training_examples")
+        .select("input_context, expected_output")
+        .eq("module_name", "policy-generator")
+        .eq("is_active", true)
+        .limit(3);
+
+      if (examplesData) fewShotExamples = examplesData;
+    } catch (configErr) {
+      console.error("Failed to fetch AI config, using fallback:", configErr);
+    }
+
+    // Append output rules to system prompt
+    if (outputRules.length > 0) {
+      systemPrompt += "\n\nMANDATORY OUTPUT RULES:\n" + outputRules.map((r, i) => `${i + 1}. ${r}`).join("\n");
     }
 
     const activitiesList = Array.isArray(processingActivities) && processingActivities.length > 0
@@ -156,8 +166,14 @@ Generate the FULL document. Do not truncate or summarise. Every section must con
 User-Specific Requirements: ${userMessage}`;
 
     const messages: Array<{ role: string; content: string }> = [
-      { role: "system", content: SYSTEM_INSTRUCTION },
+      { role: "system", content: systemPrompt },
     ];
+
+    // Add few-shot examples
+    for (const ex of fewShotExamples) {
+      messages.push({ role: "user", content: ex.input_context });
+      messages.push({ role: "assistant", content: ex.expected_output });
+    }
 
     if (conversationHistory && Array.isArray(conversationHistory)) {
       for (const msg of conversationHistory) {
@@ -174,11 +190,11 @@ User-Specific Requirements: ${userMessage}`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model,
         messages,
         stream: true,
-        temperature: 0.3,
-        max_tokens: 65536,
+        temperature,
+        max_tokens: maxTokens,
       }),
     });
 
@@ -203,7 +219,6 @@ User-Specific Requirements: ${userMessage}`;
       );
     }
 
-    // For streaming, we need to sanitise on-the-fly via a TransformStream
     const contextForSanitise = {
       orgName: effectiveOrgName,
       dpoName: effectiveDpo,
@@ -215,7 +230,8 @@ User-Specific Requirements: ${userMessage}`;
     const { readable, writable } = new TransformStream({
       transform(chunk, controller) {
         const text = new TextDecoder().decode(chunk);
-        const sanitised = sanitisePlaceholders(text, contextForSanitise);
+        let sanitised = sanitisePlaceholders(text, contextForSanitise);
+        sanitised = sanitiseBannedPhrases(sanitised, bannedPhrases, contextForSanitise);
         controller.enqueue(new TextEncoder().encode(sanitised));
       },
     });

@@ -25,6 +25,7 @@ import PhaseFileReferences from "./pages/PhaseFileReferences";
 import PhaseDashboard from "./pages/PhaseDashboard";
 import PolicySopBuilder from "./pages/PolicySopBuilder";
 import PolicyLibrary from "./pages/PolicyLibrary";
+import AdminAiConfig from "./pages/AdminAiConfig";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -74,6 +75,7 @@ const App = () => (
               <Route path="/policy-library" element={<PolicyLibrary />} />
               <Route path="/settings" element={<AccountSettings />} />
               <Route path="/settings/users" element={<UserManagement />} />
+              <Route path="/admin/ai-config" element={<AdminAiConfig />} />
               <Route path="/assessment/:assessmentId/org-profile" element={<PhaseOrgProfile />} />
               <Route path="/assessment/:assessmentId/policy-matrix" element={<PhasePolicyMatrix />} />
               <Route path="/assessment/:assessmentId/rapid-assessment" element={<PhaseRapidAssessment />} />
