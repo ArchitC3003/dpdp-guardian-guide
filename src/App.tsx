@@ -48,12 +48,6 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function LandingGuard() {
-  const { session, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">Loading...</div>;
-  if (session) return <Navigate to="/dashboard" replace />;
-  return <LandingPage />;
-}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -64,7 +58,7 @@ const App = () => (
         <AuthProvider>
           <CookieBanner />
           <Routes>
-            <Route path="/" element={<LandingGuard />} />
+            <Route path="/" element={<LandingPage />} />
             <Route path="/landing" element={<LandingPage />} />
             <Route path="/auth" element={<AuthGuard><Auth /></AuthGuard>} />
             <Route path="/profile-setup" element={<ProfileSetup />} />
