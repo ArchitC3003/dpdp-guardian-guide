@@ -791,7 +791,7 @@ export default function AdminAiConfig() {
                       <TableCell className="text-xs">{MODULE_LABELS[f.module_name as ModuleName] || f.module_name}</TableCell>
                       <TableCell>
                         {f.rating === "up"
-                          ? <ThumbsUp className="h-3.5 w-3.5 text-green-500" />
+                          ? <ThumbsUp className="h-3.5 w-3.5 text-primary" />
                           : <ThumbsDown className="h-3.5 w-3.5 text-destructive" />
                         }
                       </TableCell>
