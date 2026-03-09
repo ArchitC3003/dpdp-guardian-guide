@@ -65,6 +65,7 @@ const App = () => (
           <CookieBanner />
           <Routes>
             <Route path="/" element={<LandingGuard />} />
+            <Route path="/landing" element={<LandingPage />} />
             <Route path="/auth" element={<AuthGuard><Auth /></AuthGuard>} />
             <Route path="/profile-setup" element={<ProfileSetup />} />
             <Route path="/privacy" element={<Privacy />} />
