@@ -25,6 +25,7 @@ import PhaseFileReferences from "./pages/PhaseFileReferences";
 import PhaseDashboard from "./pages/PhaseDashboard";
 import PolicySopBuilder from "./pages/PolicySopBuilder";
 import PolicyLibrary from "./pages/PolicyLibrary";
+import AdminAiConfig from "./pages/AdminAiConfig";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
