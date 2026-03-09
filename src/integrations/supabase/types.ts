@@ -14,6 +14,141 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_config_audit_log: {
+        Row: {
+          change_summary: string | null
+          changed_at: string
+          changed_by: string | null
+          id: string
+          module_name: string
+          new_prompt: string | null
+          old_prompt: string | null
+        }
+        Insert: {
+          change_summary?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          module_name: string
+          new_prompt?: string | null
+          old_prompt?: string | null
+        }
+        Update: {
+          change_summary?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          module_name?: string
+          new_prompt?: string | null
+          old_prompt?: string | null
+        }
+        Relationships: []
+      }
+      ai_output_feedback: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          module_name: string
+          prompt_version: string | null
+          rating: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          module_name: string
+          prompt_version?: string | null
+          rating?: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          module_name?: string
+          prompt_version?: string | null
+          rating?: string
+        }
+        Relationships: []
+      }
+      ai_prompt_config: {
+        Row: {
+          assessment_template: Json | null
+          banned_phrases: Json
+          id: string
+          max_tokens: number
+          model: string
+          module_name: string
+          output_rules: Json
+          scoring_rubric: Json | null
+          system_prompt: string
+          temperature: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          assessment_template?: Json | null
+          banned_phrases?: Json
+          id?: string
+          max_tokens?: number
+          model?: string
+          module_name: string
+          output_rules?: Json
+          scoring_rubric?: Json | null
+          system_prompt?: string
+          temperature?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          assessment_template?: Json | null
+          banned_phrases?: Json
+          id?: string
+          max_tokens?: number
+          model?: string
+          module_name?: string
+          output_rules?: Json
+          scoring_rubric?: Json | null
+          system_prompt?: string
+          temperature?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      ai_training_examples: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          doc_type: string
+          expected_output: string
+          id: string
+          input_context: string
+          is_active: boolean
+          module_name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          doc_type?: string
+          expected_output?: string
+          id?: string
+          input_context?: string
+          is_active?: boolean
+          module_name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          doc_type?: string
+          expected_output?: string
+          id?: string
+          input_context?: string
+          is_active?: boolean
+          module_name?: string
+        }
+        Relationships: []
+      }
       artefact_files: {
         Row: {
           description: string | null
@@ -240,6 +375,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      framework_clause_library: {
+        Row: {
+          clause_ref: string
+          clause_text: string
+          framework_name: string
+          id: string
+          is_active: boolean
+        }
+        Insert: {
+          clause_ref: string
+          clause_text?: string
+          framework_name: string
+          id?: string
+          is_active?: boolean
+        }
+        Update: {
+          clause_ref?: string
+          clause_text?: string
+          framework_name?: string
+          id?: string
+          is_active?: boolean
+        }
+        Relationships: []
       }
       policy_audit_log: {
         Row: {
