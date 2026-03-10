@@ -271,8 +271,15 @@ export default function AdminAiConfig() {
     setTestOutput("");
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await supabase.functions.invoke("generate-policy", {
-        body: {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const response = await fetch(`${supabaseUrl}/functions/v1/generate-policy`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.access_token}`,
+          "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({
           documentType: testProfile.documentType,
           frameworks: testProfile.frameworks,
           orgName: testProfile.orgName,
@@ -286,15 +293,48 @@ export default function AdminAiConfig() {
           sector: testProfile.sector,
           dpoName: "Test DPO",
           date: new Date().toISOString().split("T")[0],
-        },
+        }),
       });
 
-      if (res.error) {
-        setTestOutput("Error: " + (res.error.message || JSON.stringify(res.error)));
-      } else if (typeof res.data === "string") {
-        setTestOutput(res.data);
-      } else {
-        setTestOutput(JSON.stringify(res.data, null, 2));
+      if (!response.ok) {
+        const errText = await response.text();
+        setTestOutput("Error: " + errText);
+        setTesting(false);
+        return;
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = "";
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          // Parse SSE lines to extract content
+          const lines = chunk.split("\n");
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const data = line.slice(6);
+              if (data === "[DONE]") continue;
+              try {
+                const parsed = JSON.parse(data);
+                const content = parsed.choices?.[0]?.delta?.content || "";
+                accumulated += content;
+                setTestOutput(accumulated);
+              } catch {
+                // Not valid JSON SSE, treat as raw text
+                accumulated += data;
+                setTestOutput(accumulated);
+              }
+            }
+          }
+        }
+      }
+
+      if (!accumulated) {
+        setTestOutput("No output received from the AI model.");
       }
     } catch (e: any) {
       setTestOutput("Error: " + e.message);
