@@ -271,8 +271,15 @@ export default function AdminAiConfig() {
     setTestOutput("");
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await supabase.functions.invoke("generate-policy", {
-        body: {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const response = await fetch(`${supabaseUrl}/functions/v1/generate-policy`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.access_token}`,
+          "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({
           documentType: testProfile.documentType,
           frameworks: testProfile.frameworks,
           orgName: testProfile.orgName,
@@ -286,15 +293,61 @@ export default function AdminAiConfig() {
           sector: testProfile.sector,
           dpoName: "Test DPO",
           date: new Date().toISOString().split("T")[0],
-        },
+        }),
       });
 
-      if (res.error) {
-        setTestOutput("Error: " + (res.error.message || JSON.stringify(res.error)));
-      } else if (typeof res.data === "string") {
-        setTestOutput(res.data);
-      } else {
-        setTestOutput(JSON.stringify(res.data, null, 2));
+      if (!response.ok) {
+        const errText = await response.text();
+        setTestOutput("Error: " + errText);
+        setTesting(false);
+        return;
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = "";
+      let buffer = "";
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          // Process complete lines from buffer
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || ""; // keep incomplete last line in buffer
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || trimmed === "data: [DONE]") continue;
+            if (trimmed.startsWith("data: ")) {
+              const data = trimmed.slice(6);
+              try {
+                const parsed = JSON.parse(data);
+                const content = parsed.choices?.[0]?.delta?.content || "";
+                accumulated += content;
+                setTestOutput(accumulated);
+              } catch {
+                // skip unparseable chunks
+              }
+            }
+          }
+        }
+        // Process any remaining buffer
+        if (buffer.trim().startsWith("data: ")) {
+          const data = buffer.trim().slice(6);
+          if (data !== "[DONE]") {
+            try {
+              const parsed = JSON.parse(data);
+              const content = parsed.choices?.[0]?.delta?.content || "";
+              accumulated += content;
+              setTestOutput(accumulated);
+            } catch { /* skip */ }
+          }
+        }
+      }
+
+      if (!accumulated) {
+        setTestOutput("No output received from the AI model.");
       }
     } catch (e: any) {
       setTestOutput("Error: " + e.message);
