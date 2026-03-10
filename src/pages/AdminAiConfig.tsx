@@ -306,29 +306,42 @@ export default function AdminAiConfig() {
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let accumulated = "";
+      let buffer = "";
 
       if (reader) {
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          // Parse SSE lines to extract content
-          const lines = chunk.split("\n");
+          buffer += decoder.decode(value, { stream: true });
+          // Process complete lines from buffer
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || ""; // keep incomplete last line in buffer
           for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6);
-              if (data === "[DONE]") continue;
+            const trimmed = line.trim();
+            if (!trimmed || trimmed === "data: [DONE]") continue;
+            if (trimmed.startsWith("data: ")) {
+              const data = trimmed.slice(6);
               try {
                 const parsed = JSON.parse(data);
                 const content = parsed.choices?.[0]?.delta?.content || "";
                 accumulated += content;
                 setTestOutput(accumulated);
               } catch {
-                // Not valid JSON SSE, treat as raw text
-                accumulated += data;
-                setTestOutput(accumulated);
+                // skip unparseable chunks
               }
             }
+          }
+        }
+        // Process any remaining buffer
+        if (buffer.trim().startsWith("data: ")) {
+          const data = buffer.trim().slice(6);
+          if (data !== "[DONE]") {
+            try {
+              const parsed = JSON.parse(data);
+              const content = parsed.choices?.[0]?.delta?.content || "";
+              accumulated += content;
+              setTestOutput(accumulated);
+            } catch { /* skip */ }
           }
         }
       }
