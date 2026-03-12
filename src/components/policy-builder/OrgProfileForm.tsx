@@ -122,6 +122,39 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
     onChange({ ...ctx, personalDataTypes: (ctx.personalDataTypes || []).filter((d) => d !== dt) });
   };
 
+  const addCustomDataType = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    const existing = ctx.personalDataTypes || [];
+    if (existing.includes(trimmed)) return;
+    userAddedDataTypes.current.add(trimmed);
+    onChange({ ...ctx, personalDataTypes: [...existing, trimmed] });
+    setCustomDataTypeInput("");
+  };
+
+  const handleDataTypeKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addCustomDataType(customDataTypeInput);
+    }
+  };
+
+  const addCustomActivity = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    if (ctx.processingActivities.includes(trimmed)) return;
+    userAddedActivities.current.add(trimmed);
+    onChange({ ...ctx, processingActivities: [...ctx.processingActivities, trimmed] });
+    setCustomActivityInput("");
+  };
+
+  const handleActivityKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addCustomActivity(customActivityInput);
+    }
+  };
+
   const handleMaturityChange = (value: string) => {
     setAutoFilledFields((prev) => { const n = new Set(prev); n.delete("maturityLevel"); return n; });
     onChange({ ...ctx, maturityLevel: value });
