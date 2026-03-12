@@ -16,7 +16,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Building2, ChevronDown, Sparkles, X } from "lucide-react";
+import { Building2, ChevronDown, Sparkles, X, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   OrgContext,
