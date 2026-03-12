@@ -28,6 +28,7 @@ export function AppLayout() {
         </div>
       </div>
       <SessionTimeout />
+      <PrivacyAssistant />
     </SidebarProvider>
   );
 }

@@ -1,1 +1,4 @@
 project_id = "xuibhzkkomiucbiwpvin"
+
+[functions.privacy-assistant]
+verify_jwt = false
