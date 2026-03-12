@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -15,7 +15,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Building2, ChevronDown } from "lucide-react";
+import { Building2, ChevronDown, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   OrgContext,
@@ -28,6 +28,7 @@ import {
   MATURITY_OPTIONS,
   getOrgProfileCompleteness,
 } from "./orgContextTypes";
+import { inferSmartContext } from "@/utils/smartContextEngine";
 
 interface Props {
   ctx: OrgContext;
@@ -37,16 +38,76 @@ interface Props {
 
 export default function OrgProfileForm({ ctx, onChange, compact = false }: Props) {
   const [open, setOpen] = useState(true);
+  const [autoFilledFields, setAutoFilledFields] = useState<Set<string>>(new Set());
+  const prevTriggerRef = useRef<string>("");
   const { filled, total } = getOrgProfileCompleteness(ctx);
   const pct = Math.round((filled / total) * 100);
 
   const sectors = ctx.industry ? (SECTOR_MAP[ctx.industry] || ["General"]) : [];
 
+  // Smart Context Inference — fires when trigger fields change
+  useEffect(() => {
+    const triggerKey = `${ctx.industry}|${ctx.geographies}|${ctx.sdfClassification}`;
+    if (triggerKey === prevTriggerRef.current) return;
+    prevTriggerRef.current = triggerKey;
+
+    const result = inferSmartContext(ctx.industry, ctx.geographies, ctx.sdfClassification);
+    if (!result) {
+      setAutoFilledFields(new Set());
+      return;
+    }
+
+    // Merge inferred activities with any existing manual selections
+    const merged = Array.from(
+      new Set([...ctx.processingActivities, ...result.processingActivities])
+    );
+
+    const newFields = new Set<string>();
+    if (result.processingActivities.length > 0) newFields.add("processingActivities");
+    if (result.maturityLevel) newFields.add("maturityLevel");
+
+    setAutoFilledFields(newFields);
+    onChange({
+      ...ctx,
+      processingActivities: merged,
+      maturityLevel: result.maturityLevel,
+    });
+
+    // Clear the sparkle indicators after 8 seconds
+    const timer = setTimeout(() => setAutoFilledFields(new Set()), 8000);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ctx.industry, ctx.geographies, ctx.sdfClassification]);
+
   const toggleActivity = (act: string) => {
     const next = ctx.processingActivities.includes(act)
       ? ctx.processingActivities.filter((a) => a !== act)
       : [...ctx.processingActivities, act];
+    setAutoFilledFields((prev) => {
+      const n = new Set(prev);
+      n.delete("processingActivities");
+      return n;
+    });
     onChange({ ...ctx, processingActivities: next });
+  };
+
+  const handleMaturityChange = (value: string) => {
+    setAutoFilledFields((prev) => {
+      const n = new Set(prev);
+      n.delete("maturityLevel");
+      return n;
+    });
+    onChange({ ...ctx, maturityLevel: value });
+  };
+
+  const AutoDetectedHint = ({ field }: { field: string }) => {
+    if (!autoFilledFields.has(field)) return null;
+    return (
+      <span className="inline-flex items-center gap-1 text-[9px] text-primary font-medium animate-in fade-in-0 slide-in-from-left-2 duration-300">
+        <Sparkles className="h-3 w-3" />
+        Auto-detected based on your profile
+      </span>
+    );
   };
 
   return (
@@ -160,17 +221,22 @@ export default function OrgProfileForm({ ctx, onChange, compact = false }: Props
 
             {/* Row 5: Maturity */}
             <div>
-              <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Compliance Maturity</label>
+              <div className="flex items-center gap-2 mb-1">
+                <label className="text-[11px] font-medium text-muted-foreground block">Compliance Maturity</label>
+                <AutoDetectedHint field="maturityLevel" />
+              </div>
               <div className="flex gap-1.5">
                 {MATURITY_OPTIONS.map((m) => (
                   <button
                     key={m.value}
-                    onClick={() => onChange({ ...ctx, maturityLevel: m.value })}
+                    onClick={() => handleMaturityChange(m.value)}
                     className={cn(
                       "flex-1 px-2 py-1.5 rounded-md text-[10px] font-medium border transition-all text-center",
                       ctx.maturityLevel === m.value
                         ? "bg-primary/15 border-primary/40 text-primary"
-                        : "border-border text-foreground/60 hover:border-primary/30"
+                        : "border-border text-foreground/60 hover:border-primary/30",
+                      ctx.maturityLevel === m.value && autoFilledFields.has("maturityLevel") &&
+                        "ring-1 ring-primary/30 shadow-[0_0_6px_hsl(var(--primary)/0.2)]"
                     )}
                   >
                     {m.label}
@@ -181,9 +247,12 @@ export default function OrgProfileForm({ ctx, onChange, compact = false }: Props
 
             {/* Processing Activities */}
             <div>
-              <label className="text-[11px] font-medium text-muted-foreground mb-1.5 block">
-                Processing Activities
-              </label>
+              <div className="flex items-center gap-2 mb-1.5">
+                <label className="text-[11px] font-medium text-muted-foreground block">
+                  Processing Activities
+                </label>
+                <AutoDetectedHint field="processingActivities" />
+              </div>
               <p className="text-[9px] text-muted-foreground mb-2">Select all that apply — each activates specific legal obligations</p>
               <div className="grid grid-cols-2 gap-1.5">
                 {PROCESSING_ACTIVITIES.map((act) => (
