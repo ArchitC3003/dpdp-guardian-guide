@@ -315,12 +315,12 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
                 </label>
                 <AutoDetectedHint field="personalDataTypes" />
               </div>
-              <p className="text-[9px] text-muted-foreground mb-2">Auto-tailored to your document type & industry — click ✕ to remove</p>
+              <p className="text-[9px] text-muted-foreground mb-2">Auto-tailored to your document type & industry — type and press Enter to add custom tags</p>
               <div className={cn(
                 "flex flex-wrap gap-1.5 min-h-[32px] rounded-lg border border-border p-2 transition-all duration-500",
                 flashFields.has("personalDataTypes") && "ring-2 ring-primary/40 shadow-[0_0_12px_hsl(var(--primary)/0.15)] border-primary/50"
               )}>
-                {personalDataTypes.length === 0 && (
+                {personalDataTypes.length === 0 && !customDataTypeInput && (
                   <span className="text-[10px] text-muted-foreground italic">Select a document type & industry to auto-populate</span>
                 )}
                 {personalDataTypes.map((dt) => (
@@ -341,6 +341,23 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
                     </button>
                   </Badge>
                 ))}
+                <div className="flex items-center gap-1">
+                  <Input
+                    className="h-6 w-40 text-[10px] border-0 bg-transparent shadow-none focus-visible:ring-0 px-1"
+                    value={customDataTypeInput}
+                    onChange={(e) => setCustomDataTypeInput(e.target.value)}
+                    onKeyDown={handleDataTypeKeyDown}
+                    placeholder="Type & press Enter…"
+                  />
+                  {customDataTypeInput.trim() && (
+                    <button
+                      onClick={() => addCustomDataType(customDataTypeInput)}
+                      className="p-0.5 rounded hover:bg-primary/10"
+                    >
+                      <Plus className="h-3 w-3 text-primary" />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
