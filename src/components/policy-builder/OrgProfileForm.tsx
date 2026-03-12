@@ -15,7 +15,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Building2, ChevronDown, Sparkles } from "lucide-react";
+import { Building2, ChevronDown, Sparkles, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   OrgContext,
@@ -34,69 +34,93 @@ interface Props {
   ctx: OrgContext;
   onChange: (ctx: OrgContext) => void;
   compact?: boolean;
+  documentType?: string;
 }
 
-export default function OrgProfileForm({ ctx, onChange, compact = false }: Props) {
+export default function OrgProfileForm({ ctx, onChange, compact = false, documentType }: Props) {
   const [open, setOpen] = useState(true);
   const [autoFilledFields, setAutoFilledFields] = useState<Set<string>>(new Set());
+  const [flashFields, setFlashFields] = useState<Set<string>>(new Set());
   const prevTriggerRef = useRef<string>("");
+  const userAddedActivities = useRef<Set<string>>(new Set());
+  const userAddedDataTypes = useRef<Set<string>>(new Set());
   const { filled, total } = getOrgProfileCompleteness(ctx);
   const pct = Math.round((filled / total) * 100);
 
   const sectors = ctx.industry ? (SECTOR_MAP[ctx.industry] || ["General"]) : [];
 
-  // Smart Context Inference — fires when trigger fields change
+  // Smart Context Inference — fires when trigger fields OR documentType change
   useEffect(() => {
-    const triggerKey = `${ctx.industry}|${ctx.geographies}|${ctx.sdfClassification}`;
+    const triggerKey = `${ctx.industry}|${ctx.geographies}|${ctx.sdfClassification}|${documentType || ""}`;
     if (triggerKey === prevTriggerRef.current) return;
     prevTriggerRef.current = triggerKey;
 
-    const result = inferSmartContext(ctx.industry, ctx.geographies, ctx.sdfClassification);
+    const result = inferSmartContext(ctx.industry, ctx.geographies, ctx.sdfClassification, documentType);
     if (!result) {
       setAutoFilledFields(new Set());
       return;
     }
 
-    // Merge inferred activities with any existing manual selections
-    const merged = Array.from(
-      new Set([...ctx.processingActivities, ...result.processingActivities])
-    );
+    // Preserve user-added custom tags via set union
+    const mergedActivities = Array.from(new Set([
+      ...Array.from(userAddedActivities.current),
+      ...result.processingActivities,
+    ]));
+
+    const mergedDataTypes = Array.from(new Set([
+      ...Array.from(userAddedDataTypes.current),
+      ...(result.personalDataTypes || []),
+    ]));
 
     const newFields = new Set<string>();
     if (result.processingActivities.length > 0) newFields.add("processingActivities");
+    if (result.personalDataTypes && result.personalDataTypes.length > 0) newFields.add("personalDataTypes");
     if (result.maturityLevel) newFields.add("maturityLevel");
 
     setAutoFilledFields(newFields);
+
+    // Trigger flash animation
+    setFlashFields(new Set(["processingActivities", "personalDataTypes"]));
+
     onChange({
       ...ctx,
-      processingActivities: merged,
+      processingActivities: mergedActivities,
+      personalDataTypes: mergedDataTypes,
       maturityLevel: result.maturityLevel,
     });
 
-    // Clear the sparkle indicators after 8 seconds
-    const timer = setTimeout(() => setAutoFilledFields(new Set()), 8000);
+    // Clear sparkle indicators after 8s
+    const timer = setTimeout(() => {
+      setAutoFilledFields(new Set());
+      setFlashFields(new Set());
+    }, 8000);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctx.industry, ctx.geographies, ctx.sdfClassification]);
+  }, [ctx.industry, ctx.geographies, ctx.sdfClassification, documentType]);
 
   const toggleActivity = (act: string) => {
-    const next = ctx.processingActivities.includes(act)
+    const isRemoving = ctx.processingActivities.includes(act);
+    const next = isRemoving
       ? ctx.processingActivities.filter((a) => a !== act)
       : [...ctx.processingActivities, act];
-    setAutoFilledFields((prev) => {
-      const n = new Set(prev);
-      n.delete("processingActivities");
-      return n;
-    });
+
+    if (isRemoving) {
+      userAddedActivities.current.delete(act);
+    } else {
+      userAddedActivities.current.add(act);
+    }
+
+    setAutoFilledFields((prev) => { const n = new Set(prev); n.delete("processingActivities"); return n; });
     onChange({ ...ctx, processingActivities: next });
   };
 
+  const removeDataType = (dt: string) => {
+    userAddedDataTypes.current.delete(dt);
+    onChange({ ...ctx, personalDataTypes: (ctx.personalDataTypes || []).filter((d) => d !== dt) });
+  };
+
   const handleMaturityChange = (value: string) => {
-    setAutoFilledFields((prev) => {
-      const n = new Set(prev);
-      n.delete("maturityLevel");
-      return n;
-    });
+    setAutoFilledFields((prev) => { const n = new Set(prev); n.delete("maturityLevel"); return n; });
     onChange({ ...ctx, maturityLevel: value });
   };
 
@@ -109,6 +133,8 @@ export default function OrgProfileForm({ ctx, onChange, compact = false }: Props
       </span>
     );
   };
+
+  const personalDataTypes = ctx.personalDataTypes || [];
 
   return (
     <Card>
@@ -245,6 +271,43 @@ export default function OrgProfileForm({ ctx, onChange, compact = false }: Props
               </div>
             </div>
 
+            {/* Types of Personal Data — dynamically populated */}
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <label className="text-[11px] font-medium text-muted-foreground block">
+                  Types of Personal Data
+                </label>
+                <AutoDetectedHint field="personalDataTypes" />
+              </div>
+              <p className="text-[9px] text-muted-foreground mb-2">Auto-tailored to your document type & industry — click ✕ to remove</p>
+              <div className={cn(
+                "flex flex-wrap gap-1.5 min-h-[32px] rounded-lg border border-border p-2 transition-all duration-500",
+                flashFields.has("personalDataTypes") && "ring-2 ring-primary/40 shadow-[0_0_12px_hsl(var(--primary)/0.15)] border-primary/50"
+              )}>
+                {personalDataTypes.length === 0 && (
+                  <span className="text-[10px] text-muted-foreground italic">Select a document type & industry to auto-populate</span>
+                )}
+                {personalDataTypes.map((dt) => (
+                  <Badge
+                    key={dt}
+                    variant="secondary"
+                    className={cn(
+                      "text-[10px] gap-1 pr-1 transition-all duration-300",
+                      flashFields.has("personalDataTypes") && "animate-in fade-in-0 zoom-in-95 duration-300"
+                    )}
+                  >
+                    {dt}
+                    <button
+                      onClick={() => removeDataType(dt)}
+                      className="ml-0.5 rounded-full hover:bg-destructive/20 p-0.5"
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
             {/* Processing Activities */}
             <div>
               <div className="flex items-center gap-2 mb-1.5">
@@ -254,7 +317,11 @@ export default function OrgProfileForm({ ctx, onChange, compact = false }: Props
                 <AutoDetectedHint field="processingActivities" />
               </div>
               <p className="text-[9px] text-muted-foreground mb-2">Select all that apply — each activates specific legal obligations</p>
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className={cn(
+                "grid grid-cols-2 gap-1.5 transition-all duration-500 rounded-lg",
+                flashFields.has("processingActivities") && "ring-2 ring-primary/40 shadow-[0_0_12px_hsl(var(--primary)/0.15)]"
+              )}>
+                {/* Standard activities from the constant list */}
                 {PROCESSING_ACTIVITIES.map((act) => (
                   <button
                     key={act}
@@ -263,13 +330,40 @@ export default function OrgProfileForm({ ctx, onChange, compact = false }: Props
                       "px-2.5 py-1.5 rounded-md text-[10px] font-medium border transition-all text-left",
                       ctx.processingActivities.includes(act)
                         ? "bg-primary/15 border-primary/40 text-primary"
-                        : "border-border text-foreground/60 hover:border-primary/30"
+                        : "border-border text-foreground/60 hover:border-primary/30",
+                      ctx.processingActivities.includes(act) && flashFields.has("processingActivities") &&
+                        "animate-in fade-in-0 duration-300"
                     )}
                   >
                     {act}
                   </button>
                 ))}
               </div>
+              {/* Show additional inferred activities not in PROCESSING_ACTIVITIES */}
+              {ctx.processingActivities.filter((a) => !PROCESSING_ACTIVITIES.includes(a as any)).length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {ctx.processingActivities
+                    .filter((a) => !PROCESSING_ACTIVITIES.includes(a as any))
+                    .map((act) => (
+                      <Badge
+                        key={act}
+                        variant="secondary"
+                        className={cn(
+                          "text-[10px] gap-1 pr-1 transition-all duration-300",
+                          flashFields.has("processingActivities") && "animate-in fade-in-0 zoom-in-95 duration-300"
+                        )}
+                      >
+                        {act}
+                        <button
+                          onClick={() => toggleActivity(act)}
+                          className="ml-0.5 rounded-full hover:bg-destructive/20 p-0.5"
+                        >
+                          <X className="h-2.5 w-2.5" />
+                        </button>
+                      </Badge>
+                    ))}
+                </div>
+              )}
             </div>
           </CardContent>
         </CollapsibleContent>
