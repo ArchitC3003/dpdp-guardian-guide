@@ -248,7 +248,7 @@ export default function DocumentConfigSection({ config, onChange, onGenerate, or
       {onOrgContextChange && (
         <>
           <ComplianceProfileSummary ctx={ctx} />
-          <OrgProfileForm ctx={ctx} onChange={onOrgContextChange} />
+          <OrgProfileForm ctx={ctx} onChange={onOrgContextChange} documentType={config.documentType} />
         </>
       )}
 

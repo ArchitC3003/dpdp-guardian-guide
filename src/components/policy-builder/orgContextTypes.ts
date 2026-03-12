@@ -7,6 +7,7 @@ export interface OrgContext {
   sdfClassification: string;
   geographies: string;
   processingActivities: string[];
+  personalDataTypes: string[];
   maturityLevel: string;
   sector: string;
 }
@@ -20,6 +21,7 @@ export const DEFAULT_ORG_CONTEXT: OrgContext = {
   sdfClassification: "",
   geographies: "",
   processingActivities: [],
+  personalDataTypes: [],
   maturityLevel: "",
   sector: "",
 };
