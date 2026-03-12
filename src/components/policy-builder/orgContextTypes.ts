@@ -25,6 +25,7 @@ export const DEFAULT_ORG_CONTEXT: OrgContext = {
   personalDataTypes: [],
   maturityLevel: "",
   sector: "",
+  additionalContext: "",
 };
 
 export const INDUSTRY_OPTIONS = [
