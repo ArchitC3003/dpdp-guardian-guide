@@ -101,7 +101,7 @@ export const MATURITY_OPTIONS = [
 ] as const;
 
 export function getOrgProfileCompleteness(ctx: OrgContext): { filled: number; total: number } {
-  const total = 10;
+  const total = 11;
   let filled = 0;
   if (ctx.orgName.trim()) filled++;
   if (ctx.industry) filled++;
@@ -113,5 +113,6 @@ export function getOrgProfileCompleteness(ctx: OrgContext): { filled: number; to
   if (ctx.processingActivities.length > 0) filled++;
   if (ctx.maturityLevel) filled++;
   if (ctx.sector) filled++;
+  if ((ctx.additionalContext || "").trim()) filled++;
   return { filled, total };
 }
