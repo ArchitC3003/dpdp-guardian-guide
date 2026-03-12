@@ -380,7 +380,8 @@ serve(async (req) => {
     const {
       documentType, frameworks, orgName, industry, orgSize, maturityLevel,
       userMessage, conversationHistory, sdfClassification, geographies,
-      processingActivities, sector, dpoName, date,
+      processingActivities, personalDataTypes, sector, dpoName, date,
+      additionalContext,
     } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -442,6 +443,12 @@ serve(async (req) => {
       ? processingActivities.join(", ")
       : "General personal data processing";
 
+    const dataTypesList = Array.isArray(personalDataTypes) && personalDataTypes.length > 0
+      ? personalDataTypes.join(", ")
+      : "";
+
+    const effectiveAdditionalContext = (additionalContext || "").trim();
+
     const effectiveOrgName = orgName || "the Organisation";
     const effectiveSector = sector || industry || "General";
     const effectiveSize = orgSize || "Enterprise";
@@ -469,15 +476,30 @@ Organisation Size: ${effectiveSize}
 DPDP Classification: ${effectiveSdf}
 Applicable Jurisdictions: ${effectiveGeo}
 Data Processing Activities: ${activitiesList}
+${dataTypesList ? `Types of Personal Data Processed: ${dataTypesList}` : ""}
 Compliance Maturity Level: ${effectiveMaturity}
 Compliance Frameworks: ${effectiveFrameworks}
 DPO/Privacy Lead: ${effectiveDpo}
 Effective Date: ${effectiveDate}
+${effectiveAdditionalContext ? `\n═══ ADDITIONAL BUSINESS CONTEXT & INSTRUCTIONS ═══\nThe following are ABSOLUTE BUSINESS RULES provided by the user. You MUST integrate these specific operational realities, constraints, vendor names, SLAs, and exclusions directly into the relevant clauses of the document. Do NOT ignore or generalise these:\n\n${effectiveAdditionalContext}` : ""}
+
+═══ CONTEXT INTEGRATION RULES (MANDATORY) ═══
+
+RULE A — PERSONAL DATA TYPE EMBEDDING: ${dataTypesList ? `The user has specified these EXACT types of personal data: ${dataTypesList}. You MUST physically embed these specific data types into the relevant clauses of the document — particularly in the Scope, Data Collection, Purpose Limitation, Data Classification, Retention Schedule, and Cross-Border Transfer sections. Do NOT use generic terms like "personal data" or "sensitive personal data" when the user has specified exact types. Each data type listed must appear in at least one specific clause with its handling requirements.` : "Use appropriate data types based on the organisation's industry and processing activities."}
+
+RULE B — PROCESSING ACTIVITY INTEGRATION: The user has specified these processing activities: ${activitiesList}. Each activity MUST be referenced in the Purpose of Processing section with its specific legal basis, data categories involved, retention period, and lawful purpose under the applicable framework.
+
+RULE C — EXPERT GUIDANCE BLOCKS: At the end of EVERY major section (numbered heading) in the generated document, you MUST append two distinct sub-blocks:
+
+📌 **[Regulatory Reference]**: Cite the specific section/rule of the selected legal framework applicable to that section (e.g., "DPDP Act 2023 Sec 8(1) read with Rule 4(2)", "GDPR Art 30(1)", "NIST CSF 2.0 GV.RM-01", "ISO 27001:2022 A.5.24"). Include multiple framework references if multiple frameworks are selected.
+
+💡 **[Implementation Guidance]**: Provide 2-3 practical, actionable steps on how ${effectiveOrgName} should operationalise this specific section based on their ${effectiveSector} industry context and ${effectiveMaturity} maturity level. Include specific tool recommendations, timeline suggestions, and evidence artifacts where applicable.
 
 ═══ DRAFTING INSTRUCTION ═══
 Generate a complete, specific, and enforceable ${effectiveDocType} for ${effectiveOrgName}, a ${effectiveSize} ${effectiveSector} organisation classified as ${effectiveSdf} under the DPDP Act 2023.
 
 Every clause must be tailored to this organisation's actual processing activities: ${activitiesList}.
+${dataTypesList ? `Every data handling clause must reference the specific personal data types: ${dataTypesList}.` : ""}
 The document must comply with: ${effectiveFrameworks}.
 Operating jurisdictions: ${effectiveGeo}.
 Current maturity: ${effectiveMaturity}.
@@ -500,6 +522,9 @@ Before outputting each section, verify:
 4. Is the obligation language calibrated to ${effectiveMaturity} maturity?
 5. Can an auditor assess compliance against this clause?
 6. Does every control state WHO, WHAT, WHEN, and EVIDENCE?
+7. Does every major section end with 📌 [Regulatory Reference] and 💡 [Implementation Guidance] blocks?
+${dataTypesList ? `8. Are the specific data types (${dataTypesList}) embedded in relevant clauses instead of generic "personal data"?` : ""}
+${effectiveAdditionalContext ? `9. Are the user's additional business context instructions reflected in the relevant clauses?` : ""}
 
 Generate the FULL document. Do not truncate or summarise. Every section must contain complete, enforceable prose.
 

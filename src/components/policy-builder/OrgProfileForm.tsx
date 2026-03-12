@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, KeyboardEvent } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -15,7 +16,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Building2, ChevronDown, Sparkles, X } from "lucide-react";
+import { Building2, ChevronDown, Sparkles, X, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   OrgContext,
@@ -41,6 +42,8 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
   const [open, setOpen] = useState(true);
   const [autoFilledFields, setAutoFilledFields] = useState<Set<string>>(new Set());
   const [flashFields, setFlashFields] = useState<Set<string>>(new Set());
+  const [customDataTypeInput, setCustomDataTypeInput] = useState("");
+  const [customActivityInput, setCustomActivityInput] = useState("");
   const prevTriggerRef = useRef<string>("");
   const userAddedActivities = useRef<Set<string>>(new Set());
   const userAddedDataTypes = useRef<Set<string>>(new Set());
@@ -117,6 +120,39 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
   const removeDataType = (dt: string) => {
     userAddedDataTypes.current.delete(dt);
     onChange({ ...ctx, personalDataTypes: (ctx.personalDataTypes || []).filter((d) => d !== dt) });
+  };
+
+  const addCustomDataType = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    const existing = ctx.personalDataTypes || [];
+    if (existing.includes(trimmed)) return;
+    userAddedDataTypes.current.add(trimmed);
+    onChange({ ...ctx, personalDataTypes: [...existing, trimmed] });
+    setCustomDataTypeInput("");
+  };
+
+  const handleDataTypeKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addCustomDataType(customDataTypeInput);
+    }
+  };
+
+  const addCustomActivity = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    if (ctx.processingActivities.includes(trimmed)) return;
+    userAddedActivities.current.add(trimmed);
+    onChange({ ...ctx, processingActivities: [...ctx.processingActivities, trimmed] });
+    setCustomActivityInput("");
+  };
+
+  const handleActivityKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addCustomActivity(customActivityInput);
+    }
   };
 
   const handleMaturityChange = (value: string) => {
@@ -279,12 +315,12 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
                 </label>
                 <AutoDetectedHint field="personalDataTypes" />
               </div>
-              <p className="text-[9px] text-muted-foreground mb-2">Auto-tailored to your document type & industry — click ✕ to remove</p>
+              <p className="text-[9px] text-muted-foreground mb-2">Auto-tailored to your document type & industry — type and press Enter to add custom tags</p>
               <div className={cn(
                 "flex flex-wrap gap-1.5 min-h-[32px] rounded-lg border border-border p-2 transition-all duration-500",
                 flashFields.has("personalDataTypes") && "ring-2 ring-primary/40 shadow-[0_0_12px_hsl(var(--primary)/0.15)] border-primary/50"
               )}>
-                {personalDataTypes.length === 0 && (
+                {personalDataTypes.length === 0 && !customDataTypeInput && (
                   <span className="text-[10px] text-muted-foreground italic">Select a document type & industry to auto-populate</span>
                 )}
                 {personalDataTypes.map((dt) => (
@@ -305,6 +341,23 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
                     </button>
                   </Badge>
                 ))}
+                <div className="flex items-center gap-1">
+                  <Input
+                    className="h-6 w-40 text-[10px] border-0 bg-transparent shadow-none focus-visible:ring-0 px-1"
+                    value={customDataTypeInput}
+                    onChange={(e) => setCustomDataTypeInput(e.target.value)}
+                    onKeyDown={handleDataTypeKeyDown}
+                    placeholder="Type & press Enter…"
+                  />
+                  {customDataTypeInput.trim() && (
+                    <button
+                      onClick={() => addCustomDataType(customDataTypeInput)}
+                      className="p-0.5 rounded hover:bg-primary/10"
+                    >
+                      <Plus className="h-3 w-3 text-primary" />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -316,12 +369,11 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
                 </label>
                 <AutoDetectedHint field="processingActivities" />
               </div>
-              <p className="text-[9px] text-muted-foreground mb-2">Select all that apply — each activates specific legal obligations</p>
+              <p className="text-[9px] text-muted-foreground mb-2">Select all that apply or type custom activities below — each activates specific legal obligations</p>
               <div className={cn(
                 "grid grid-cols-2 gap-1.5 transition-all duration-500 rounded-lg",
                 flashFields.has("processingActivities") && "ring-2 ring-primary/40 shadow-[0_0_12px_hsl(var(--primary)/0.15)]"
               )}>
-                {/* Standard activities from the constant list */}
                 {PROCESSING_ACTIVITIES.map((act) => (
                   <button
                     key={act}
@@ -339,7 +391,7 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
                   </button>
                 ))}
               </div>
-              {/* Show additional inferred activities not in PROCESSING_ACTIVITIES */}
+              {/* Custom / inferred activities as removable badges */}
               {ctx.processingActivities.filter((a) => !PROCESSING_ACTIVITIES.includes(a as any)).length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {ctx.processingActivities
@@ -364,6 +416,40 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
                     ))}
                 </div>
               )}
+              {/* Custom activity input */}
+              <div className="mt-2 flex items-center gap-2">
+                <Input
+                  className="h-7 text-[10px] flex-1"
+                  value={customActivityInput}
+                  onChange={(e) => setCustomActivityInput(e.target.value)}
+                  onKeyDown={handleActivityKeyDown}
+                  placeholder="Add custom activity… (press Enter)"
+                />
+                {customActivityInput.trim() && (
+                  <button
+                    onClick={() => addCustomActivity(customActivityInput)}
+                    className="p-1 rounded hover:bg-primary/10"
+                  >
+                    <Plus className="h-3.5 w-3.5 text-primary" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Additional Business Context */}
+            <div>
+              <label className="text-[11px] font-medium text-muted-foreground mb-1 block">
+                Additional Business Context & Instructions (Optional)
+              </label>
+              <Textarea
+                className="text-xs min-h-[80px] resize-y"
+                value={ctx.additionalContext || ""}
+                onChange={(e) => onChange({ ...ctx, additionalContext: e.target.value })}
+                placeholder="e.g., We host data on AWS Mumbai, our internal SLA for DSAR is 48 hours, we do not process biometric data, our key vendor for cloud is Azure..."
+              />
+              <p className="text-[9px] text-muted-foreground mt-1">
+                These details will be embedded directly into the generated document as business rules
+              </p>
             </div>
           </CardContent>
         </CollapsibleContent>

@@ -54,9 +54,11 @@ export async function streamPolicyChat({
         sdfClassification: orgContext?.sdfClassification || config.sdfClassification || "",
         geographies: orgContext?.geographies || config.geographies || "",
         processingActivities: orgContext?.processingActivities || config.processingActivities || [],
+        personalDataTypes: orgContext?.personalDataTypes || [],
         sector: orgContext?.sector || config.sector || "",
         dpoName: orgContext?.dpoName || config.dpoName || "",
         date: orgContext?.date || config.date || "",
+        additionalContext: orgContext?.additionalContext || "",
       }),
       signal,
     });
