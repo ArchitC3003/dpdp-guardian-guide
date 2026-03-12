@@ -10,6 +10,7 @@ export interface OrgContext {
   personalDataTypes: string[];
   maturityLevel: string;
   sector: string;
+  additionalContext: string;
 }
 
 export const DEFAULT_ORG_CONTEXT: OrgContext = {
