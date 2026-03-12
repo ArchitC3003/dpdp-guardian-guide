@@ -369,12 +369,11 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
                 </label>
                 <AutoDetectedHint field="processingActivities" />
               </div>
-              <p className="text-[9px] text-muted-foreground mb-2">Select all that apply — each activates specific legal obligations</p>
+              <p className="text-[9px] text-muted-foreground mb-2">Select all that apply or type custom activities below — each activates specific legal obligations</p>
               <div className={cn(
                 "grid grid-cols-2 gap-1.5 transition-all duration-500 rounded-lg",
                 flashFields.has("processingActivities") && "ring-2 ring-primary/40 shadow-[0_0_12px_hsl(var(--primary)/0.15)]"
               )}>
-                {/* Standard activities from the constant list */}
                 {PROCESSING_ACTIVITIES.map((act) => (
                   <button
                     key={act}
@@ -392,7 +391,7 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
                   </button>
                 ))}
               </div>
-              {/* Show additional inferred activities not in PROCESSING_ACTIVITIES */}
+              {/* Custom / inferred activities as removable badges */}
               {ctx.processingActivities.filter((a) => !PROCESSING_ACTIVITIES.includes(a as any)).length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {ctx.processingActivities
@@ -417,6 +416,40 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
                     ))}
                 </div>
               )}
+              {/* Custom activity input */}
+              <div className="mt-2 flex items-center gap-2">
+                <Input
+                  className="h-7 text-[10px] flex-1"
+                  value={customActivityInput}
+                  onChange={(e) => setCustomActivityInput(e.target.value)}
+                  onKeyDown={handleActivityKeyDown}
+                  placeholder="Add custom activity… (press Enter)"
+                />
+                {customActivityInput.trim() && (
+                  <button
+                    onClick={() => addCustomActivity(customActivityInput)}
+                    className="p-1 rounded hover:bg-primary/10"
+                  >
+                    <Plus className="h-3.5 w-3.5 text-primary" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Additional Business Context */}
+            <div>
+              <label className="text-[11px] font-medium text-muted-foreground mb-1 block">
+                Additional Business Context & Instructions (Optional)
+              </label>
+              <Textarea
+                className="text-xs min-h-[80px] resize-y"
+                value={ctx.additionalContext || ""}
+                onChange={(e) => onChange({ ...ctx, additionalContext: e.target.value })}
+                placeholder="e.g., We host data on AWS Mumbai, our internal SLA for DSAR is 48 hours, we do not process biometric data, our key vendor for cloud is Azure..."
+              />
+              <p className="text-[9px] text-muted-foreground mt-1">
+                These details will be embedded directly into the generated document as business rules
+              </p>
             </div>
           </CardContent>
         </CollapsibleContent>

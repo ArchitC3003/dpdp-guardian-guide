@@ -443,6 +443,12 @@ serve(async (req) => {
       ? processingActivities.join(", ")
       : "General personal data processing";
 
+    const dataTypesList = Array.isArray(personalDataTypes) && personalDataTypes.length > 0
+      ? personalDataTypes.join(", ")
+      : "";
+
+    const effectiveAdditionalContext = (additionalContext || "").trim();
+
     const effectiveOrgName = orgName || "the Organisation";
     const effectiveSector = sector || industry || "General";
     const effectiveSize = orgSize || "Enterprise";
