@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { SessionTimeout } from "./SessionTimeout";
+import { PrivacyAssistant } from "./PrivacyAssistant";
 
 export function AppLayout() {
   return (
@@ -27,6 +28,7 @@ export function AppLayout() {
         </div>
       </div>
       <SessionTimeout />
+      <PrivacyAssistant />
     </SidebarProvider>
   );
 }
