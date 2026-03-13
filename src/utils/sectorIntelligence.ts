@@ -478,7 +478,8 @@ export function generateAIPromptSegment(ctx: OrgContext): string {
 
   // Sector overlay
   if (sector) {
-    segment += `SECTOR REGULATORY OVERLAY (${ctx.industry.toUpperCase()}):\n`;
+    const industryLabel = industries.length > 0 ? industries.join(", ").toUpperCase() : ctx.industry.toUpperCase();
+    segment += `SECTOR REGULATORY OVERLAY (${industryLabel}):\n`;
     segment += `CRITICAL: In addition to DPDP Act 2023, this document MUST incorporate and cite the following sector-specific regulations:\n`;
     for (const inst of sector.instruments) {
       segment += `- ${inst.name} [${inst.citation}]\n`;
