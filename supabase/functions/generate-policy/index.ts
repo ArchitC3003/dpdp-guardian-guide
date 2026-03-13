@@ -477,7 +477,8 @@ Use these EXACT values throughout the document — do NOT generalise or substitu
 
 Organisation Name: ${effectiveOrgName}
 Document Type: ${effectiveDocType}
-Sector: ${effectiveSector} / ${industry || "Technology"}
+Industry Verticals: The organisation operates across: ${industriesList.join(", ")}
+Sector: ${effectiveSector}
 Organisation Size: ${effectiveSize}
 DPDP Classification: ${effectiveSdf}
 Applicable Jurisdictions: ${effectiveGeo}
