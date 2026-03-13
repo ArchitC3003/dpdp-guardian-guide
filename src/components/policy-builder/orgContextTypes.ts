@@ -1,6 +1,8 @@
 export interface OrgContext {
   orgName: string;
+  /** @deprecated Use industries[] instead */
   industry: string;
+  industries: string[];
   dpoName: string;
   date: string;
   orgSize: string;
@@ -16,6 +18,7 @@ export interface OrgContext {
 export const DEFAULT_ORG_CONTEXT: OrgContext = {
   orgName: "",
   industry: "",
+  industries: [],
   dpoName: "",
   date: new Date().toISOString().split("T")[0],
   orgSize: "",
@@ -104,7 +107,7 @@ export function getOrgProfileCompleteness(ctx: OrgContext): { filled: number; to
   const total = 11;
   let filled = 0;
   if (ctx.orgName.trim()) filled++;
-  if (ctx.industry) filled++;
+  if ((ctx.industries && ctx.industries.length > 0) || ctx.industry) filled++;
   if (ctx.dpoName.trim()) filled++;
   if (ctx.date) filled++;
   if (ctx.orgSize) filled++;

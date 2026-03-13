@@ -46,6 +46,7 @@ export async function streamPolicyChat({
         frameworks: frameworkLabels.join(", ") || "NIST CSF 2.0",
         orgName: orgContext?.orgName || config.orgName || config.industry,
         industry: orgContext?.industry || config.industry,
+        industryVerticals: orgContext?.industries || (orgContext?.industry ? [orgContext.industry] : [config.industry].filter(Boolean)),
         orgSize: orgContext?.orgSize || config.orgSize,
         maturityLevel: orgContext?.maturityLevel || maturityLabel,
         userMessage: lastMessage?.content || "",

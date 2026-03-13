@@ -335,8 +335,40 @@ const SIZE_CALIBRATIONS: Record<string, SizeCalibration> = {
 
 // ── Public API ──────────────────────────────────────────────────
 
-export function getSectorOverlay(industry: string): SectorOverlay | null {
+export function getSectorOverlay(industry: string | string[]): SectorOverlay | null {
+  if (Array.isArray(industry)) {
+    return getMergedSectorOverlay(industry);
+  }
   return SECTOR_OVERLAYS[industry] || null;
+}
+
+/** Merge overlays from multiple industries — set-union, no duplicates */
+function getMergedSectorOverlay(industries: string[]): SectorOverlay | null {
+  const overlays = industries
+    .map((ind) => SECTOR_OVERLAYS[ind])
+    .filter(Boolean) as SectorOverlay[];
+  if (overlays.length === 0) return null;
+  if (overlays.length === 1) return overlays[0];
+
+  const dedup = <T extends Record<string, any>>(arr: T[], key: string): T[] => {
+    const seen = new Set<string>();
+    return arr.filter((item) => {
+      const k = item[key];
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  };
+
+  return {
+    regulators: Array.from(new Set(overlays.flatMap((o) => o.regulators))),
+    instruments: dedup(overlays.flatMap((o) => o.instruments), "name"),
+    specialDataCategories: dedup(overlays.flatMap((o) => o.specialDataCategories), "category"),
+    retentionGuidance: dedup(overlays.flatMap((o) => o.retentionGuidance), "dataType"),
+    breachOverlays: dedup(overlays.flatMap((o) => o.breachOverlays), "regulator"),
+    riskFactors: Array.from(new Set(overlays.flatMap((o) => o.riskFactors))),
+    typicalProcessingBasis: dedup(overlays.flatMap((o) => o.typicalProcessingBasis), "activity"),
+  };
 }
 
 export function getMaturityLanguageProfile(level: string): MaturityLanguage {
@@ -354,7 +386,8 @@ export function getSizeCalibration(size: string): SizeCalibration {
  * organisation-tailored compliance artefacts.
  */
 export function generateEnrichmentBlock(ctx: OrgContext): string {
-  const sector = getSectorOverlay(ctx.industry);
+  const industries = ctx.industries?.length ? ctx.industries : (ctx.industry ? [ctx.industry] : []);
+  const sector = getSectorOverlay(industries.length > 0 ? industries : ctx.industry);
   const maturity = getMaturityLanguageProfile(ctx.maturityLevel);
   const size = getSizeCalibration(ctx.orgSize);
 
@@ -377,7 +410,8 @@ export function generateEnrichmentBlock(ctx: OrgContext): string {
 
   // Sector overlay
   if (sector) {
-    block += `\nSECTOR-SPECIFIC REGULATORY OVERLAY: ${ctx.industry.toUpperCase()}\n${"─".repeat(60)}\n`;
+    const industryLabel = industries.length > 0 ? industries.join(", ").toUpperCase() : ctx.industry.toUpperCase();
+    block += `\nSECTOR-SPECIFIC REGULATORY OVERLAY: ${industryLabel}\n${"─".repeat(60)}\n`;
     block += `Applicable Regulators: ${sector.regulators.join("; ")}\n\n`;
 
     block += `Regulatory Instruments:\n`;
@@ -420,7 +454,8 @@ export function generateEnrichmentBlock(ctx: OrgContext): string {
  * concrete, enforceable requirements the LLM must follow.
  */
 export function generateAIPromptSegment(ctx: OrgContext): string {
-  const sector = getSectorOverlay(ctx.industry);
+  const industries = ctx.industries?.length ? ctx.industries : (ctx.industry ? [ctx.industry] : []);
+  const sector = getSectorOverlay(industries.length > 0 ? industries : ctx.industry);
   const maturity = getMaturityLanguageProfile(ctx.maturityLevel);
   const size = getSizeCalibration(ctx.orgSize);
 
@@ -443,7 +478,8 @@ export function generateAIPromptSegment(ctx: OrgContext): string {
 
   // Sector overlay
   if (sector) {
-    segment += `SECTOR REGULATORY OVERLAY (${ctx.industry.toUpperCase()}):\n`;
+    const industryLabel = industries.length > 0 ? industries.join(", ").toUpperCase() : ctx.industry.toUpperCase();
+    segment += `SECTOR REGULATORY OVERLAY (${industryLabel}):\n`;
     segment += `CRITICAL: In addition to DPDP Act 2023, this document MUST incorporate and cite the following sector-specific regulations:\n`;
     for (const inst of sector.instruments) {
       segment += `- ${inst.name} [${inst.citation}]\n`;

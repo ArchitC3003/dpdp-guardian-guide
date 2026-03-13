@@ -378,7 +378,7 @@ serve(async (req) => {
 
   try {
     const {
-      documentType, frameworks, orgName, industry, orgSize, maturityLevel,
+      documentType, frameworks, orgName, industry, industryVerticals, orgSize, maturityLevel,
       userMessage, conversationHistory, sdfClassification, geographies,
       processingActivities, personalDataTypes, sector, dpoName, date,
       additionalContext,
@@ -450,7 +450,10 @@ serve(async (req) => {
     const effectiveAdditionalContext = (additionalContext || "").trim();
 
     const effectiveOrgName = orgName || "the Organisation";
-    const effectiveSector = sector || industry || "General";
+    const effectiveSector = sector || (Array.isArray(industryVerticals) && industryVerticals.length > 0 ? industryVerticals.join(", ") : industry) || "General";
+    const industriesList = Array.isArray(industryVerticals) && industryVerticals.length > 0
+      ? industryVerticals
+      : (industry ? [industry] : ["General"]);
     const effectiveSize = orgSize || "Enterprise";
     const effectiveSdf = sdfClassification || "Under Assessment";
     const effectiveGeo = geographies || "India Only";
@@ -460,8 +463,11 @@ serve(async (req) => {
     const effectiveDate = date || new Date().toISOString().split("T")[0];
     const effectiveDocType = documentType || "Information Security Policy";
 
-    // ── Sector Intelligence: regulatory overlay for the AI ──────────
-    const sectorIntel = buildSectorOverlay(effectiveSector, industry);
+    // ── Sector Intelligence: build merged overlay for all industries ──
+    const sectorOverlays = industriesList.map((ind: string) => buildSectorOverlay(ind, ind)).filter(Boolean);
+    const sectorIntel = sectorOverlays.length > 0
+      ? sectorOverlays.join("\n\n")
+      : buildSectorOverlay(effectiveSector, industry);
     const maturityIntel = buildMaturityCalibration(effectiveMaturity);
     const sizeIntel = buildSizeCalibration(effectiveSize);
     const sdfIntel = effectiveSdf === "sdf" ? buildSdfOverlay(effectiveOrgName, effectiveDpo) : "";
@@ -471,7 +477,8 @@ Use these EXACT values throughout the document — do NOT generalise or substitu
 
 Organisation Name: ${effectiveOrgName}
 Document Type: ${effectiveDocType}
-Sector: ${effectiveSector} / ${industry || "Technology"}
+Industry Verticals: The organisation operates across: ${industriesList.join(", ")}
+Sector: ${effectiveSector}
 Organisation Size: ${effectiveSize}
 DPDP Classification: ${effectiveSdf}
 Applicable Jurisdictions: ${effectiveGeo}
