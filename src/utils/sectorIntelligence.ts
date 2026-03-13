@@ -335,8 +335,40 @@ const SIZE_CALIBRATIONS: Record<string, SizeCalibration> = {
 
 // ── Public API ──────────────────────────────────────────────────
 
-export function getSectorOverlay(industry: string): SectorOverlay | null {
+export function getSectorOverlay(industry: string | string[]): SectorOverlay | null {
+  if (Array.isArray(industry)) {
+    return getMergedSectorOverlay(industry);
+  }
   return SECTOR_OVERLAYS[industry] || null;
+}
+
+/** Merge overlays from multiple industries — set-union, no duplicates */
+function getMergedSectorOverlay(industries: string[]): SectorOverlay | null {
+  const overlays = industries
+    .map((ind) => SECTOR_OVERLAYS[ind])
+    .filter(Boolean) as SectorOverlay[];
+  if (overlays.length === 0) return null;
+  if (overlays.length === 1) return overlays[0];
+
+  const dedup = <T extends Record<string, any>>(arr: T[], key: string): T[] => {
+    const seen = new Set<string>();
+    return arr.filter((item) => {
+      const k = item[key];
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  };
+
+  return {
+    regulators: Array.from(new Set(overlays.flatMap((o) => o.regulators))),
+    instruments: dedup(overlays.flatMap((o) => o.instruments), "name"),
+    specialDataCategories: dedup(overlays.flatMap((o) => o.specialDataCategories), "category"),
+    retentionGuidance: dedup(overlays.flatMap((o) => o.retentionGuidance), "dataType"),
+    breachOverlays: dedup(overlays.flatMap((o) => o.breachOverlays), "regulator"),
+    riskFactors: Array.from(new Set(overlays.flatMap((o) => o.riskFactors))),
+    typicalProcessingBasis: dedup(overlays.flatMap((o) => o.typicalProcessingBasis), "activity"),
+  };
 }
 
 export function getMaturityLanguageProfile(level: string): MaturityLanguage {
