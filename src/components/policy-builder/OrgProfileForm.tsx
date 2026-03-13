@@ -5,13 +5,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
@@ -21,7 +14,6 @@ import { cn } from "@/lib/utils";
 import {
   OrgContext,
   INDUSTRY_OPTIONS,
-  SECTOR_MAP,
   ORG_SIZE_OPTIONS,
   SDF_OPTIONS,
   GEOGRAPHY_OPTIONS,
@@ -30,6 +22,33 @@ import {
   getOrgProfileCompleteness,
 } from "./orgContextTypes";
 import { inferSmartContext } from "@/utils/smartContextEngine";
+
+// Expanded industry list per requirements
+const MULTI_INDUSTRY_OPTIONS = [
+  "Manufacturing",
+  "Retail/E-commerce",
+  "HealthTech/Healthcare",
+  "BFSI/Banking",
+  "EdTech/Education",
+  "Technology/IT Services",
+  "Logistics",
+  "Retail",
+  "Pharma",
+  "Media & Entertainment",
+  "Government/PSU",
+  "Insurance",
+  "Telecom",
+  "Legal/Professional Services",
+  "Other",
+];
+
+const MATURITY_RANK: Record<string, number> = {
+  initial: 0,
+  developing: 1,
+  defined: 2,
+  managed: 3,
+  optimising: 4,
+};
 
 interface Props {
   ctx: OrgContext;
@@ -44,62 +63,118 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
   const [flashFields, setFlashFields] = useState<Set<string>>(new Set());
   const [customDataTypeInput, setCustomDataTypeInput] = useState("");
   const [customActivityInput, setCustomActivityInput] = useState("");
+  const [customIndustryInput, setCustomIndustryInput] = useState("");
+  const [showIndustryDropdown, setShowIndustryDropdown] = useState(false);
   const prevTriggerRef = useRef<string>("");
   const userAddedActivities = useRef<Set<string>>(new Set());
   const userAddedDataTypes = useRef<Set<string>>(new Set());
+  const industryDropdownRef = useRef<HTMLDivElement>(null);
   const { filled, total } = getOrgProfileCompleteness(ctx);
   const pct = Math.round((filled / total) * 100);
 
-  const sectors = ctx.industry ? (SECTOR_MAP[ctx.industry] || ["General"]) : [];
+  const industries = ctx.industries || (ctx.industry ? [ctx.industry] : []);
 
-  // Smart Context Inference — fires when trigger fields OR documentType change
+  // Close industry dropdown on outside click
   useEffect(() => {
-    const triggerKey = `${ctx.industry}|${ctx.geographies}|${ctx.sdfClassification}|${documentType || ""}`;
+    const handler = (e: MouseEvent) => {
+      if (industryDropdownRef.current && !industryDropdownRef.current.contains(e.target as Node)) {
+        setShowIndustryDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // Smart Context Inference — runs per industry, merges results
+  useEffect(() => {
+    const triggerKey = `${industries.join(",")}|${ctx.geographies}|${ctx.sdfClassification}|${documentType || ""}`;
     if (triggerKey === prevTriggerRef.current) return;
     prevTriggerRef.current = triggerKey;
 
-    const result = inferSmartContext(ctx.industry, ctx.geographies, ctx.sdfClassification, documentType);
-    if (!result) {
+    if (industries.length === 0) {
       setAutoFilledFields(new Set());
       return;
     }
 
-    // Preserve user-added custom tags via set union
-    const mergedActivities = Array.from(new Set([
-      ...Array.from(userAddedActivities.current),
-      ...result.processingActivities,
-    ]));
+    // Run inference for EACH industry and merge
+    const allActivities = new Set<string>(Array.from(userAddedActivities.current));
+    const allDataTypes = new Set<string>(Array.from(userAddedDataTypes.current));
+    let highestMaturity = "";
+    let highestRank = -1;
+    let anyMatch = false;
 
-    const mergedDataTypes = Array.from(new Set([
-      ...Array.from(userAddedDataTypes.current),
-      ...(result.personalDataTypes || []),
-    ]));
+    for (const ind of industries) {
+      const result = inferSmartContext(ind, ctx.geographies, ctx.sdfClassification, documentType);
+      if (!result) continue;
+      anyMatch = true;
+      result.processingActivities.forEach((a) => allActivities.add(a));
+      (result.personalDataTypes || []).forEach((d) => allDataTypes.add(d));
+      const rank = MATURITY_RANK[result.maturityLevel] ?? -1;
+      if (rank > highestRank) {
+        highestRank = rank;
+        highestMaturity = result.maturityLevel;
+      }
+    }
+
+    if (!anyMatch) {
+      setAutoFilledFields(new Set());
+      return;
+    }
 
     const newFields = new Set<string>();
-    if (result.processingActivities.length > 0) newFields.add("processingActivities");
-    if (result.personalDataTypes && result.personalDataTypes.length > 0) newFields.add("personalDataTypes");
-    if (result.maturityLevel) newFields.add("maturityLevel");
+    if (allActivities.size > userAddedActivities.current.size) newFields.add("processingActivities");
+    if (allDataTypes.size > userAddedDataTypes.current.size) newFields.add("personalDataTypes");
+    if (highestMaturity) newFields.add("maturityLevel");
 
     setAutoFilledFields(newFields);
-
-    // Trigger flash animation
     setFlashFields(new Set(["processingActivities", "personalDataTypes"]));
 
     onChange({
       ...ctx,
-      processingActivities: mergedActivities,
-      personalDataTypes: mergedDataTypes,
-      maturityLevel: result.maturityLevel,
+      processingActivities: Array.from(allActivities),
+      personalDataTypes: Array.from(allDataTypes),
+      maturityLevel: highestMaturity || ctx.maturityLevel,
     });
 
-    // Clear sparkle indicators after 8s
     const timer = setTimeout(() => {
       setAutoFilledFields(new Set());
       setFlashFields(new Set());
     }, 8000);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctx.industry, ctx.geographies, ctx.sdfClassification, documentType]);
+  }, [industries.join(","), ctx.geographies, ctx.sdfClassification, documentType]);
+
+  const setIndustries = (next: string[]) => {
+    onChange({
+      ...ctx,
+      industries: next,
+      industry: next[0] || "",
+      sector: "", // reset sub-sector when industries change
+    });
+  };
+
+  const addIndustry = (ind: string) => {
+    const trimmed = ind.trim();
+    if (!trimmed || industries.includes(trimmed)) return;
+    setIndustries([...industries, trimmed]);
+    setCustomIndustryInput("");
+    setShowIndustryDropdown(false);
+  };
+
+  const removeIndustry = (ind: string) => {
+    setIndustries(industries.filter((i) => i !== ind));
+  };
+
+  const handleIndustryKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addIndustry(customIndustryInput);
+    }
+  };
+
+  const filteredIndustryOptions = MULTI_INDUSTRY_OPTIONS.filter(
+    (opt) => !industries.includes(opt) && opt.toLowerCase().includes(customIndustryInput.toLowerCase())
+  );
 
   const toggleActivity = (act: string) => {
     const isRemoving = ctx.processingActivities.includes(act);
@@ -160,12 +235,12 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
     onChange({ ...ctx, maturityLevel: value });
   };
 
-  const AutoDetectedHint = ({ field }: { field: string }) => {
+  const AutoDetectedHint = ({ field, extra }: { field: string; extra?: string }) => {
     if (!autoFilledFields.has(field)) return null;
     return (
       <span className="inline-flex items-center gap-1 text-[9px] text-primary font-medium animate-in fade-in-0 slide-in-from-left-2 duration-300">
         <Sparkles className="h-3 w-3" />
-        Auto-detected based on your profile
+        {extra || "Auto-detected based on your profile"}
       </span>
     );
   };
@@ -196,22 +271,75 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
         </CollapsibleTrigger>
         <CollapsibleContent>
           <CardContent className="px-5 pb-4 space-y-4">
-            {/* Row 1: Name + Industry */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Organisation Name *</label>
-                <Input className="h-8 text-xs" value={ctx.orgName} onChange={(e) => onChange({ ...ctx, orgName: e.target.value })} placeholder="Acme Corp" />
-              </div>
-              <div>
-                <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Industry</label>
-                <Select value={ctx.industry} onValueChange={(v) => onChange({ ...ctx, industry: v, sector: "" })}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select industry" /></SelectTrigger>
-                  <SelectContent>
-                    {INDUSTRY_OPTIONS.map((ind) => (
-                      <SelectItem key={ind} value={ind} className="text-xs">{ind}</SelectItem>
+            {/* Row 1: Name */}
+            <div>
+              <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Organisation Name *</label>
+              <Input className="h-8 text-xs" value={ctx.orgName} onChange={(e) => onChange({ ...ctx, orgName: e.target.value })} placeholder="Acme Corp" />
+            </div>
+
+            {/* Industry — Multi-select tag input */}
+            <div>
+              <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Industry Verticals</label>
+              <p className="text-[9px] text-muted-foreground mb-2">Select multiple industries — the engine merges regulatory overlays from all selected</p>
+              <div
+                ref={industryDropdownRef}
+                className="relative"
+              >
+                <div className={cn(
+                  "flex flex-wrap gap-1.5 min-h-[36px] rounded-lg border border-border p-2 transition-all duration-300",
+                  flashFields.has("industry") && "ring-2 ring-primary/40 shadow-[0_0_12px_hsl(var(--primary)/0.15)] border-primary/50"
+                )}>
+                  {industries.map((ind) => (
+                    <Badge
+                      key={ind}
+                      variant="secondary"
+                      className="text-[10px] gap-1 pr-1"
+                    >
+                      {ind}
+                      <button
+                        onClick={() => removeIndustry(ind)}
+                        className="ml-0.5 rounded-full hover:bg-destructive/20 p-0.5"
+                      >
+                        <X className="h-2.5 w-2.5" />
+                      </button>
+                    </Badge>
+                  ))}
+                  <div className="flex items-center gap-1 flex-1 min-w-[120px]">
+                    <Input
+                      className="h-6 text-[10px] border-0 bg-transparent shadow-none focus-visible:ring-0 px-1"
+                      value={customIndustryInput}
+                      onChange={(e) => {
+                        setCustomIndustryInput(e.target.value);
+                        setShowIndustryDropdown(true);
+                      }}
+                      onFocus={() => setShowIndustryDropdown(true)}
+                      onKeyDown={handleIndustryKeyDown}
+                      placeholder={industries.length === 0 ? "Select or type industries…" : "Add more…"}
+                    />
+                    {customIndustryInput.trim() && (
+                      <button
+                        onClick={() => addIndustry(customIndustryInput)}
+                        className="p-0.5 rounded hover:bg-primary/10"
+                      >
+                        <Plus className="h-3 w-3 text-primary" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {/* Dropdown */}
+                {showIndustryDropdown && filteredIndustryOptions.length > 0 && (
+                  <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto rounded-lg border border-border bg-popover shadow-lg">
+                    {filteredIndustryOptions.map((opt) => (
+                      <button
+                        key={opt}
+                        onClick={() => addIndustry(opt)}
+                        className="w-full text-left px-3 py-1.5 text-xs hover:bg-accent/50 transition-colors"
+                      >
+                        {opt}
+                      </button>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -231,53 +359,59 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Organisation Size</label>
-                <Select value={ctx.orgSize} onValueChange={(v) => onChange({ ...ctx, orgSize: v })}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select size" /></SelectTrigger>
-                  <SelectContent>
-                    {ORG_SIZE_OPTIONS.map((o) => (
-                      <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <select
+                  className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  value={ctx.orgSize}
+                  onChange={(e) => onChange({ ...ctx, orgSize: e.target.value })}
+                >
+                  <option value="">Select size</option>
+                  {ORG_SIZE_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
                 <p className="text-[9px] text-muted-foreground mt-0.5">Scales obligation language to your size</p>
               </div>
               <div>
                 <label className="text-[11px] font-medium text-muted-foreground mb-1 block">DPDP Classification</label>
-                <Select value={ctx.sdfClassification} onValueChange={(v) => onChange({ ...ctx, sdfClassification: v })}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select classification" /></SelectTrigger>
-                  <SelectContent>
-                    {SDF_OPTIONS.map((o) => (
-                      <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <select
+                  className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  value={ctx.sdfClassification}
+                  onChange={(e) => onChange({ ...ctx, sdfClassification: e.target.value })}
+                >
+                  <option value="">Select classification</option>
+                  {SDF_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
                 <p className="text-[9px] text-muted-foreground mt-0.5">SDFs have enhanced obligations under Rules 5, 6, 9, 10, 12</p>
               </div>
             </div>
 
-            {/* Row 4: Geographies + Sector */}
+            {/* Row 4: Geographies + Sub-Sector */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Applicable Jurisdictions</label>
-                <Select value={ctx.geographies} onValueChange={(v) => onChange({ ...ctx, geographies: v })}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select jurisdictions" /></SelectTrigger>
-                  <SelectContent>
-                    {GEOGRAPHY_OPTIONS.map((o) => (
-                      <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <select
+                  className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  value={ctx.geographies}
+                  onChange={(e) => onChange({ ...ctx, geographies: e.target.value })}
+                >
+                  <option value="">Select jurisdictions</option>
+                  {GEOGRAPHY_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
               </div>
               <div>
-                <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Sub-Sector</label>
-                <Select value={ctx.sector} onValueChange={(v) => onChange({ ...ctx, sector: v })} disabled={sectors.length === 0}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={sectors.length ? "Select sub-sector" : "Select industry first"} /></SelectTrigger>
-                  <SelectContent>
-                    {sectors.map((s) => (
-                      <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <label className="text-[11px] font-medium text-muted-foreground mb-1 block">
+                  {industries.length > 1 ? "Primary Sub-Sector (Optional)" : "Sub-Sector"}
+                </label>
+                <Input
+                  className="h-8 text-xs"
+                  value={ctx.sector}
+                  onChange={(e) => onChange({ ...ctx, sector: e.target.value })}
+                  placeholder={industries.length > 1 ? "e.g., Retail Banking, SaaS…" : "e.g., SaaS, Retail Banking…"}
+                />
               </div>
             </div>
 
@@ -285,7 +419,7 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <label className="text-[11px] font-medium text-muted-foreground block">Compliance Maturity</label>
-                <AutoDetectedHint field="maturityLevel" />
+                <AutoDetectedHint field="maturityLevel" extra={industries.length > 1 ? `Highest maturity from ${industries.length} industries` : undefined} />
               </div>
               <div className="flex gap-1.5">
                 {MATURITY_OPTIONS.map((m) => (
@@ -313,7 +447,7 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
                 <label className="text-[11px] font-medium text-muted-foreground block">
                   Types of Personal Data
                 </label>
-                <AutoDetectedHint field="personalDataTypes" />
+                <AutoDetectedHint field="personalDataTypes" extra={industries.length > 1 ? `Auto-detected from ${industries.length} industries` : undefined} />
               </div>
               <p className="text-[9px] text-muted-foreground mb-2">Auto-tailored to your document type & industry — type and press Enter to add custom tags</p>
               <div className={cn(
@@ -367,7 +501,7 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
                 <label className="text-[11px] font-medium text-muted-foreground block">
                   Processing Activities
                 </label>
-                <AutoDetectedHint field="processingActivities" />
+                <AutoDetectedHint field="processingActivities" extra={industries.length > 1 ? `Auto-detected from ${industries.length} industries` : undefined} />
               </div>
               <p className="text-[9px] text-muted-foreground mb-2">Select all that apply or type custom activities below — each activates specific legal obligations</p>
               <div className={cn(

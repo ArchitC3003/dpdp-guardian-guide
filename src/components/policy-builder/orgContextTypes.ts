@@ -107,7 +107,7 @@ export function getOrgProfileCompleteness(ctx: OrgContext): { filled: number; to
   const total = 11;
   let filled = 0;
   if (ctx.orgName.trim()) filled++;
-  if (ctx.industry) filled++;
+  if ((ctx.industries && ctx.industries.length > 0) || ctx.industry) filled++;
   if (ctx.dpoName.trim()) filled++;
   if (ctx.date) filled++;
   if (ctx.orgSize) filled++;
