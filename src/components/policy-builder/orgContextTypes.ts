@@ -1,6 +1,8 @@
 export interface OrgContext {
   orgName: string;
+  /** @deprecated Use industries[] instead */
   industry: string;
+  industries: string[];
   dpoName: string;
   date: string;
   orgSize: string;
@@ -16,6 +18,7 @@ export interface OrgContext {
 export const DEFAULT_ORG_CONTEXT: OrgContext = {
   orgName: "",
   industry: "",
+  industries: [],
   dpoName: "",
   date: new Date().toISOString().split("T")[0],
   orgSize: "",
