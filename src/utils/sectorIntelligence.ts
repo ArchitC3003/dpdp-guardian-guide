@@ -386,7 +386,8 @@ export function getSizeCalibration(size: string): SizeCalibration {
  * organisation-tailored compliance artefacts.
  */
 export function generateEnrichmentBlock(ctx: OrgContext): string {
-  const sector = getSectorOverlay(ctx.industry);
+  const industries = ctx.industries?.length ? ctx.industries : (ctx.industry ? [ctx.industry] : []);
+  const sector = getSectorOverlay(industries.length > 0 ? industries : ctx.industry);
   const maturity = getMaturityLanguageProfile(ctx.maturityLevel);
   const size = getSizeCalibration(ctx.orgSize);
 
