@@ -450,8 +450,10 @@ serve(async (req) => {
     const effectiveAdditionalContext = (additionalContext || "").trim();
 
     const effectiveOrgName = orgName || "the Organisation";
-    const effectiveSector = sector || industry || "General";
-    const effectiveSize = orgSize || "Enterprise";
+    const effectiveSector = sector || (Array.isArray(industryVerticals) && industryVerticals.length > 0 ? industryVerticals.join(", ") : industry) || "General";
+    const industriesList = Array.isArray(industryVerticals) && industryVerticals.length > 0
+      ? industryVerticals
+      : (industry ? [industry] : ["General"]);
     const effectiveSdf = sdfClassification || "Under Assessment";
     const effectiveGeo = geographies || "India Only";
     const effectiveMaturity = maturityLevel || "Defined";
