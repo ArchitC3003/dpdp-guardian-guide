@@ -378,7 +378,7 @@ serve(async (req) => {
 
   try {
     const {
-      documentType, frameworks, orgName, industry, orgSize, maturityLevel,
+      documentType, frameworks, orgName, industry, industryVerticals, orgSize, maturityLevel,
       userMessage, conversationHistory, sdfClassification, geographies,
       processingActivities, personalDataTypes, sector, dpoName, date,
       additionalContext,
