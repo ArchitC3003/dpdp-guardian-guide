@@ -454,6 +454,7 @@ serve(async (req) => {
     const industriesList = Array.isArray(industryVerticals) && industryVerticals.length > 0
       ? industryVerticals
       : (industry ? [industry] : ["General"]);
+    const effectiveSize = orgSize || "Enterprise";
     const effectiveSdf = sdfClassification || "Under Assessment";
     const effectiveGeo = geographies || "India Only";
     const effectiveMaturity = maturityLevel || "Defined";
@@ -462,8 +463,11 @@ serve(async (req) => {
     const effectiveDate = date || new Date().toISOString().split("T")[0];
     const effectiveDocType = documentType || "Information Security Policy";
 
-    // ── Sector Intelligence: regulatory overlay for the AI ──────────
-    const sectorIntel = buildSectorOverlay(effectiveSector, industry);
+    // ── Sector Intelligence: build merged overlay for all industries ──
+    const sectorOverlays = industriesList.map((ind: string) => buildSectorOverlay(ind, ind)).filter(Boolean);
+    const sectorIntel = sectorOverlays.length > 0
+      ? sectorOverlays.join("\n\n")
+      : buildSectorOverlay(effectiveSector, industry);
     const maturityIntel = buildMaturityCalibration(effectiveMaturity);
     const sizeIntel = buildSizeCalibration(effectiveSize);
     const sdfIntel = effectiveSdf === "sdf" ? buildSdfOverlay(effectiveOrgName, effectiveDpo) : "";
