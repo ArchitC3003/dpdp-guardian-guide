@@ -410,7 +410,8 @@ export function generateEnrichmentBlock(ctx: OrgContext): string {
 
   // Sector overlay
   if (sector) {
-    block += `\nSECTOR-SPECIFIC REGULATORY OVERLAY: ${ctx.industry.toUpperCase()}\n${"─".repeat(60)}\n`;
+    const industryLabel = industries.length > 0 ? industries.join(", ").toUpperCase() : ctx.industry.toUpperCase();
+    block += `\nSECTOR-SPECIFIC REGULATORY OVERLAY: ${industryLabel}\n${"─".repeat(60)}\n`;
     block += `Applicable Regulators: ${sector.regulators.join("; ")}\n\n`;
 
     block += `Regulatory Instruments:\n`;
