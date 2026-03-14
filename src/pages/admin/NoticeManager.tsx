@@ -111,8 +111,7 @@ export default function NoticeManager() {
     if (editingId) {
       await (supabase as any).from("privacy_notices").update(payload).eq("id", editingId);
     } else {
-      payload.created_by = session?.user?.id;
-      await (supabase as any).from("privacy_notices").insert(payload);
+      await (supabase as any).from("privacy_notices").insert({ ...payload, created_by: session?.user?.id });
     }
     toast({ title: "Draft saved" });
     setEditOpen(false);
