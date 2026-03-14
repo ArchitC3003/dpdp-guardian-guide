@@ -309,6 +309,104 @@ export type Database = {
         }
         Relationships: []
       }
+      consent_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_type: string
+          entity_id: string | null
+          entity_type: string
+          event_timestamp: string
+          id: string
+          ip_address: string | null
+          new_state: string | null
+          notes: string | null
+          previous_state: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_type?: string
+          entity_id?: string | null
+          entity_type: string
+          event_timestamp?: string
+          id?: string
+          ip_address?: string | null
+          new_state?: string | null
+          notes?: string | null
+          previous_state?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_type?: string
+          entity_id?: string | null
+          entity_type?: string
+          event_timestamp?: string
+          id?: string
+          ip_address?: string | null
+          new_state?: string | null
+          notes?: string | null
+          previous_state?: string | null
+        }
+        Relationships: []
+      }
+      consent_receipts: {
+        Row: {
+          action_type: string
+          banner_language: string | null
+          categories_accepted: string[] | null
+          categories_rejected: string[] | null
+          consent_timestamp: string
+          created_at: string
+          id: string
+          ip_address: string | null
+          notice_version_id: string | null
+          session_id: string | null
+          user_agent: string | null
+          user_id: string | null
+          withdrawal_timestamp: string | null
+        }
+        Insert: {
+          action_type?: string
+          banner_language?: string | null
+          categories_accepted?: string[] | null
+          categories_rejected?: string[] | null
+          consent_timestamp?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          notice_version_id?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          withdrawal_timestamp?: string | null
+        }
+        Update: {
+          action_type?: string
+          banner_language?: string | null
+          categories_accepted?: string[] | null
+          categories_rejected?: string[] | null
+          consent_timestamp?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          notice_version_id?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          withdrawal_timestamp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consent_receipts_notice_version_id_fkey"
+            columns: ["notice_version_id"]
+            isOneToOne: false
+            referencedRelation: "privacy_notices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dept_grid: {
         Row: {
           assessment_id: string
@@ -399,6 +497,107 @@ export type Database = {
           is_active?: boolean
         }
         Relationships: []
+      }
+      grievances: {
+        Row: {
+          acknowledged_at: string | null
+          assigned_to: string | null
+          communication_log: Json | null
+          description: string | null
+          evidence_path: string | null
+          id: string
+          internal_notes: string | null
+          nature: string
+          resolution_summary: string | null
+          resolved_at: string | null
+          sla_deadline_ack: string
+          sla_deadline_resolution: string
+          status: string
+          subject: string
+          submitted_at: string
+          updated_at: string
+          user_email: string
+          user_id: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          assigned_to?: string | null
+          communication_log?: Json | null
+          description?: string | null
+          evidence_path?: string | null
+          id?: string
+          internal_notes?: string | null
+          nature: string
+          resolution_summary?: string | null
+          resolved_at?: string | null
+          sla_deadline_ack?: string
+          sla_deadline_resolution?: string
+          status?: string
+          subject: string
+          submitted_at?: string
+          updated_at?: string
+          user_email: string
+          user_id?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          assigned_to?: string | null
+          communication_log?: Json | null
+          description?: string | null
+          evidence_path?: string | null
+          id?: string
+          internal_notes?: string | null
+          nature?: string
+          resolution_summary?: string | null
+          resolved_at?: string | null
+          sla_deadline_ack?: string
+          sla_deadline_resolution?: string
+          status?: string
+          subject?: string
+          submitted_at?: string
+          updated_at?: string
+          user_email?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      notice_translations: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          language: string
+          notice_id: string
+          translation_status: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          id?: string
+          language?: string
+          notice_id: string
+          translation_status?: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          language?: string
+          notice_id?: string
+          translation_status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notice_translations_notice_id_fkey"
+            columns: ["notice_id"]
+            isOneToOne: false
+            referencedRelation: "privacy_notices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       policy_audit_log: {
         Row: {
@@ -602,6 +801,84 @@ export type Database = {
           },
         ]
       }
+      privacy_notices: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          cross_border_transfers: string | null
+          data_categories: Json | null
+          dpb_complaint_route: string | null
+          effective_date: string | null
+          fiduciary_contact: string | null
+          fiduciary_name: string | null
+          grievance_officer_designation: string | null
+          grievance_officer_email: string | null
+          grievance_officer_name: string | null
+          grievance_response_timeline: string | null
+          id: string
+          material_change: boolean | null
+          modified_by: string | null
+          purposes: Json | null
+          retention_periods: Json | null
+          rights_description: string | null
+          status: string
+          third_parties: Json | null
+          updated_at: string
+          version_number: string
+          withdraw_consent_link: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          cross_border_transfers?: string | null
+          data_categories?: Json | null
+          dpb_complaint_route?: string | null
+          effective_date?: string | null
+          fiduciary_contact?: string | null
+          fiduciary_name?: string | null
+          grievance_officer_designation?: string | null
+          grievance_officer_email?: string | null
+          grievance_officer_name?: string | null
+          grievance_response_timeline?: string | null
+          id?: string
+          material_change?: boolean | null
+          modified_by?: string | null
+          purposes?: Json | null
+          retention_periods?: Json | null
+          rights_description?: string | null
+          status?: string
+          third_parties?: Json | null
+          updated_at?: string
+          version_number?: string
+          withdraw_consent_link?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          cross_border_transfers?: string | null
+          data_categories?: Json | null
+          dpb_complaint_route?: string | null
+          effective_date?: string | null
+          fiduciary_contact?: string | null
+          fiduciary_name?: string | null
+          grievance_officer_designation?: string | null
+          grievance_officer_email?: string | null
+          grievance_officer_name?: string | null
+          grievance_response_timeline?: string | null
+          id?: string
+          material_change?: boolean | null
+          modified_by?: string | null
+          purposes?: Json | null
+          retention_periods?: Json | null
+          rights_description?: string | null
+          status?: string
+          third_parties?: Json | null
+          updated_at?: string
+          version_number?: string
+          withdraw_consent_link?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -635,6 +912,63 @@ export type Database = {
           last_login?: string | null
           organisation?: string | null
           role?: string | null
+        }
+        Relationships: []
+      }
+      rights_requests: {
+        Row: {
+          assigned_to: string | null
+          communication_log: Json | null
+          completed_at: string | null
+          description: string | null
+          id: string
+          internal_notes: string | null
+          rejection_reason: string | null
+          request_type: string
+          resolution_summary: string | null
+          sla_deadline: string
+          status: string
+          submitted_at: string
+          supporting_doc_path: string | null
+          updated_at: string
+          user_email: string
+          user_id: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          communication_log?: Json | null
+          completed_at?: string | null
+          description?: string | null
+          id?: string
+          internal_notes?: string | null
+          rejection_reason?: string | null
+          request_type: string
+          resolution_summary?: string | null
+          sla_deadline?: string
+          status?: string
+          submitted_at?: string
+          supporting_doc_path?: string | null
+          updated_at?: string
+          user_email: string
+          user_id?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          communication_log?: Json | null
+          completed_at?: string | null
+          description?: string | null
+          id?: string
+          internal_notes?: string | null
+          rejection_reason?: string | null
+          request_type?: string
+          resolution_summary?: string | null
+          sla_deadline?: string
+          status?: string
+          submitted_at?: string
+          supporting_doc_path?: string | null
+          updated_at?: string
+          user_email?: string
+          user_id?: string | null
         }
         Relationships: []
       }
