@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { AppLayout } from "@/components/AppLayout";
-import { CookieBanner } from "@/components/CookieBanner";
+import { CookieConsentBanner } from "@/components/consent/CookieConsentBanner";
 import LandingPage from "./pages/LandingPage";
 import Auth from "./pages/Auth";
 import ProfileSetup from "./pages/ProfileSetup";
@@ -26,6 +26,12 @@ import PhaseDashboard from "./pages/PhaseDashboard";
 import PolicySopBuilder from "./pages/PolicySopBuilder";
 import PolicyLibrary from "./pages/PolicyLibrary";
 import AdminAiConfig from "./pages/AdminAiConfig";
+import PrivacyPreferences from "./pages/PrivacyPreferences";
+import ConsentLedger from "./pages/admin/ConsentLedger";
+import NoticeManager from "./pages/admin/NoticeManager";
+import RightsDesk from "./pages/admin/RightsDesk";
+import GrievanceConsole from "./pages/admin/GrievanceConsole";
+import ConsentAuditLog from "./pages/admin/ConsentAuditLog";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -57,7 +63,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <CookieBanner />
+          <CookieConsentBanner />
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/landing" element={<LandingPage />} />
@@ -76,6 +82,12 @@ const App = () => (
               <Route path="/settings" element={<AccountSettings />} />
               <Route path="/settings/users" element={<UserManagement />} />
               <Route path="/admin/ai-config" element={<AdminAiConfig />} />
+              <Route path="/privacy-preferences" element={<PrivacyPreferences />} />
+              <Route path="/admin/consent-ledger" element={<ConsentLedger />} />
+              <Route path="/admin/notice-manager" element={<NoticeManager />} />
+              <Route path="/admin/rights-desk" element={<RightsDesk />} />
+              <Route path="/admin/grievance-console" element={<GrievanceConsole />} />
+              <Route path="/admin/consent-audit-log" element={<ConsentAuditLog />} />
               <Route path="/assessment/:assessmentId/org-profile" element={<PhaseOrgProfile />} />
               <Route path="/assessment/:assessmentId/policy-matrix" element={<PhasePolicyMatrix />} />
               <Route path="/assessment/:assessmentId/rapid-assessment" element={<PhaseRapidAssessment />} />
