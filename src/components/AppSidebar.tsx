@@ -1,4 +1,4 @@
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import {
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/sidebar";
 import { NavLink } from "@/components/NavLink";
 import { Badge } from "@/components/ui/badge";
-import { Cog, LayoutDashboard, ClipboardList, Share2, FolderOpen, Building2, FileText, Search, Grid3X3, Paperclip, BarChart3, LogOut, Settings2, Bot, Users, BookMarked } from "lucide-react";
+import { Cog, LayoutDashboard, ClipboardList, Share2, FolderOpen, Building2, FileText, Search, Grid3X3, Paperclip, BarChart3, LogOut, Settings2, Bot, Users, BookMarked, Shield, ScrollText, Scale, AlertTriangle, FileSearch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +28,18 @@ const mainNav = [
   { title: "Policy & SOP Builder", subtitle: "AI-powered policy & SOP generator", url: "/policy-sop-builder", icon: Bot },
   { title: "Policy Register", subtitle: "Official policy lifecycle register", url: "/policy-library", icon: BookMarked },
   { title: "Settings", subtitle: "App configuration & preferences", url: "/settings", icon: Settings2 },
+];
+
+const consentUserNav = [
+  { title: "Privacy Preferences", subtitle: "Manage consent & exercise rights", url: "/privacy-preferences", icon: Shield },
+];
+
+const consentAdminNav = [
+  { title: "Consent Ledger", subtitle: "All consent receipts", url: "/admin/consent-ledger", icon: ScrollText },
+  { title: "Notice Manager", subtitle: "Create & publish notices", url: "/admin/notice-manager", icon: FileText },
+  { title: "Rights Desk", subtitle: "Data principal rights requests", url: "/admin/rights-desk", icon: Scale },
+  { title: "Grievance Console", subtitle: "Complaints & grievances", url: "/admin/grievance-console", icon: AlertTriangle },
+  { title: "Audit Log", subtitle: "Tamper-evident event log", url: "/admin/consent-audit-log", icon: FileSearch },
 ];
 
 const phases = [
@@ -45,10 +57,25 @@ export function AppSidebar() {
   const { profile, signOut } = useAuth();
   const { userRoleLabel, userRoleColor, canManageUsers } = usePermissions();
   const location = useLocation();
-  const navigate = useNavigate();
 
   const assessmentMatch = location.pathname.match(/\/assessment\/([^/]+)/);
   const assessmentId = assessmentMatch?.[1];
+
+  const renderNavItem = (item: { title: string; subtitle: string; url: string; icon: any }) => (
+    <SidebarMenuItem key={item.title}>
+      <SidebarMenuButton asChild>
+        <NavLink to={item.url} end={item.url === "/dashboard" || item.url === "/assessments"} className="hover:bg-sidebar-accent" activeClassName="bg-sidebar-accent text-primary font-medium">
+          <item.icon className="h-4 w-4 mr-2 shrink-0 self-start mt-0.5" />
+          {!collapsed && (
+            <div className="flex flex-col">
+              <span>{item.title}</span>
+              <span className="text-[10px] text-muted-foreground leading-tight">{item.subtitle}</span>
+            </div>
+          )}
+        </NavLink>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
 
   return (
     <Sidebar collapsible="icon">
@@ -69,22 +96,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainNav.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.url} end className="hover:bg-sidebar-accent" activeClassName="bg-sidebar-accent text-primary font-medium">
-                      <item.icon className="h-4 w-4 mr-2 shrink-0 self-start mt-0.5" />
-                      {!collapsed && (
-                        <div className="flex flex-col">
-                          <span>{item.title}</span>
-                          <span className="text-[10px] text-muted-foreground leading-tight">{item.subtitle}</span>
-                        </div>
-                      )}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-              {/* User Management — admin only */}
+              {mainNav.map(renderNavItem)}
               {canManageUsers && (
                 <>
                   <SidebarMenuItem>
@@ -115,6 +127,17 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 </>
               )}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Consent & Rights — User Facing */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Consent & Rights</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {consentUserNav.map(renderNavItem)}
+              {canManageUsers && consentAdminNav.map(renderNavItem)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
