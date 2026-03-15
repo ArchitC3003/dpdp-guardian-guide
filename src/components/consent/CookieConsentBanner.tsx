@@ -191,9 +191,9 @@ export function CookieConsentBanner() {
               </div>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div className="flex gap-2 text-xs">
-                  <a href="/privacy" className="text-primary underline hover:text-primary/80" aria-label="View privacy notice">Privacy Notice</a>
+                  <button onClick={() => { setVisible(false); navigate("/privacy"); }} className="text-primary underline hover:text-primary/80 bg-transparent border-none cursor-pointer p-0 inline text-xs" aria-label="View privacy notice">Privacy Notice</button>
                   <span className="text-muted">|</span>
-                  <a href="/privacy-preferences#grievance" className="text-primary underline hover:text-primary/80" aria-label="Contact grievance officer">Grievance / Contact DPO</a>
+                  <button onClick={() => { setVisible(false); navigate("/privacy-preferences", { state: { scrollTo: "grievance" } }); }} className="text-primary underline hover:text-primary/80 bg-transparent border-none cursor-pointer p-0 inline text-xs" aria-label="Contact grievance officer">Grievance / Contact DPO</button>
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <Button onClick={handleAcceptAll} className="bg-primary hover:bg-primary/90 text-primary-foreground" aria-label="Accept all cookies">
