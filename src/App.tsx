@@ -72,6 +72,7 @@ const App = () => (
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy-preferences" element={<PrivacyPreferences />} />
+            <Route element={<ProtectedRoutes />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/assessments" element={<Dashboard />} />
               <Route path="/shared" element={<SharedReports />} />
