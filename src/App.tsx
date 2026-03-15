@@ -89,6 +89,12 @@ const App = () => (
               <Route path="/admin/rights-desk" element={<RightsDesk />} />
               <Route path="/admin/grievance-console" element={<GrievanceConsole />} />
               <Route path="/admin/consent-audit-log" element={<ConsentAuditLog />} />
+              <Route path="/consent" element={<ConsentLedger />} />
+              <Route path="/consent/ledger" element={<ConsentLedger />} />
+              <Route path="/consent/notices" element={<NoticeManager />} />
+              <Route path="/consent/rights-desk" element={<RightsDesk />} />
+              <Route path="/consent/grievances" element={<GrievanceConsole />} />
+              <Route path="/consent/audit-log" element={<ConsentAuditLog />} />
               <Route path="/assessment/:assessmentId/org-profile" element={<PhaseOrgProfile />} />
               <Route path="/assessment/:assessmentId/policy-matrix" element={<PhasePolicyMatrix />} />
               <Route path="/assessment/:assessmentId/rapid-assessment" element={<PhaseRapidAssessment />} />
