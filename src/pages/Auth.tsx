@@ -155,7 +155,9 @@ export default function Auth() {
         <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline">Privacy Policy</a>
         {" "}and{" "}
         <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline">Terms of Service</a>
-        . PrivcybHub uses essential cookies only.
+        . We use cookies to improve your experience. You can manage your{" "}
+        <a href="/privacy-preferences" className="text-primary underline">preferences</a>{" "}
+        at any time via our Privacy Preferences page.
       </p>
     </div>
   );
