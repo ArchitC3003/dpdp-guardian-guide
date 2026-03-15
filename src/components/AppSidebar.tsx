@@ -35,11 +35,11 @@ const consentUserNav = [
 ];
 
 const consentAdminNav = [
-  { title: "Consent Ledger", subtitle: "All consent receipts", url: "/admin/consent-ledger", icon: ScrollText },
-  { title: "Notice Manager", subtitle: "Create & publish notices", url: "/admin/notice-manager", icon: FileText },
-  { title: "Rights Desk", subtitle: "Data principal rights requests", url: "/admin/rights-desk", icon: Scale },
-  { title: "Grievance Console", subtitle: "Complaints & grievances", url: "/admin/grievance-console", icon: AlertTriangle },
-  { title: "Audit Log", subtitle: "Tamper-evident event log", url: "/admin/consent-audit-log", icon: FileSearch },
+  { title: "Consent Ledger", subtitle: "All consent receipts", url: "/consent/ledger", icon: ScrollText },
+  { title: "Notice Manager", subtitle: "Create & publish notices", url: "/consent/notices", icon: FileText },
+  { title: "Rights Desk", subtitle: "Data principal rights requests", url: "/consent/rights-desk", icon: Scale },
+  { title: "Grievance Console", subtitle: "Complaints & grievances", url: "/consent/grievances", icon: AlertTriangle },
+  { title: "Audit Log", subtitle: "Tamper-evident event log", url: "/consent/audit-log", icon: FileSearch },
 ];
 
 const phases = [
