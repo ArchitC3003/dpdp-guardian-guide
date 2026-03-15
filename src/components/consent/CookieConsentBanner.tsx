@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -111,6 +112,7 @@ async function recordConsent(
 }
 
 export function CookieConsentBanner() {
+  const navigate = useNavigate();
   const [visible, setVisible] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
   const [categories, setCategories] = useState<Record<string, boolean>>(() => {
@@ -181,17 +183,17 @@ export function CookieConsentBanner() {
                     We collect limited data categories (session identifiers, usage analytics) to provide and improve our compliance platform.
                     Your data is processed for platform functionality and service improvement.
                     You can withdraw consent at any time via{" "}
-                    <a href="/privacy-preferences" className="text-primary underline hover:text-primary/80">Preferences</a>.
+                    <button onClick={() => { setVisible(false); navigate("/privacy-preferences"); }} className="text-primary underline hover:text-primary/80 bg-transparent border-none cursor-pointer p-0 inline text-sm">Preferences</button>.
                     To raise a concern, use our{" "}
-                    <a href="/privacy-preferences#grievance" className="text-primary underline hover:text-primary/80">Grievance / Contact DPO</a> link.
+                    <button onClick={() => { setVisible(false); navigate("/privacy-preferences", { state: { scrollTo: "grievance" } }); }} className="text-primary underline hover:text-primary/80 bg-transparent border-none cursor-pointer p-0 inline text-sm">Grievance / Contact DPO</button> link.
                   </p>
                 </div>
               </div>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div className="flex gap-2 text-xs">
-                  <a href="/privacy" className="text-primary underline hover:text-primary/80" aria-label="View privacy notice">Privacy Notice</a>
+                  <button onClick={() => { setVisible(false); navigate("/privacy"); }} className="text-primary underline hover:text-primary/80 bg-transparent border-none cursor-pointer p-0 inline text-xs" aria-label="View privacy notice">Privacy Notice</button>
                   <span className="text-muted">|</span>
-                  <a href="/privacy-preferences#grievance" className="text-primary underline hover:text-primary/80" aria-label="Contact grievance officer">Grievance / Contact DPO</a>
+                  <button onClick={() => { setVisible(false); navigate("/privacy-preferences", { state: { scrollTo: "grievance" } }); }} className="text-primary underline hover:text-primary/80 bg-transparent border-none cursor-pointer p-0 inline text-xs" aria-label="Contact grievance officer">Grievance / Contact DPO</button>
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <Button onClick={handleAcceptAll} className="bg-primary hover:bg-primary/90 text-primary-foreground" aria-label="Accept all cookies">
