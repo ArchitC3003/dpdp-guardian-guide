@@ -183,9 +183,9 @@ export function CookieConsentBanner() {
                     We collect limited data categories (session identifiers, usage analytics) to provide and improve our compliance platform.
                     Your data is processed for platform functionality and service improvement.
                     You can withdraw consent at any time via{" "}
-                    <a href="/privacy-preferences" className="text-primary underline hover:text-primary/80">Preferences</a>.
+                    <button onClick={() => { setVisible(false); navigate("/privacy-preferences"); }} className="text-primary underline hover:text-primary/80 bg-transparent border-none cursor-pointer p-0 inline text-sm">Preferences</button>.
                     To raise a concern, use our{" "}
-                    <a href="/privacy-preferences#grievance" className="text-primary underline hover:text-primary/80">Grievance / Contact DPO</a> link.
+                    <button onClick={() => { setVisible(false); navigate("/privacy-preferences", { state: { scrollTo: "grievance" } }); }} className="text-primary underline hover:text-primary/80 bg-transparent border-none cursor-pointer p-0 inline text-sm">Grievance / Contact DPO</button> link.
                   </p>
                 </div>
               </div>
