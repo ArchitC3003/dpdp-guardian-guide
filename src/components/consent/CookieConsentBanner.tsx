@@ -113,6 +113,7 @@ async function recordConsent(
 
 export function CookieConsentBanner() {
   const navigate = useNavigate();
+  const [visible, setVisible] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
   const [categories, setCategories] = useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {};
