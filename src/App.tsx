@@ -83,7 +83,6 @@ const App = () => (
               <Route path="/settings" element={<AccountSettings />} />
               <Route path="/settings/users" element={<UserManagement />} />
               <Route path="/admin/ai-config" element={<AdminAiConfig />} />
-              <Route path="/privacy-preferences" element={<PrivacyPreferences />} />
               <Route path="/admin/consent-ledger" element={<ConsentLedger />} />
               <Route path="/admin/notice-manager" element={<NoticeManager />} />
               <Route path="/admin/rights-desk" element={<RightsDesk />} />
