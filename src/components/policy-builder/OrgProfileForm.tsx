@@ -376,6 +376,9 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
               </div>
             </div>
 
+            {/* KM Sources Panel — below industry selection */}
+            <KMSourcesPanel kmContext={kmContext} loading={kmLoading} />
+
             {/* Row 2: DPO + Date */}
             <div className="grid grid-cols-2 gap-3">
               <div>
