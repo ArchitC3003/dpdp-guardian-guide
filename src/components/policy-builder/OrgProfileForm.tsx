@@ -150,6 +150,33 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [industries.join(","), ctx.geographies, ctx.sdfClassification, documentType]);
 
+  // KM Context fetch — debounced on industry/subSector change
+  const fetchKMContext = useCallback(async () => {
+    if (industries.length === 0) {
+      setKmContext(null);
+      return;
+    }
+    setKmLoading(true);
+    try {
+      const result = await getKMContext(industries, ctx.sector, "policy-gen");
+      setKmContext(result);
+    } catch {
+      // Graceful degradation — KM layer is optional
+    } finally {
+      setKmLoading(false);
+    }
+  }, [industries, ctx.sector]);
+
+  useEffect(() => {
+    const triggerKey = `${industries.join(",")}|${ctx.sector}`;
+    if (triggerKey === kmTriggerRef.current) return;
+    kmTriggerRef.current = triggerKey;
+    if (industries.length === 0) return;
+    const timer = setTimeout(() => fetchKMContext(), 1500);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [industries.join(","), ctx.sector]);
+
   const setIndustries = (next: string[]) => {
     onChange({
       ...ctx,
