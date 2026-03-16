@@ -451,6 +451,9 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
               </div>
             </div>
 
+            {/* Sector Insights Panel — below sub-sector input */}
+            <SectorInsightsPanel kmContext={kmContext} loading={kmLoading} onRegenerate={fetchKMContext} />
+
             {/* Row 5: Maturity */}
             <div>
               <div className="flex items-center gap-2 mb-1">
