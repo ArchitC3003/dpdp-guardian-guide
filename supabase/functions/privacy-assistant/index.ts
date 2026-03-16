@@ -263,6 +263,7 @@ The user is currently on: ${currentPage || "Unknown page"}
 - **Compliance Dashboard** (/assessment/dashboard): Visual compliance analytics
 ${domainsRef}
 ${userContextBlock}
+${kmContextBlock}
 
 ## FALLBACK BEHAVIOUR
 ${!hasAssessments && user ? `The user hasn't completed any assessments yet. Be encouraging and guide them:
