@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, KeyboardEvent } from "react";
+import { useState, useEffect, useRef, useCallback, KeyboardEvent } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,6 +22,9 @@ import {
   getOrgProfileCompleteness,
 } from "./orgContextTypes";
 import { inferSmartContext } from "@/utils/smartContextEngine";
+import { KMSourcesPanel } from "@/components/km/KMSourcesPanel";
+import { SectorInsightsPanel } from "@/components/km/SectorInsightsPanel";
+import { getKMContext, type KMContext } from "@/services/kmRetrievalService";
 
 // Expanded industry list per requirements
 const MULTI_INDUSTRY_OPTIONS = [
@@ -65,7 +68,10 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
   const [customActivityInput, setCustomActivityInput] = useState("");
   const [customIndustryInput, setCustomIndustryInput] = useState("");
   const [showIndustryDropdown, setShowIndustryDropdown] = useState(false);
+  const [kmContext, setKmContext] = useState<KMContext | null>(null);
+  const [kmLoading, setKmLoading] = useState(false);
   const prevTriggerRef = useRef<string>("");
+  const kmTriggerRef = useRef<string>("");
   const userAddedActivities = useRef<Set<string>>(new Set());
   const userAddedDataTypes = useRef<Set<string>>(new Set());
   const industryDropdownRef = useRef<HTMLDivElement>(null);
@@ -143,6 +149,33 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [industries.join(","), ctx.geographies, ctx.sdfClassification, documentType]);
+
+  // KM Context fetch — debounced on industry/subSector change
+  const fetchKMContext = useCallback(async () => {
+    if (industries.length === 0) {
+      setKmContext(null);
+      return;
+    }
+    setKmLoading(true);
+    try {
+      const result = await getKMContext(industries, ctx.sector, "policy-gen");
+      setKmContext(result);
+    } catch {
+      // Graceful degradation — KM layer is optional
+    } finally {
+      setKmLoading(false);
+    }
+  }, [industries, ctx.sector]);
+
+  useEffect(() => {
+    const triggerKey = `${industries.join(",")}|${ctx.sector}`;
+    if (triggerKey === kmTriggerRef.current) return;
+    kmTriggerRef.current = triggerKey;
+    if (industries.length === 0) return;
+    const timer = setTimeout(() => fetchKMContext(), 1500);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [industries.join(","), ctx.sector]);
 
   const setIndustries = (next: string[]) => {
     onChange({
@@ -343,6 +376,9 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
               </div>
             </div>
 
+            {/* KM Sources Panel — below industry selection */}
+            <KMSourcesPanel kmContext={kmContext} loading={kmLoading} />
+
             {/* Row 2: DPO + Date */}
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -414,6 +450,9 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
                 />
               </div>
             </div>
+
+            {/* Sector Insights Panel — below sub-sector input */}
+            <SectorInsightsPanel kmContext={kmContext} loading={kmLoading} onRegenerate={fetchKMContext} />
 
             {/* Row 5: Maturity */}
             <div>

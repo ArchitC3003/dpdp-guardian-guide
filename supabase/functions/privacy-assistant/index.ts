@@ -54,6 +54,7 @@ serve(async (req) => {
     // ── Fetch user context data ──────────────────────────────────
     let userContextBlock = "";
     let hasAssessments = false;
+    let kmContextBlock = "";
 
     if (user) {
       // 1. Fetch user profile
@@ -187,6 +188,39 @@ serve(async (req) => {
       userContextBlock = "\n\n═══ USER NOT AUTHENTICATED ═══\nThe user is not logged in. Guide them to sign in to access personalised compliance data.\n";
     }
 
+    // ── Fetch KM artefacts for context enrichment ──────────────────
+    try {
+      const { data: kmArtefacts } = await sb
+        .from("km_artefact_index")
+        .select("title, content, doc_type, industry_verticals, frameworks, source_authority")
+        .eq("is_active", true)
+        .limit(10);
+
+      if (kmArtefacts && kmArtefacts.length > 0) {
+        kmContextBlock += "\n\n═══ KNOWLEDGE MANAGEMENT ARTEFACTS ═══\n";
+        kmContextBlock += `${kmArtefacts.length} compliance knowledge artefacts available:\n`;
+        for (const art of kmArtefacts) {
+          kmContextBlock += `- ${art.title} [${art.doc_type}] (${(art.frameworks || []).join(", ")}): ${art.content.substring(0, 200)}...\n`;
+        }
+      }
+
+      const { data: regSources } = await sb
+        .from("regulatory_source_map")
+        .select("industry_vertical, framework, authority, description")
+        .eq("is_active", true)
+        .limit(20);
+
+      if (regSources && regSources.length > 0) {
+        kmContextBlock += "\n── REGULATORY SOURCE MAP ──\n";
+        for (const src of regSources) {
+          kmContextBlock += `- ${src.authority}: ${src.framework} (${src.industry_vertical}) — ${src.description}\n`;
+        }
+      }
+    } catch (e) {
+      console.error("KM context fetch error:", e);
+      // Non-blocking — chatbot works without KM context
+    }
+
     // ── Available assessment domains reference ────────────────────
     let domainsRef = "\n\n═══ AVAILABLE ASSESSMENT DOMAINS (DPDP Act 2023 Readiness) ═══\n";
     for (const d of ASSESSMENT_DOMAINS) {
@@ -229,6 +263,7 @@ The user is currently on: ${currentPage || "Unknown page"}
 - **Compliance Dashboard** (/assessment/dashboard): Visual compliance analytics
 ${domainsRef}
 ${userContextBlock}
+${kmContextBlock}
 
 ## FALLBACK BEHAVIOUR
 ${!hasAssessments && user ? `The user hasn't completed any assessments yet. Be encouraging and guide them:
