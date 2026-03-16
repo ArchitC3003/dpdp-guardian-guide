@@ -561,6 +561,99 @@ export type Database = {
         }
         Relationships: []
       }
+      km_artefact_index: {
+        Row: {
+          content: string
+          content_embedding: string | null
+          created_at: string | null
+          doc_type: string
+          effective_date: string | null
+          frameworks: string[] | null
+          id: string
+          industry_verticals: string[] | null
+          is_active: boolean | null
+          jurisdictions: string[] | null
+          source_authority: string | null
+          source_url: string | null
+          sub_sectors: string[] | null
+          title: string
+          updated_at: string | null
+          version: string | null
+        }
+        Insert: {
+          content: string
+          content_embedding?: string | null
+          created_at?: string | null
+          doc_type: string
+          effective_date?: string | null
+          frameworks?: string[] | null
+          id?: string
+          industry_verticals?: string[] | null
+          is_active?: boolean | null
+          jurisdictions?: string[] | null
+          source_authority?: string | null
+          source_url?: string | null
+          sub_sectors?: string[] | null
+          title: string
+          updated_at?: string | null
+          version?: string | null
+        }
+        Update: {
+          content?: string
+          content_embedding?: string | null
+          created_at?: string | null
+          doc_type?: string
+          effective_date?: string | null
+          frameworks?: string[] | null
+          id?: string
+          industry_verticals?: string[] | null
+          is_active?: boolean | null
+          jurisdictions?: string[] | null
+          source_authority?: string | null
+          source_url?: string | null
+          sub_sectors?: string[] | null
+          title?: string
+          updated_at?: string | null
+          version?: string | null
+        }
+        Relationships: []
+      }
+      km_query_log: {
+        Row: {
+          artefacts_used: string[] | null
+          created_at: string | null
+          generated_output_preview: string | null
+          id: string
+          industries: string[] | null
+          query_type: string | null
+          sources_used: string[] | null
+          sub_sector: string | null
+          user_id: string | null
+        }
+        Insert: {
+          artefacts_used?: string[] | null
+          created_at?: string | null
+          generated_output_preview?: string | null
+          id?: string
+          industries?: string[] | null
+          query_type?: string | null
+          sources_used?: string[] | null
+          sub_sector?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          artefacts_used?: string[] | null
+          created_at?: string | null
+          generated_output_preview?: string | null
+          id?: string
+          industries?: string[] | null
+          query_type?: string | null
+          sources_used?: string[] | null
+          sub_sector?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       notice_translations: {
         Row: {
           content: string
@@ -915,6 +1008,42 @@ export type Database = {
         }
         Relationships: []
       }
+      regulatory_source_map: {
+        Row: {
+          authority: string
+          description: string | null
+          framework: string
+          id: string
+          industry_vertical: string
+          is_active: boolean | null
+          jurisdiction: string
+          last_checked: string | null
+          source_url: string
+        }
+        Insert: {
+          authority: string
+          description?: string | null
+          framework: string
+          id?: string
+          industry_vertical: string
+          is_active?: boolean | null
+          jurisdiction: string
+          last_checked?: string | null
+          source_url: string
+        }
+        Update: {
+          authority?: string
+          description?: string | null
+          framework?: string
+          id?: string
+          industry_vertical?: string
+          is_active?: boolean | null
+          jurisdiction?: string
+          last_checked?: string | null
+          source_url?: string
+        }
+        Relationships: []
+      }
       rights_requests: {
         Row: {
           assigned_to: string | null
@@ -1039,6 +1168,26 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      match_km_artefacts: {
+        Args: {
+          filter_industries?: string[]
+          filter_jurisdictions?: string[]
+          match_count?: number
+          query_embedding: string
+        }
+        Returns: {
+          content: string
+          doc_type: string
+          frameworks: string[]
+          id: string
+          industry_verticals: string[]
+          similarity: number
+          source_authority: string
+          source_url: string
+          title: string
+          version: string
+        }[]
       }
     }
     Enums: {
