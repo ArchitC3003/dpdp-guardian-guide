@@ -54,6 +54,7 @@ serve(async (req) => {
     // ── Fetch user context data ──────────────────────────────────
     let userContextBlock = "";
     let hasAssessments = false;
+    let kmContextBlock = "";
 
     if (user) {
       // 1. Fetch user profile
