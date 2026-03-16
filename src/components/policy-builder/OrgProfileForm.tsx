@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, KeyboardEvent } from "react";
+import { useState, useEffect, useRef, useCallback, KeyboardEvent } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,6 +22,9 @@ import {
   getOrgProfileCompleteness,
 } from "./orgContextTypes";
 import { inferSmartContext } from "@/utils/smartContextEngine";
+import { KMSourcesPanel } from "@/components/km/KMSourcesPanel";
+import { SectorInsightsPanel } from "@/components/km/SectorInsightsPanel";
+import { getKMContext, type KMContext } from "@/services/kmRetrievalService";
 
 // Expanded industry list per requirements
 const MULTI_INDUSTRY_OPTIONS = [
