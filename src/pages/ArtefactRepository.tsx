@@ -141,6 +141,9 @@ export default function ArtefactRepository() {
         </div>
       )}
 
+      {/* KM Admin Panel */}
+      {isAdmin && <KMAdminPanel files={files} isAdmin={isAdmin} />}
+
       {/* Folders */}
       {loading ? (
         <div className="text-center py-12 text-muted-foreground">Loading artefacts...</div>
