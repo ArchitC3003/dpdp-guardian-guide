@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { REGULATORY_SOURCE_MAP, type RegulatorySourceEntry } from "@/data/regulatorySourceMap";
+import { normaliseIndustry } from "@/utils/industryNormaliser";
 
 export interface KMContext {
   artefacts: KMArtefact[];
