@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, KeyboardEvent } from "react";
+import { useState, useEffect, useRef, useCallback, KeyboardEvent, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,41 +9,35 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Building2, ChevronDown, Sparkles, X, Plus } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Building2, ChevronDown, Sparkles, X, Plus, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   OrgContext,
   INDUSTRY_OPTIONS,
+  SECTOR_MAP,
   ORG_SIZE_OPTIONS,
   SDF_OPTIONS,
   GEOGRAPHY_OPTIONS,
-  PROCESSING_ACTIVITIES,
+  PROCESSING_ACTIVITIES_CATALOGUE,
   MATURITY_OPTIONS,
   getOrgProfileCompleteness,
+  type ProcessingActivity,
 } from "./orgContextTypes";
 import { inferSmartContext } from "@/utils/smartContextEngine";
+import { normaliseIndustry } from "@/utils/industryNormaliser";
+import { normaliseCustomEntry } from "@/utils/customEntryNormaliser";
 import { KMSourcesPanel } from "@/components/km/KMSourcesPanel";
 import { SectorInsightsPanel } from "@/components/km/SectorInsightsPanel";
 import { getKMContext, type KMContext } from "@/services/kmRetrievalService";
+import { toast } from "sonner";
 
-// Expanded industry list per requirements
-const MULTI_INDUSTRY_OPTIONS = [
-  "Manufacturing",
-  "Retail/E-commerce",
-  "HealthTech/Healthcare",
-  "BFSI/Banking",
-  "EdTech/Education",
-  "Technology/IT Services",
-  "Logistics",
-  "Retail",
-  "Pharma",
-  "Media & Entertainment",
-  "Government/PSU",
-  "Insurance",
-  "Telecom",
-  "Legal/Professional Services",
-  "Other",
-];
+const CANONICAL_INDUSTRY_LIST = [...INDUSTRY_OPTIONS];
 
 const MATURITY_RANK: Record<string, number> = {
   initial: 0,
@@ -68,6 +62,8 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
   const [customActivityInput, setCustomActivityInput] = useState("");
   const [customIndustryInput, setCustomIndustryInput] = useState("");
   const [showIndustryDropdown, setShowIndustryDropdown] = useState(false);
+  const [customSubSectorInput, setCustomSubSectorInput] = useState("");
+  const [showSubSectorDropdown, setShowSubSectorDropdown] = useState(false);
   const [kmContext, setKmContext] = useState<KMContext | null>(null);
   const [kmLoading, setKmLoading] = useState(false);
   const prevTriggerRef = useRef<string>("");
@@ -75,16 +71,58 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
   const userAddedActivities = useRef<Set<string>>(new Set());
   const userAddedDataTypes = useRef<Set<string>>(new Set());
   const industryDropdownRef = useRef<HTMLDivElement>(null);
+  const subSectorDropdownRef = useRef<HTMLDivElement>(null);
   const { filled, total } = getOrgProfileCompleteness(ctx);
   const pct = Math.round((filled / total) * 100);
 
-  const industries = ctx.industries || (ctx.industry ? [ctx.industry] : []);
+  const industries = (ctx.industries || (ctx.industry ? [ctx.industry] : [])).map(normaliseIndustry);
 
-  // Close industry dropdown on outside click
+  // Derive sub-sector options from selected industries
+  const subSectorOptions = useMemo(() => {
+    if (industries.length === 0) return [];
+    if (industries.length === 1) {
+      return (SECTOR_MAP[industries[0]] || []).map(s => ({ industry: industries[0], subSector: s }));
+    }
+    // Multiple industries: grouped
+    const result: { industry: string; subSector: string }[] = [];
+    for (const ind of industries) {
+      const subs = SECTOR_MAP[ind] || [];
+      for (const s of subs) {
+        if (!result.some(r => r.subSector === s)) {
+          result.push({ industry: ind, subSector: s });
+        }
+      }
+    }
+    return result;
+  }, [industries.join(",")]);
+
+  // Parse sector as array of sub-sectors
+  const selectedSubSectors = useMemo(() => {
+    if (!ctx.sector) return [];
+    return ctx.sector.split(",").map(s => s.trim()).filter(Boolean);
+  }, [ctx.sector]);
+
+  // Recommended vs Other processing activities
+  const { recommended, other } = useMemo(() => {
+    const rec: ProcessingActivity[] = [];
+    const oth: ProcessingActivity[] = [];
+    for (const pa of PROCESSING_ACTIVITIES_CATALOGUE) {
+      const isRecommended = pa.industries.includes("All") ||
+        pa.industries.some(ind => industries.includes(ind));
+      if (isRecommended) rec.push(pa);
+      else oth.push(pa);
+    }
+    return { recommended: rec, other: oth };
+  }, [industries.join(",")]);
+
+  // Close dropdowns on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (industryDropdownRef.current && !industryDropdownRef.current.contains(e.target as Node)) {
         setShowIndustryDropdown(false);
+      }
+      if (subSectorDropdownRef.current && !subSectorDropdownRef.current.contains(e.target as Node)) {
+        setShowSubSectorDropdown(false);
       }
     };
     document.addEventListener("mousedown", handler);
@@ -102,7 +140,6 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
       return;
     }
 
-    // Run inference for EACH industry and merge
     const allActivities = new Set<string>(Array.from(userAddedActivities.current));
     const allDataTypes = new Set<string>(Array.from(userAddedDataTypes.current));
     let highestMaturity = "";
@@ -178,16 +215,17 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
   }, [industries.join(","), ctx.sector]);
 
   const setIndustries = (next: string[]) => {
+    const normalised = next.map(normaliseIndustry);
     onChange({
       ...ctx,
-      industries: next,
-      industry: next[0] || "",
-      sector: "", // reset sub-sector when industries change
+      industries: normalised,
+      industry: normalised[0] || "",
+      sector: "",
     });
   };
 
   const addIndustry = (ind: string) => {
-    const trimmed = ind.trim();
+    const trimmed = normaliseIndustry(ind.trim());
     if (!trimmed || industries.includes(trimmed)) return;
     setIndustries([...industries, trimmed]);
     setCustomIndustryInput("");
@@ -205,8 +243,35 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
     }
   };
 
-  const filteredIndustryOptions = MULTI_INDUSTRY_OPTIONS.filter(
+  const filteredIndustryOptions = CANONICAL_INDUSTRY_LIST.filter(
     (opt) => !industries.includes(opt) && opt.toLowerCase().includes(customIndustryInput.toLowerCase())
+  );
+
+  // Sub-sector handlers
+  const addSubSector = (sub: string) => {
+    const trimmed = sub.trim();
+    if (!trimmed || selectedSubSectors.includes(trimmed)) return;
+    const next = [...selectedSubSectors, trimmed].join(", ");
+    onChange({ ...ctx, sector: next });
+    setCustomSubSectorInput("");
+    setShowSubSectorDropdown(false);
+  };
+
+  const removeSubSector = (sub: string) => {
+    const next = selectedSubSectors.filter(s => s !== sub).join(", ");
+    onChange({ ...ctx, sector: next });
+  };
+
+  const handleSubSectorKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addSubSector(customSubSectorInput);
+    }
+  };
+
+  const filteredSubSectorOptions = subSectorOptions.filter(
+    (opt) => !selectedSubSectors.includes(opt.subSector) &&
+      opt.subSector.toLowerCase().includes(customSubSectorInput.toLowerCase())
   );
 
   const toggleActivity = (act: string) => {
@@ -233,10 +298,15 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
   const addCustomDataType = (value: string) => {
     const trimmed = value.trim();
     if (!trimmed) return;
+    const result = normaliseCustomEntry(trimmed, "personal-data");
+    const finalValue = result.normalised;
     const existing = ctx.personalDataTypes || [];
-    if (existing.includes(trimmed)) return;
-    userAddedDataTypes.current.add(trimmed);
-    onChange({ ...ctx, personalDataTypes: [...existing, trimmed] });
+    if (existing.includes(finalValue)) return;
+    if (result.original !== result.normalised) {
+      toast.success(`Normalised: '${result.original}' → '${result.normalised}' (${result.dpdpReference})`);
+    }
+    userAddedDataTypes.current.add(finalValue);
+    onChange({ ...ctx, personalDataTypes: [...existing, finalValue] });
     setCustomDataTypeInput("");
   };
 
@@ -250,9 +320,14 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
   const addCustomActivity = (value: string) => {
     const trimmed = value.trim();
     if (!trimmed) return;
-    if (ctx.processingActivities.includes(trimmed)) return;
-    userAddedActivities.current.add(trimmed);
-    onChange({ ...ctx, processingActivities: [...ctx.processingActivities, trimmed] });
+    const result = normaliseCustomEntry(trimmed, "processing-activity");
+    const finalValue = result.normalised;
+    if (ctx.processingActivities.includes(finalValue)) return;
+    if (result.original !== result.normalised) {
+      toast.success(`Normalised: '${result.original}' → '${result.normalised}' (${result.dpdpReference})`);
+    }
+    userAddedActivities.current.add(finalValue);
+    onChange({ ...ctx, processingActivities: [...ctx.processingActivities, finalValue] });
     setCustomActivityInput("");
   };
 
@@ -279,6 +354,43 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
   };
 
   const personalDataTypes = ctx.personalDataTypes || [];
+
+  // Check if a data type is sensitive (from normaliser)
+  const isSensitiveDataType = (dt: string): boolean => {
+    const result = normaliseCustomEntry(dt, "personal-data");
+    return result.isSensitive;
+  };
+
+  // Get all catalogue activity labels for determining "extra" activities
+  const catalogueLabels = useMemo(() => new Set(PROCESSING_ACTIVITIES_CATALOGUE.map(pa => pa.label)), []);
+
+  const renderActivityChip = (pa: ProcessingActivity, isActive: boolean) => (
+    <TooltipProvider key={pa.id} delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={() => toggleActivity(pa.label)}
+            className={cn(
+              "px-2.5 py-1.5 rounded-md text-[10px] font-medium border transition-all text-left flex items-center gap-1",
+              isActive
+                ? "bg-primary/15 border-primary/40 text-primary"
+                : "border-border text-foreground/60 hover:border-primary/30",
+              isActive && flashFields.has("processingActivities") &&
+                "animate-in fade-in-0 duration-300"
+            )}
+          >
+            {pa.isSensitive && <span className="inline-block w-2 h-2 rounded-full bg-destructive flex-shrink-0" />}
+            {pa.label}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs text-xs">
+          <p className="font-semibold">{pa.legalBasis}</p>
+          <p className="text-muted-foreground">DPDP: {pa.dpdpSection}</p>
+          {pa.isSensitive && <p className="text-destructive font-medium mt-1">⚠ Sensitive — enhanced obligations apply</p>}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
 
   return (
     <Card>
@@ -440,14 +552,67 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
               </div>
               <div>
                 <label className="text-[11px] font-medium text-muted-foreground mb-1 block">
-                  {industries.length > 1 ? "Primary Sub-Sector (Optional)" : "Sub-Sector"}
+                  Sub-Sector(s)
                 </label>
-                <Input
-                  className="h-8 text-xs"
-                  value={ctx.sector}
-                  onChange={(e) => onChange({ ...ctx, sector: e.target.value })}
-                  placeholder={industries.length > 1 ? "e.g., Retail Banking, SaaS…" : "e.g., SaaS, Retail Banking…"}
-                />
+                <div ref={subSectorDropdownRef} className="relative">
+                  <div className="flex flex-wrap gap-1 min-h-[32px] rounded-md border border-input p-1.5">
+                    {selectedSubSectors.map((sub) => (
+                      <Badge key={sub} variant="secondary" className="text-[9px] gap-1 pr-0.5">
+                        {sub}
+                        <button onClick={() => removeSubSector(sub)} className="ml-0.5 rounded-full hover:bg-destructive/20 p-0.5">
+                          <X className="h-2 w-2" />
+                        </button>
+                      </Badge>
+                    ))}
+                    <Input
+                      className="h-5 text-[10px] border-0 bg-transparent shadow-none focus-visible:ring-0 px-1 flex-1 min-w-[80px]"
+                      value={customSubSectorInput}
+                      onChange={(e) => {
+                        setCustomSubSectorInput(e.target.value);
+                        setShowSubSectorDropdown(true);
+                      }}
+                      onFocus={() => setShowSubSectorDropdown(true)}
+                      onKeyDown={handleSubSectorKeyDown}
+                      placeholder={industries.length === 0 ? "Select industry first" : "Search sub-sectors…"}
+                      disabled={industries.length === 0}
+                    />
+                  </div>
+                  {showSubSectorDropdown && filteredSubSectorOptions.length > 0 && (
+                    <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto rounded-lg border border-border bg-popover shadow-lg">
+                      {industries.length > 1 ? (
+                        // Grouped by industry
+                        industries.map((ind) => {
+                          const items = filteredSubSectorOptions.filter(o => o.industry === ind);
+                          if (items.length === 0) return null;
+                          return (
+                            <div key={ind}>
+                              <div className="px-3 py-1 text-[9px] font-semibold text-muted-foreground bg-muted/50 sticky top-0">{ind}</div>
+                              {items.map((opt) => (
+                                <button
+                                  key={`${ind}-${opt.subSector}`}
+                                  onClick={() => addSubSector(opt.subSector)}
+                                  className="w-full text-left px-3 py-1.5 text-xs hover:bg-accent/50 transition-colors"
+                                >
+                                  {opt.subSector}
+                                </button>
+                              ))}
+                            </div>
+                          );
+                        })
+                      ) : (
+                        filteredSubSectorOptions.map((opt) => (
+                          <button
+                            key={opt.subSector}
+                            onClick={() => addSubSector(opt.subSector)}
+                            className="w-full text-left px-3 py-1.5 text-xs hover:bg-accent/50 transition-colors"
+                          >
+                            {opt.subSector}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -505,6 +670,7 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
                       flashFields.has("personalDataTypes") && "animate-in fade-in-0 zoom-in-95 duration-300"
                     )}
                   >
+                    {isSensitiveDataType(dt) && <span className="inline-block w-2 h-2 rounded-full bg-destructive flex-shrink-0" />}
                     {dt}
                     <button
                       onClick={() => removeDataType(dt)}
@@ -534,7 +700,7 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
               </div>
             </div>
 
-            {/* Processing Activities */}
+            {/* Processing Activities — Redesigned with catalogue */}
             <div>
               <div className="flex items-center gap-2 mb-1.5">
                 <label className="text-[11px] font-medium text-muted-foreground block">
@@ -542,33 +708,41 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
                 </label>
                 <AutoDetectedHint field="processingActivities" extra={industries.length > 1 ? `Auto-detected from ${industries.length} industries` : undefined} />
               </div>
-              <p className="text-[9px] text-muted-foreground mb-2">Select all that apply or type custom activities below — each activates specific legal obligations</p>
-              <div className={cn(
-                "grid grid-cols-2 gap-1.5 transition-all duration-500 rounded-lg",
-                flashFields.has("processingActivities") && "ring-2 ring-primary/40 shadow-[0_0_12px_hsl(var(--primary)/0.15)]"
-              )}>
-                {PROCESSING_ACTIVITIES.map((act) => (
-                  <button
-                    key={act}
-                    onClick={() => toggleActivity(act)}
-                    className={cn(
-                      "px-2.5 py-1.5 rounded-md text-[10px] font-medium border transition-all text-left",
-                      ctx.processingActivities.includes(act)
-                        ? "bg-primary/15 border-primary/40 text-primary"
-                        : "border-border text-foreground/60 hover:border-primary/30",
-                      ctx.processingActivities.includes(act) && flashFields.has("processingActivities") &&
-                        "animate-in fade-in-0 duration-300"
-                    )}
-                  >
-                    {act}
-                  </button>
-                ))}
-              </div>
-              {/* Custom / inferred activities as removable badges */}
-              {ctx.processingActivities.filter((a) => !PROCESSING_ACTIVITIES.includes(a as any)).length > 0 && (
+
+              {/* Recommended for your industry */}
+              {recommended.length > 0 && (
+                <div className="mb-3">
+                  <p className="text-[9px] text-primary font-medium mb-1.5 flex items-center gap-1">
+                    <Sparkles className="h-3 w-3" /> Recommended for your industry
+                  </p>
+                  <div className={cn(
+                    "grid grid-cols-2 gap-1.5 transition-all duration-500 rounded-lg",
+                    flashFields.has("processingActivities") && "ring-2 ring-primary/40 shadow-[0_0_12px_hsl(var(--primary)/0.15)]"
+                  )}>
+                    {recommended.map((pa) => renderActivityChip(pa, ctx.processingActivities.includes(pa.label)))}
+                  </div>
+                </div>
+              )}
+
+              {/* Other Activities */}
+              {other.length > 0 && (
+                <Collapsible>
+                  <CollapsibleTrigger className="text-[9px] text-muted-foreground hover:text-foreground flex items-center gap-1 mb-1.5">
+                    <ChevronDown className="h-3 w-3" /> Other Activities ({other.length})
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {other.map((pa) => renderActivityChip(pa, ctx.processingActivities.includes(pa.label)))}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+
+              {/* Custom / inferred activities not in catalogue */}
+              {ctx.processingActivities.filter((a) => !catalogueLabels.has(a)).length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {ctx.processingActivities
-                    .filter((a) => !PROCESSING_ACTIVITIES.includes(a as any))
+                    .filter((a) => !catalogueLabels.has(a))
                     .map((act) => (
                       <Badge
                         key={act}
@@ -589,6 +763,7 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
                     ))}
                 </div>
               )}
+
               {/* Custom activity input */}
               <div className="mt-2 flex items-center gap-2">
                 <Input
