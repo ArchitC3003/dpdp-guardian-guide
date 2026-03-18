@@ -6,6 +6,8 @@
  * Industry, Jurisdiction, DPDP Classification, AND Document Type selections.
  */
 
+import { normaliseIndustry } from "@/utils/industryNormaliser";
+
 export interface InferenceResult {
   processingActivities: string[];
   personalDataTypes: string[];
@@ -116,15 +118,15 @@ const ARTEFACT_MAP: Record<string, ArtefactMapping> = {
   },
 };
 
-// ── Industry Macro Mapping (existing rules refactored) ─────────────
+// ── Industry Macro Mapping ─────────────────────────────────────
 
 const RULES: Rule[] = [
-  // Healthcare
-  { industry: "HealthTech/Healthcare", geographies: "india-only", sdfClassification: "sdf", result: { processingActivities: ["Health & Medical Data", "Customer Personal Data", "Biometric Data", "Sensitive Personal Data"], personalDataTypes: ["Patient Health Records (EHR)", "Diagnostic Reports", "Insurance Claim Data", "Prescription Data"], maturityLevel: "defined" } },
-  { industry: "HealthTech/Healthcare", geographies: "india-eu", sdfClassification: "sdf", result: { processingActivities: ["Health & Medical Data", "Customer Personal Data", "Biometric Data", "Cross-border Data Transfers", "Sensitive Personal Data"], personalDataTypes: ["Patient Health Records (EHR)", "Genomic Data", "Clinical Trial Data", "Cross-border Patient Data"], maturityLevel: "managed" } },
-  { industry: "HealthTech/Healthcare", geographies: "india-only", sdfClassification: "standard", result: { processingActivities: ["Health & Medical Data", "Customer Personal Data", "Employee/HR Data"], personalDataTypes: ["Patient Records", "Staff HR Data", "Appointment Data"], maturityLevel: "developing" } },
+  // Healthcare/Healthtech
+  { industry: "Healthcare/Healthtech", geographies: "india-only", sdfClassification: "sdf", result: { processingActivities: ["Health & Medical Data", "Customer Personal Data", "Biometric Data", "Sensitive Personal Data"], personalDataTypes: ["Patient Health Records (EHR)", "Diagnostic Reports", "Insurance Claim Data", "Prescription Data"], maturityLevel: "defined" } },
+  { industry: "Healthcare/Healthtech", geographies: "india-eu", sdfClassification: "sdf", result: { processingActivities: ["Health & Medical Data", "Customer Personal Data", "Biometric Data", "Cross-border Data Transfers", "Sensitive Personal Data"], personalDataTypes: ["Patient Health Records (EHR)", "Genomic Data", "Clinical Trial Data", "Cross-border Patient Data"], maturityLevel: "managed" } },
+  { industry: "Healthcare/Healthtech", geographies: "india-only", sdfClassification: "standard", result: { processingActivities: ["Health & Medical Data", "Customer Personal Data", "Employee/HR Data"], personalDataTypes: ["Patient Records", "Staff HR Data", "Appointment Data"], maturityLevel: "developing" } },
 
-  // BFSI / Banking
+  // BFSI/Banking
   { industry: "BFSI/Banking", geographies: "india-only", sdfClassification: "sdf", result: { processingActivities: ["Financial & Payment Data", "Customer Personal Data", "Biometric Data", "Cross-border Data Transfers", "Automated Decision Making"], personalDataTypes: ["KYC Documents", "Transaction Records", "Credit Scores", "Aadhaar/eKYC Data", "Account Details"], maturityLevel: "managed" } },
   { industry: "BFSI/Banking", geographies: "global", sdfClassification: "sdf", result: { processingActivities: ["Financial & Payment Data", "Customer Personal Data", "Biometric Data", "Cross-border Data Transfers", "Automated Decision Making", "Third-Party/Vendor Data"], personalDataTypes: ["KYC Documents", "SWIFT Transaction Data", "Credit Bureau Data", "Payment Card Data", "Wealth Management Records"], maturityLevel: "managed" } },
   { industry: "BFSI/Banking", geographies: "india-only", sdfClassification: "standard", result: { processingActivities: ["Financial & Payment Data", "Customer Personal Data", "Employee/HR Data"], personalDataTypes: ["Customer Account Data", "Basic KYC", "Staff Records"], maturityLevel: "developing" } },
@@ -133,31 +135,49 @@ const RULES: Rule[] = [
   { industry: "Insurance", geographies: "india-only", sdfClassification: "sdf", result: { processingActivities: ["Health & Medical Data", "Financial & Payment Data", "Customer Personal Data", "Sensitive Personal Data", "Automated Decision Making"], personalDataTypes: ["Policyholder Data", "Claims Records", "Medical Underwriting Data", "Agent/Broker Data"], maturityLevel: "managed" } },
   { industry: "Insurance", geographies: "india-only", sdfClassification: "standard", result: { processingActivities: ["Customer Personal Data", "Financial & Payment Data", "Employee/HR Data"], personalDataTypes: ["Policyholder Contact Data", "Premium Records", "Staff HR Data"], maturityLevel: "developing" } },
 
-  // Technology / IT Services
+  // Technology/IT Services
   { industry: "Technology/IT Services", geographies: "global", sdfClassification: "processor", result: { processingActivities: ["Employee/HR Data", "Third-Party/Vendor Data", "Cross-border Data Transfers", "Customer Personal Data"], personalDataTypes: ["Client PII (as Processor)", "Employee Data", "System Logs", "API Access Tokens"], maturityLevel: "defined" } },
   { industry: "Technology/IT Services", geographies: "india-eu", sdfClassification: "processor", result: { processingActivities: ["Employee/HR Data", "Third-Party/Vendor Data", "Cross-border Data Transfers", "Customer Personal Data"], personalDataTypes: ["Client PII (as Processor)", "GDPR Subject Data", "Employee Data", "Cloud Tenant Data"], maturityLevel: "defined" } },
   { industry: "Technology/IT Services", geographies: "india-only", sdfClassification: "sdf", result: { processingActivities: ["Customer Personal Data", "Employee/HR Data", "Automated Decision Making", "Third-Party/Vendor Data", "Cross-border Data Transfers"], personalDataTypes: ["User Account Data", "Behavioural Analytics", "Employee Records", "API/Integration Data"], maturityLevel: "managed" } },
   { industry: "Technology/IT Services", geographies: "india-only", sdfClassification: "standard", result: { processingActivities: ["Customer Personal Data", "Employee/HR Data", "Third-Party/Vendor Data"], personalDataTypes: ["User Contact Data", "Employee HR Data", "Vendor Contact Data"], maturityLevel: "developing" } },
 
-  // EdTech / Education
+  // EdTech/Education
   { industry: "EdTech/Education", geographies: "india-only", sdfClassification: "sdf", result: { processingActivities: ["Children's Data (under 18)", "Customer Personal Data", "Employee/HR Data", "Sensitive Personal Data"], personalDataTypes: ["Student Academic Records", "Parent/Guardian Data", "Learning Analytics", "Proctoring Data"], maturityLevel: "defined" } },
   { industry: "EdTech/Education", geographies: "india-only", sdfClassification: "standard", result: { processingActivities: ["Children's Data (under 18)", "Customer Personal Data", "Employee/HR Data"], personalDataTypes: ["Student Enrollment Data", "Parent Contact Data", "Staff Records"], maturityLevel: "developing" } },
 
   // Telecom
   { industry: "Telecom", geographies: "india-only", sdfClassification: "sdf", result: { processingActivities: ["Customer Personal Data", "Biometric Data", "Automated Decision Making", "Cross-border Data Transfers", "Third-Party/Vendor Data"], personalDataTypes: ["Subscriber Data", "CDR/Call Records", "Location Data", "eKYC/Biometric Data"], maturityLevel: "managed" } },
 
-  // Retail / E-commerce
+  // Retail/E-commerce
   { industry: "Retail/E-commerce", geographies: "india-only", sdfClassification: "sdf", result: { processingActivities: ["Customer Personal Data", "Financial & Payment Data", "Automated Decision Making", "Third-Party/Vendor Data"], personalDataTypes: ["Customer Profiles", "Order/Transaction Data", "Delivery Address Data", "Payment Information"], maturityLevel: "defined" } },
   { industry: "Retail/E-commerce", geographies: "global", sdfClassification: "sdf", result: { processingActivities: ["Customer Personal Data", "Financial & Payment Data", "Automated Decision Making", "Third-Party/Vendor Data", "Cross-border Data Transfers"], personalDataTypes: ["Customer Profiles", "Cross-border Order Data", "Payment Card Data", "Behavioural/Recommendation Data"], maturityLevel: "managed" } },
 
-  // Government / PSU
+  // Government/PSU
   { industry: "Government/PSU", geographies: "india-only", sdfClassification: "sdf", result: { processingActivities: ["Customer Personal Data", "Biometric Data", "Sensitive Personal Data", "Children's Data (under 18)", "Automated Decision Making"], personalDataTypes: ["Citizen Identity Data", "Aadhaar Data", "Beneficiary Records", "Grievance Records"], maturityLevel: "defined" } },
 
   // Manufacturing
   { industry: "Manufacturing", geographies: "india-only", sdfClassification: "standard", result: { processingActivities: ["Employee/HR Data", "Third-Party/Vendor Data", "Customer Personal Data"], personalDataTypes: ["Worker Safety Records", "Contractor Data", "Supply Chain Contact Data"], maturityLevel: "developing" } },
 
-  // Legal / Professional Services
+  // Legal/Professional Services
   { industry: "Legal/Professional Services", geographies: "india-only", sdfClassification: "standard", result: { processingActivities: ["Customer Personal Data", "Sensitive Personal Data", "Employee/HR Data", "Third-Party/Vendor Data"], personalDataTypes: ["Client Case Data", "Privileged Communications", "Witness/Party Data", "Staff Records"], maturityLevel: "defined" } },
+
+  // Hospitality & Travel
+  { industry: "Hospitality & Travel", geographies: "india-only", sdfClassification: "standard", result: { processingActivities: ["Customer Personal Data", "Employee/HR Data", "Third-Party/Vendor Data"], personalDataTypes: ["Guest Registration Data", "Booking Records", "Payment Data", "Loyalty Programme Data"], maturityLevel: "developing" } },
+
+  // Media & Entertainment
+  { industry: "Media & Entertainment", geographies: "india-only", sdfClassification: "standard", result: { processingActivities: ["Customer Personal Data", "Automated Decision Making", "Third-Party/Vendor Data"], personalDataTypes: ["Subscriber Data", "Content Consumption Data", "Advertising Profiles", "User-Generated Content"], maturityLevel: "developing" } },
+
+  // Energy & Utilities
+  { industry: "Energy & Utilities", geographies: "india-only", sdfClassification: "standard", result: { processingActivities: ["Customer Personal Data", "Employee/HR Data", "Third-Party/Vendor Data"], personalDataTypes: ["Consumer Metering Data", "Billing Records", "Service Connection Data", "Smart Grid Data"], maturityLevel: "developing" } },
+
+  // Real Estate & PropTech
+  { industry: "Real Estate & PropTech", geographies: "india-only", sdfClassification: "standard", result: { processingActivities: ["Customer Personal Data", "Financial & Payment Data", "Employee/HR Data"], personalDataTypes: ["Buyer/Tenant KYC Data", "Property Transaction Records", "Aadhaar/PAN for Registration", "Tenant Screening Data"], maturityLevel: "developing" } },
+
+  // Logistics & Supply Chain
+  { industry: "Logistics & Supply Chain", geographies: "india-only", sdfClassification: "standard", result: { processingActivities: ["Customer Personal Data", "Employee/HR Data", "Third-Party/Vendor Data"], personalDataTypes: ["Consignment Tracking Data", "Driver/Fleet Data", "Customer Delivery Data", "Customs Documentation"], maturityLevel: "developing" } },
+
+  // Agriculture & AgriTech
+  { industry: "Agriculture & AgriTech", geographies: "india-only", sdfClassification: "standard", result: { processingActivities: ["Customer Personal Data", "Employee/HR Data"], personalDataTypes: ["Farmer Identity Data", "Land Records", "Subsidy/Scheme Data", "Market Transaction Data"], maturityLevel: "initial" } },
 ];
 
 // ── Fuzzy fallback (unchanged logic) ─────────────────────────────────
@@ -208,7 +228,8 @@ export function inferSmartContext(
   sdfClassification: string,
   documentType?: string
 ): InferenceResult | null {
-  const industryResult = findIndustryMatch(industry, geographies, sdfClassification);
+  const normalisedIndustry = normaliseIndustry(industry);
+  const industryResult = findIndustryMatch(normalisedIndustry, geographies, sdfClassification);
   const artefactResult = documentType ? ARTEFACT_MAP[documentType] : null;
 
   // If neither matched, return null

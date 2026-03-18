@@ -9,6 +9,7 @@
  */
 
 import { OrgContext } from "@/components/policy-builder/orgContextTypes";
+import { normaliseIndustry } from "@/utils/industryNormaliser";
 
 // ── Sector Regulatory Overlay ────────────────────────────────────
 
@@ -84,7 +85,7 @@ const SECTOR_OVERLAYS: Record<string, SectorOverlay> = {
     ],
   },
 
-  "HealthTech/Healthcare": {
+  "Healthcare/Healthtech": {
     regulators: [
       "National Health Authority (NHA)",
       "Central Drugs Standard Control Organisation (CDSCO)",
@@ -339,13 +340,14 @@ export function getSectorOverlay(industry: string | string[]): SectorOverlay | n
   if (Array.isArray(industry)) {
     return getMergedSectorOverlay(industry);
   }
-  return SECTOR_OVERLAYS[industry] || null;
+  const normalised = normaliseIndustry(industry);
+  return SECTOR_OVERLAYS[normalised] || null;
 }
 
 /** Merge overlays from multiple industries — set-union, no duplicates */
 function getMergedSectorOverlay(industries: string[]): SectorOverlay | null {
   const overlays = industries
-    .map((ind) => SECTOR_OVERLAYS[ind])
+    .map((ind) => SECTOR_OVERLAYS[normaliseIndustry(ind)])
     .filter(Boolean) as SectorOverlay[];
   if (overlays.length === 0) return null;
   if (overlays.length === 1) return overlays[0];
