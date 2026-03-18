@@ -85,7 +85,7 @@ const SECTOR_OVERLAYS: Record<string, SectorOverlay> = {
     ],
   },
 
-  "HealthTech/Healthcare": {
+  "Healthcare/Healthtech": {
     regulators: [
       "National Health Authority (NHA)",
       "Central Drugs Standard Control Organisation (CDSCO)",
