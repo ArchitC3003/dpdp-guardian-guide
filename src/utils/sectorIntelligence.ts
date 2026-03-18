@@ -347,7 +347,7 @@ export function getSectorOverlay(industry: string | string[]): SectorOverlay | n
 /** Merge overlays from multiple industries — set-union, no duplicates */
 function getMergedSectorOverlay(industries: string[]): SectorOverlay | null {
   const overlays = industries
-    .map((ind) => SECTOR_OVERLAYS[ind])
+    .map((ind) => SECTOR_OVERLAYS[normaliseIndustry(ind)])
     .filter(Boolean) as SectorOverlay[];
   if (overlays.length === 0) return null;
   if (overlays.length === 1) return overlays[0];
