@@ -340,7 +340,8 @@ export function getSectorOverlay(industry: string | string[]): SectorOverlay | n
   if (Array.isArray(industry)) {
     return getMergedSectorOverlay(industry);
   }
-  return SECTOR_OVERLAYS[industry] || null;
+  const normalised = normaliseIndustry(industry);
+  return SECTOR_OVERLAYS[normalised] || null;
 }
 
 /** Merge overlays from multiple industries — set-union, no duplicates */
