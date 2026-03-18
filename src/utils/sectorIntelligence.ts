@@ -9,6 +9,7 @@
  */
 
 import { OrgContext } from "@/components/policy-builder/orgContextTypes";
+import { normaliseIndustry } from "@/utils/industryNormaliser";
 
 // ── Sector Regulatory Overlay ────────────────────────────────────
 
