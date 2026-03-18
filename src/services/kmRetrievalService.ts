@@ -40,11 +40,12 @@ export function getRegulatorySources(
   industries: string[],
   jurisdictions?: string[]
 ): RegulatorySource[] {
+  const normalisedIndustries = industries.map(normaliseIndustry);
   const seen = new Set<string>();
   return REGULATORY_SOURCE_MAP.filter((src) => {
     const industryMatch =
       src.industryVertical === "All" ||
-      industries.some(
+      normalisedIndustries.some(
         (ind) =>
           ind === src.industryVertical ||
           src.industryVertical.toLowerCase().includes(ind.toLowerCase()) ||
