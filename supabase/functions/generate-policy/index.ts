@@ -24,12 +24,7 @@ RULE 4 — SECTOR-SPECIFIC TAILORING: This is NOT a generic template. You MUST:
   (d) Include ALL applicable breach notification timelines beyond DPDP (e.g., CERT-In 6hr, RBI CSITE, SEBI CSCRF).
   (e) Address sector-specific risk factors (e.g., multi-tenant data isolation for SaaS, patient re-identification for healthcare).
 
-RULE 5 — MATURITY-CALIBRATED LANGUAGE: Match the obligation language and control expectations to the organisation's stated compliance maturity level:
-  - Initial: "shall establish" — foundational controls, manual processes acceptable, 90-day implementation
-  - Developing: "is formalising" — documented processes, automation roadmap, 6-month timeline
-  - Defined: "has established and maintains" — standardised, tool-supported, annual audit cycle
-  - Managed: "monitors and measures effectiveness of" — KPI-driven, continuous monitoring, quarterly metrics
-  - Optimising: "continuously improves" — best-in-class, AI-assisted, proactive regulatory engagement
+RULE 5 — MATURITY-CALIBRATED LANGUAGE: Follow the MATURITY LEVEL calibration block below PRECISELY. The document depth, clause complexity, governance structures, and language register MUST match the specified maturity level. A Level 1 document should look fundamentally different from a Level 5 document — not just in word count but in structural sophistication and governance depth.
 
 RULE 6 — SIZE-APPROPRIATE GOVERNANCE: Scale governance expectations to the organisation size:
   - Startup/SME: Privacy Champion (may be dual-role), external DPO option, proportionate resource allocation
@@ -67,6 +62,75 @@ RULE 10 — PRACTICAL OPERABILITY: Every control statement must be implementable
   Example: "The DPO shall conduct a quarterly review of the consent register to verify that all active processing activities have valid, unexpired consent records. Evidence: Signed quarterly consent audit report [REG-CON-001]."
 
 Format output with clear numbered sections, sub-sections, and professional headings appropriate for an audit-ready compliance document.`;
+
+// ── Maturity Calibration Blocks ──────────────────
+
+const MATURITY_CALIBRATION: Record<string, string> = {
+  "initial": `
+MATURITY LEVEL: INITIAL (Level 1)
+Document calibration rules for Level 1 maturity:
+- Use SIMPLE, clear language — avoid complex legal jargon. Write for a first-time compliance audience.
+- Include only FOUNDATIONAL clauses: basic consent collection, basic data inventory, basic breach notification.
+- Add "PRIORITY ACTION" flags (marked with ⚡) next to the 3-5 most critical items the organisation must implement FIRST.
+- Do NOT include advanced governance structures, DPIA processes, or vendor risk programmes — these are premature for Level 1.
+- Include a "Quick Start Checklist" section at the end with 5-7 immediate action items.
+- Retention schedules should be simplified to basic categories (active/archive/delete).
+- DPO section should focus on appointment basics, not KPI frameworks.
+- Cross-border transfer section should be a basic awareness clause, not a full transfer impact assessment.`,
+
+  "developing": `
+MATURITY LEVEL: DEVELOPING (Level 2)
+Document calibration rules for Level 2 maturity:
+- Use PROFESSIONAL but accessible language — introduce compliance terminology with brief explanations.
+- Include foundational clauses PLUS: formal consent management process, structured data inventory template, incident response procedure with defined roles.
+- Add a "Maturity Roadmap" section suggesting what to implement next to reach Level 3.
+- Include basic vendor/processor agreements but not a full vendor risk programme.
+- Include a basic DSAR (Data Subject Access Request) workflow.
+- Retention schedules should have defined periods per data category.
+- Include basic training requirements (annual awareness training).
+- Cross-border transfers should include basic adequacy checks.`,
+
+  "defined": `
+MATURITY LEVEL: DEFINED (Level 3)
+Document calibration rules for Level 3 maturity:
+- Use FORMAL compliance language appropriate for regulatory submissions.
+- Include ALL standard clauses PLUS: full DPIA (Data Protection Impact Assessment) process with templates, vendor risk assessment programme with scoring criteria, mandatory annual privacy training with role-specific modules.
+- Include a Data Processing Register structure.
+- Include formal data classification scheme (Public/Internal/Confidential/Restricted).
+- Include detailed incident response with severity classification and escalation matrix.
+- Include privacy-by-design checklist for new projects/systems.
+- Retention schedules should include legal hold procedures.
+- Cross-border transfers should include Transfer Impact Assessment framework.
+- Include data processor audit schedule and requirements.`,
+
+  "managed": `
+MATURITY LEVEL: MANAGED (Level 4)
+Document calibration rules for Level 4 maturity:
+- Use PRECISE legal and regulatory language — assume the reader has compliance expertise.
+- Include all Level 3 clauses PLUS: privacy metrics and KPI tracking, automated compliance monitoring references, continuous vendor assessment programme, privacy impact assessment integrated into project lifecycle.
+- Include Data Protection Officer performance metrics and reporting structure.
+- Include privacy risk register with quantitative scoring.
+- Include cross-functional privacy governance committee structure.
+- Include automated DSAR tracking with SLA monitoring.
+- Include data lineage and flow mapping requirements.
+- Breach notification should include regulatory communication templates.
+- Include third-party audit and certification requirements (ISO 27701, SOC 2).`,
+
+  "optimising": `
+MATURITY LEVEL: OPTIMISING (Level 5)
+Document calibration rules for Level 5 maturity:
+- Use BOARDROOM-GRADE governance language — this document should be presentable to a Board of Directors and regulators.
+- Include all Level 4 clauses PLUS: Board-level accountability framework with privacy as a standing Board agenda item, DPO KPI dashboard specification (response times, breach metrics, training completion, DSAR SLA adherence), privacy-by-design integrated into SDLC with gate reviews, regulatory intelligence feed and horizon scanning process.
+- Include privacy programme maturity self-assessment framework.
+- Include benchmarking against industry peers and regulatory expectations.
+- Include advanced analytics on data processing patterns and anomaly detection.
+- Include AI/ML governance framework if applicable to the organisation.
+- Include continuous improvement cycle with quarterly privacy programme reviews.
+- Include regulatory engagement strategy and proactive disclosure protocols.
+- Include privacy culture measurement and employee awareness metrics.
+- Cross-border transfers should include Binding Corporate Rules or equivalent framework.
+- Include digital ethics framework beyond mere legal compliance.`,
+};
 
 // ── Sector Intelligence Helpers (Edge Function) ──────────────────
 
@@ -332,6 +396,41 @@ ${orgName} is classified as a Significant Data Fiduciary. The following ENHANCED
    Personal liability awareness under DPDP Act Sec 33.`;
 }
 
+// ── Structured Business Rules Builder ──────────────────
+
+function buildStructuredBusinessRules(structuredContext: any): string {
+  if (!structuredContext) return "";
+  const rules: string[] = [];
+  rules.push("\n━━━ ABSOLUTE BUSINESS RULES — OVERRIDE GENERIC LANGUAGE ━━━");
+  rules.push("The following are VERIFIED FACTS about this organisation. Use these EXACT values in the relevant document sections. Do NOT use generic placeholders when these facts are provided.\n");
+
+  if (structuredContext.cloudProvider?.trim()) {
+    rules.push(`CLOUD/HOSTING: The organisation uses ${structuredContext.cloudProvider}. In data storage, processor agreements, and data residency sections, reference this specific provider. Include provider-specific security certification references (e.g., SOC 2, ISO 27001 for the named provider).`);
+  }
+
+  if (structuredContext.dsarSla?.trim()) {
+    rules.push(`DSAR SLA: The organisation commits to responding to Data Subject Access Requests within ${structuredContext.dsarSla}. Use this EXACT timeline in all DSAR procedure sections. Generate SLA monitoring and escalation procedures calibrated to this timeline.`);
+  }
+
+  if (structuredContext.breachNotificationSla?.trim()) {
+    rules.push(`BREACH NOTIFICATION SLA: The organisation commits to notifying the Data Protection Board within ${structuredContext.breachNotificationSla} of becoming aware of a breach. Use this EXACT timeline in breach notification procedures. Note: DPDP Act S.8(6) requires notification "as soon as possible" — if the SLA exceeds 72 hours, add a compliance risk note.`);
+  }
+
+  if (structuredContext.paymentProcessors?.trim()) {
+    rules.push(`PAYMENT PROCESSORS: The organisation uses ${structuredContext.paymentProcessors} for payment processing. Reference PCI DSS compliance requirements specific to these processors. Include Data Processing Agreement requirements for each named processor.`);
+  }
+
+  if (structuredContext.childrenDataProcessing === "yes") {
+    rules.push(`CHILDREN'S DATA: This organisation processes children's data. MANDATORY: Include a dedicated Section 9 (DPDP Act) compliance section covering: verifiable parental/guardian consent mechanism, age verification process, prohibition on behavioural monitoring/targeted advertising for children, and specific data minimisation for children's data.`);
+  }
+
+  if (structuredContext.keyThirdPartyVendors?.trim()) {
+    rules.push(`KEY VENDORS: The organisation's key third-party vendors include: ${structuredContext.keyThirdPartyVendors}. In the Data Processor and Third-Party sections, reference these specific vendors. Generate vendor-specific DPA checklists. Include sub-processor notification obligations for each.`);
+  }
+
+  return rules.length > 2 ? rules.join("\n\n") : "";
+}
+
 function sanitisePlaceholders(text: string, context: Record<string, string>): string {
   let result = text;
   const placeholderMap: Record<string, string> = {
@@ -358,7 +457,6 @@ function sanitisePlaceholders(text: string, context: Record<string, string>): st
   return result;
 }
 
-// Also sanitise using dynamic banned phrases from config
 function sanitiseBannedPhrases(text: string, bannedPhrases: string[], context: Record<string, string>): string {
   let result = text;
   for (const phrase of bannedPhrases) {
@@ -381,7 +479,7 @@ serve(async (req) => {
       documentType, frameworks, orgName, industry, industryVerticals, orgSize, maturityLevel,
       userMessage, conversationHistory, sdfClassification, geographies,
       processingActivities, personalDataTypes, sector, dpoName, date,
-      additionalContext,
+      additionalContext, structuredContext,
     } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -472,6 +570,12 @@ serve(async (req) => {
     const sizeIntel = buildSizeCalibration(effectiveSize);
     const sdfIntel = effectiveSdf === "sdf" ? buildSdfOverlay(effectiveOrgName, effectiveDpo) : "";
 
+    // Inject maturity calibration from detailed blocks
+    const maturityBlock = MATURITY_CALIBRATION[effectiveMaturity.toLowerCase()] || MATURITY_CALIBRATION["defined"] || "";
+
+    // Inject structured business rules
+    const structuredRules = buildStructuredBusinessRules(structuredContext);
+
     const userPrompt = `═══ MANDATORY ORGANISATION CONTEXT ═══
 Use these EXACT values throughout the document — do NOT generalise or substitute:
 
@@ -518,6 +622,10 @@ ${maturityIntel}
 ${sizeIntel}
 
 ${sectorIntel}
+
+${maturityBlock}
+
+${structuredRules}
 
 ${sdfIntel}
 

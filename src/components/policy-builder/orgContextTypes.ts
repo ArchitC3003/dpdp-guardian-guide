@@ -1,3 +1,12 @@
+export interface StructuredBusinessContext {
+  cloudProvider?: string;
+  dsarSla?: string;
+  breachNotificationSla?: string;
+  paymentProcessors?: string;
+  childrenDataProcessing?: "yes" | "no" | "";
+  keyThirdPartyVendors?: string;
+}
+
 export interface OrgContext {
   orgName: string;
   /** @deprecated Use industries[] instead */
@@ -13,6 +22,7 @@ export interface OrgContext {
   maturityLevel: string;
   sector: string;
   additionalContext: string;
+  structuredContext?: StructuredBusinessContext;
 }
 
 export const DEFAULT_ORG_CONTEXT: OrgContext = {
@@ -29,6 +39,14 @@ export const DEFAULT_ORG_CONTEXT: OrgContext = {
   maturityLevel: "",
   sector: "",
   additionalContext: "",
+  structuredContext: {
+    cloudProvider: "",
+    dsarSla: "",
+    breachNotificationSla: "",
+    paymentProcessors: "",
+    childrenDataProcessing: "",
+    keyThirdPartyVendors: "",
+  },
 };
 
 export const INDUSTRY_OPTIONS = [
@@ -145,19 +163,54 @@ export const MATURITY_OPTIONS = [
   { value: "optimising", label: "Optimising" },
 ] as const;
 
+// ── Quality Score System ──
+
+export interface FieldQualityItem {
+  fieldName: string;
+  label: string;
+  weight: number;
+  filled: boolean;
+  impact: string;
+  sectionRef?: string;
+}
+
+function hasAnyStructuredContext(sc?: StructuredBusinessContext): boolean {
+  if (!sc) return false;
+  return !!(sc.cloudProvider?.trim() || sc.dsarSla?.trim() || sc.breachNotificationSla?.trim() || sc.paymentProcessors?.trim() || sc.childrenDataProcessing || sc.keyThirdPartyVendors?.trim());
+}
+
+export function getOrgProfileQualityScore(ctx: OrgContext, docType?: string): {
+  score: number;
+  maxScore: number;
+  percentage: number;
+  colour: "red" | "amber" | "green";
+  fields: FieldQualityItem[];
+} {
+  const fields: FieldQualityItem[] = [
+    { fieldName: "orgName", label: "Organisation Name", weight: 10, filled: !!ctx.orgName?.trim(), impact: "Document header and all references will show placeholder text", sectionRef: "org-basics" },
+    { fieldName: "industries", label: "Industry Selection", weight: 15, filled: ctx.industries?.length > 0, impact: "No sector-specific clauses, regulatory references, or data type recommendations", sectionRef: "org-industry" },
+    { fieldName: "sector", label: "Sub-Sector", weight: 10, filled: !!ctx.sector?.trim(), impact: "Generic instead of sub-sector-specific processing activities and risk factors", sectionRef: "org-subsector" },
+    { fieldName: "orgSize", label: "Organisation Size", weight: 5, filled: !!ctx.orgSize, impact: "Governance structure and DPO requirements won't be calibrated to org scale", sectionRef: "org-basics" },
+    { fieldName: "dpoName", label: "DPO / Contact Name", weight: 5, filled: !!ctx.dpoName?.trim(), impact: "Contact sections will have placeholder names requiring manual replacement", sectionRef: "org-basics" },
+    { fieldName: "geographies", label: "Operating Geographies", weight: 8, filled: !!ctx.geographies?.trim(), impact: "Cross-border transfer clauses and jurisdiction-specific requirements will be missing", sectionRef: "org-geography" },
+    { fieldName: "sdfClassification", label: "SDF Classification", weight: 5, filled: !!ctx.sdfClassification, impact: "Significant Data Fiduciary obligations may not be included if applicable", sectionRef: "org-classification" },
+    { fieldName: "processingActivities", label: "Processing Activities", weight: 15, filled: ctx.processingActivities?.length > 0, impact: "No legal basis mapping, no activity-specific clauses in the document", sectionRef: "org-activities" },
+    { fieldName: "personalDataTypes", label: "Personal Data Types", weight: 10, filled: ctx.personalDataTypes?.length > 0, impact: "Data inventory section will be generic with no sensitivity classification", sectionRef: "org-datatypes" },
+    { fieldName: "maturityLevel", label: "Compliance Maturity", weight: 7, filled: !!ctx.maturityLevel, impact: "Document depth and governance complexity won't match your actual maturity stage", sectionRef: "org-maturity" },
+    { fieldName: "structuredContext", label: "Quick Business Facts", weight: 8, filled: hasAnyStructuredContext(ctx.structuredContext), impact: "No organisation-specific SLAs, vendor names, or cloud provider references in the document", sectionRef: "org-structured-context" },
+    { fieldName: "additionalContext", label: "Business Context", weight: 10, filled: !!(ctx.additionalContext || "").trim(), impact: "No organisation-specific facts, vendor names, or SLA timelines in the document", sectionRef: "org-context" },
+  ];
+
+  const score = fields.filter(f => f.filled).reduce((sum, f) => sum + f.weight, 0);
+  const maxScore = fields.reduce((sum, f) => sum + f.weight, 0);
+  const percentage = Math.round((score / maxScore) * 100);
+  const colour = percentage >= 75 ? "green" : percentage >= 40 ? "amber" : "red";
+
+  return { score, maxScore, percentage, colour, fields };
+}
+
+/** @deprecated Use getOrgProfileQualityScore instead */
 export function getOrgProfileCompleteness(ctx: OrgContext): { filled: number; total: number } {
-  const total = 11;
-  let filled = 0;
-  if (ctx.orgName.trim()) filled++;
-  if ((ctx.industries && ctx.industries.length > 0) || ctx.industry) filled++;
-  if (ctx.dpoName.trim()) filled++;
-  if (ctx.date) filled++;
-  if (ctx.orgSize) filled++;
-  if (ctx.sdfClassification) filled++;
-  if (ctx.geographies) filled++;
-  if (ctx.processingActivities.length > 0) filled++;
-  if (ctx.maturityLevel) filled++;
-  if (ctx.sector) filled++;
-  if ((ctx.additionalContext || "").trim()) filled++;
-  return { filled, total };
+  const { fields } = getOrgProfileQualityScore(ctx);
+  return { filled: fields.filter(f => f.filled).length, total: fields.length };
 }

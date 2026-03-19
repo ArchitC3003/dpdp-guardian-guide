@@ -4,6 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import {
   Collapsible,
   CollapsibleContent,
@@ -15,7 +17,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Building2, ChevronDown, Sparkles, X, Plus, AlertCircle } from "lucide-react";
+import { Building2, ChevronDown, Sparkles, X, Plus, AlertCircle, ClipboardList, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   OrgContext,
@@ -26,8 +28,9 @@ import {
   GEOGRAPHY_OPTIONS,
   PROCESSING_ACTIVITIES_CATALOGUE,
   MATURITY_OPTIONS,
-  getOrgProfileCompleteness,
+  getOrgProfileQualityScore,
   type ProcessingActivity,
+  type StructuredBusinessContext,
 } from "./orgContextTypes";
 import { inferSmartContext } from "@/utils/smartContextEngine";
 import { normaliseIndustry } from "@/utils/industryNormaliser";
@@ -35,6 +38,7 @@ import { normaliseCustomEntry } from "@/utils/customEntryNormaliser";
 import { KMSourcesPanel } from "@/components/km/KMSourcesPanel";
 import { SectorInsightsPanel } from "@/components/km/SectorInsightsPanel";
 import { getKMContext, type KMContext } from "@/services/kmRetrievalService";
+import { getPersonalDataForIndustries } from "@/data/industryPersonalDataMap";
 import { toast } from "sonner";
 
 const CANONICAL_INDUSTRY_LIST = [...INDUSTRY_OPTIONS];
@@ -46,6 +50,13 @@ const MATURITY_RANK: Record<string, number> = {
   managed: 3,
   optimising: 4,
 };
+
+const SENSITIVE_KEYWORDS = ["biometric", "health", "genetic", "children", "aadhaar", "disability", "mental", "child"];
+
+type DataSource = "static" | "ai" | "manual";
+
+const DSAR_SLA_OPTIONS = ["24 hours", "48 hours", "72 hours", "7 days", "14 days", "30 days"];
+const BREACH_SLA_OPTIONS = ["6 hours", "12 hours", "24 hours", "48 hours", "72 hours (DPDP Maximum)"];
 
 interface Props {
   ctx: OrgContext;
@@ -66,16 +77,27 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
   const [showSubSectorDropdown, setShowSubSectorDropdown] = useState(false);
   const [kmContext, setKmContext] = useState<KMContext | null>(null);
   const [kmLoading, setKmLoading] = useState(false);
+  const [personalDataSources, setPersonalDataSources] = useState<Record<string, DataSource>>({});
+  const [nudgeOpen, setNudgeOpen] = useState(false);
+  const [highlightSection, setHighlightSection] = useState<string | null>(null);
   const prevTriggerRef = useRef<string>("");
   const kmTriggerRef = useRef<string>("");
+  const docTypeTriggerRef = useRef<string>("");
   const userAddedActivities = useRef<Set<string>>(new Set());
   const userAddedDataTypes = useRef<Set<string>>(new Set());
   const industryDropdownRef = useRef<HTMLDivElement>(null);
   const subSectorDropdownRef = useRef<HTMLDivElement>(null);
-  const { filled, total } = getOrgProfileCompleteness(ctx);
-  const pct = Math.round((filled / total) * 100);
 
   const industries = (ctx.industries || (ctx.industry ? [ctx.industry] : [])).map(normaliseIndustry);
+
+  // Quality score
+  const qualityScore = useMemo(() => getOrgProfileQualityScore(ctx, documentType), [ctx, documentType]);
+
+  const progressColour = qualityScore.colour === "green"
+    ? "bg-emerald-500"
+    : qualityScore.colour === "amber"
+      ? "bg-amber-500"
+      : "bg-destructive";
 
   // Derive sub-sector options from selected industries
   const subSectorOptions = useMemo(() => {
@@ -83,7 +105,6 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
     if (industries.length === 1) {
       return (SECTOR_MAP[industries[0]] || []).map(s => ({ industry: industries[0], subSector: s }));
     }
-    // Multiple industries: grouped
     const result: { industry: string; subSector: string }[] = [];
     for (const ind of industries) {
       const subs = SECTOR_MAP[ind] || [];
@@ -96,7 +117,6 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
     return result;
   }, [industries.join(",")]);
 
-  // Parse sector as array of sub-sectors
   const selectedSubSectors = useMemo(() => {
     if (!ctx.sector) return [];
     return ctx.sector.split(",").map(s => s.trim()).filter(Boolean);
@@ -187,6 +207,108 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [industries.join(","), ctx.geographies, ctx.sdfClassification, documentType]);
 
+  // Phase 1: Auto-populate personal data from static map on industry/sector change
+  useEffect(() => {
+    if (industries.length === 0) return;
+    const triggerKey = `static|${industries.join(",")}|${ctx.sector}`;
+    if (triggerKey === prevTriggerRef.current + "_static") return;
+    prevTriggerRef.current = prevTriggerRef.current.split("_static")[0] + "_static";
+
+    const staticTypes = getPersonalDataForIndustries(industries);
+    const existing = ctx.personalDataTypes || [];
+    const manualItems = Array.from(userAddedDataTypes.current);
+
+    // Merge: keep manual, add static, dedup
+    const merged = new Set<string>([...manualItems, ...existing]);
+    const newSources = { ...personalDataSources };
+    let addedCount = 0;
+
+    for (const dt of staticTypes) {
+      if (!merged.has(dt)) {
+        merged.add(dt);
+        addedCount++;
+      }
+      if (!newSources[dt]) {
+        newSources[dt] = "static";
+      }
+    }
+    // Preserve manual sources
+    for (const m of manualItems) {
+      newSources[m] = "manual";
+    }
+
+    if (addedCount > 0 || staticTypes.length > 0) {
+      setPersonalDataSources(newSources);
+      onChange({ ...ctx, personalDataTypes: Array.from(merged) });
+    }
+
+    // Background KM AI enrichment
+    const enrichAsync = async () => {
+      try {
+        const kmResult = await getKMContext(industries, ctx.sector, "policy-gen");
+        if (kmResult?.personalDataTypes?.length) {
+          const currentTypes = new Set(ctx.personalDataTypes || []);
+          const currentSources = { ...personalDataSources };
+          let aiAdded = 0;
+          for (const dt of kmResult.personalDataTypes) {
+            if (!currentTypes.has(dt)) {
+              currentTypes.add(dt);
+              aiAdded++;
+            }
+            if (!currentSources[dt]) {
+              currentSources[dt] = "ai";
+            }
+          }
+          if (aiAdded > 0) {
+            setPersonalDataSources(currentSources);
+            onChange({ ...ctx, personalDataTypes: Array.from(currentTypes) });
+          }
+        }
+      } catch {
+        // Graceful — AI enrichment is optional
+      }
+    };
+    const timer = setTimeout(enrichAsync, 2000);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [industries.join(","), ctx.sector]);
+
+  // Phase 2: Doc-type-specific enrichment
+  useEffect(() => {
+    if (!documentType || industries.length === 0) return;
+    const triggerKey = `doctype|${documentType}|${industries.join(",")}`;
+    if (triggerKey === docTypeTriggerRef.current) return;
+    docTypeTriggerRef.current = triggerKey;
+
+    const enrichAsync = async () => {
+      try {
+        const kmResult = await getKMContext(industries, ctx.sector, "policy-gen");
+        if (kmResult?.personalDataTypes?.length) {
+          const currentTypes = new Set(ctx.personalDataTypes || []);
+          const currentSources = { ...personalDataSources };
+          let added = 0;
+          for (const dt of kmResult.personalDataTypes) {
+            if (!currentTypes.has(dt)) {
+              currentTypes.add(dt);
+              currentSources[dt] = "ai";
+              added++;
+            }
+          }
+          if (added > 0) {
+            setPersonalDataSources(currentSources);
+            onChange({ ...ctx, personalDataTypes: Array.from(currentTypes) });
+            toast.success(`Added ${added} additional data types for ${documentType}`);
+          }
+        }
+      } catch {
+        // Graceful
+      }
+    };
+    const timer = setTimeout(enrichAsync, 1500);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [documentType, industries.join(",")]);
+
   // KM Context fetch — debounced on industry/subSector change
   const fetchKMContext = useCallback(async () => {
     if (industries.length === 0) {
@@ -198,7 +320,7 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
       const result = await getKMContext(industries, ctx.sector, "policy-gen");
       setKmContext(result);
     } catch {
-      // Graceful degradation — KM layer is optional
+      // Graceful degradation
     } finally {
       setKmLoading(false);
     }
@@ -213,6 +335,21 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [industries.join(","), ctx.sector]);
+
+  // Highlight pulse animation
+  useEffect(() => {
+    if (!highlightSection) return;
+    const timer = setTimeout(() => setHighlightSection(null), 1500);
+    return () => clearTimeout(timer);
+  }, [highlightSection]);
+
+  const scrollToSection = (sectionRef: string) => {
+    const el = document.getElementById(sectionRef);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      setHighlightSection(sectionRef);
+    }
+  };
 
   const setIndustries = (next: string[]) => {
     const normalised = next.map(normaliseIndustry);
@@ -247,7 +384,6 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
     (opt) => !industries.includes(opt) && opt.toLowerCase().includes(customIndustryInput.toLowerCase())
   );
 
-  // Sub-sector handlers
   const addSubSector = (sub: string) => {
     const trimmed = sub.trim();
     if (!trimmed || selectedSubSectors.includes(trimmed)) return;
@@ -292,6 +428,9 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
 
   const removeDataType = (dt: string) => {
     userAddedDataTypes.current.delete(dt);
+    const newSources = { ...personalDataSources };
+    delete newSources[dt];
+    setPersonalDataSources(newSources);
     onChange({ ...ctx, personalDataTypes: (ctx.personalDataTypes || []).filter((d) => d !== dt) });
   };
 
@@ -306,6 +445,7 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
       toast.success(`Normalised: '${result.original}' → '${result.normalised}' (${result.dpdpReference})`);
     }
     userAddedDataTypes.current.add(finalValue);
+    setPersonalDataSources(prev => ({ ...prev, [finalValue]: "manual" }));
     onChange({ ...ctx, personalDataTypes: [...existing, finalValue] });
     setCustomDataTypeInput("");
   };
@@ -343,6 +483,13 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
     onChange({ ...ctx, maturityLevel: value });
   };
 
+  const updateStructuredContext = (field: keyof StructuredBusinessContext, value: string) => {
+    onChange({
+      ...ctx,
+      structuredContext: { ...(ctx.structuredContext || {}), [field]: value },
+    });
+  };
+
   const AutoDetectedHint = ({ field, extra }: { field: string; extra?: string }) => {
     if (!autoFilledFields.has(field)) return null;
     return (
@@ -355,14 +502,37 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
 
   const personalDataTypes = ctx.personalDataTypes || [];
 
-  // Check if a data type is sensitive (from normaliser)
   const isSensitiveDataType = (dt: string): boolean => {
+    const lower = dt.toLowerCase();
+    if (SENSITIVE_KEYWORDS.some(kw => lower.includes(kw))) return true;
     const result = normaliseCustomEntry(dt, "personal-data");
     return result.isSensitive;
   };
 
-  // Get all catalogue activity labels for determining "extra" activities
+  const getSourceBadge = (dt: string) => {
+    const source = personalDataSources[dt];
+    if (source === "ai") return <span className="text-[7px] px-1 py-0 rounded bg-purple-500/20 text-purple-700 dark:text-purple-300 font-semibold">✨ AI</span>;
+    if (source === "manual") return <span className="text-[7px] px-1 py-0 rounded bg-blue-500/20 text-blue-700 dark:text-blue-300 font-semibold">✏️</span>;
+    return <span className="text-[7px] px-1 py-0 rounded bg-muted text-muted-foreground font-semibold">KB</span>;
+  };
+
   const catalogueLabels = useMemo(() => new Set(PROCESSING_ACTIVITIES_CATALOGUE.map(pa => pa.label)), []);
+
+  const ClauseImpactTooltip = ({ text }: { text: string }) => (
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button type="button" className="inline-flex items-center text-muted-foreground hover:text-primary transition-colors">
+            <ClipboardList className="h-3 w-3" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs text-xs">
+          <p className="font-medium">📋 Clause Impact</p>
+          <p className="text-muted-foreground">{text}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
 
   const renderActivityChip = (pa: ProcessingActivity, isActive: boolean) => (
     <TooltipProvider key={pa.id} delayDuration={200}>
@@ -392,6 +562,13 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
     </TooltipProvider>
   );
 
+  const sectionClass = (id: string) => cn(
+    "transition-all duration-500",
+    highlightSection === id && "ring-2 ring-primary/50 rounded-lg shadow-[0_0_16px_hsl(var(--primary)/0.2)] p-2 -m-2"
+  );
+
+  const sc = ctx.structuredContext || {};
+
   return (
     <Card>
       <Collapsible open={open} onOpenChange={setOpen}>
@@ -400,30 +577,70 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <Building2 className="h-4 w-4 text-primary" /> Organisation Profile
-                <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-primary/30 text-primary">
-                  {filled}/{total} fields
-                </Badge>
+                <span className={cn(
+                  "text-[10px] font-bold px-1.5 py-0.5 rounded",
+                  qualityScore.colour === "green" ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" :
+                  qualityScore.colour === "amber" ? "bg-amber-500/15 text-amber-700 dark:text-amber-400" :
+                  "bg-destructive/15 text-destructive"
+                )}>
+                  {qualityScore.percentage}%
+                </span>
               </CardTitle>
               <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", open && "rotate-180")} />
             </div>
-            <Progress value={pct} className="h-1.5 mt-2" />
-            {filled < total && (
+            <div className="relative h-1.5 mt-2 rounded-full bg-secondary overflow-hidden">
+              <div
+                className={cn("h-full rounded-full transition-all duration-700 ease-out", progressColour)}
+                style={{ width: `${qualityScore.percentage}%` }}
+              />
+            </div>
+            {qualityScore.percentage < 100 && (
               <p className="text-[9px] text-muted-foreground mt-1">
-                Add {total - filled} more field{total - filled > 1 ? "s" : ""} for higher quality output
+                Quality Score: {qualityScore.percentage}% — {qualityScore.fields.filter(f => !f.filled).length} field{qualityScore.fields.filter(f => !f.filled).length > 1 ? "s" : ""} can improve output
               </p>
             )}
           </CardHeader>
         </CollapsibleTrigger>
         <CollapsibleContent>
           <CardContent className="px-5 pb-4 space-y-4">
+            {/* Quality nudge panel */}
+            {qualityScore.fields.some(f => !f.filled) && (
+              <Collapsible open={nudgeOpen} onOpenChange={setNudgeOpen}>
+                <CollapsibleTrigger className="w-full text-left">
+                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground hover:text-foreground transition-colors py-1">
+                    <Info className="h-3 w-3" />
+                    <span>Improve your document quality</span>
+                    <ChevronDown className={cn("h-3 w-3 transition-transform", nudgeOpen && "rotate-180")} />
+                  </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="space-y-1 mt-1 mb-3 pl-1">
+                    {qualityScore.fields.filter(f => !f.filled).map(f => (
+                      <button
+                        key={f.fieldName}
+                        onClick={() => f.sectionRef && scrollToSection(f.sectionRef)}
+                        className="w-full text-left flex items-start gap-2 py-1.5 px-2 rounded hover:bg-accent/50 transition-colors group"
+                      >
+                        <AlertCircle className="h-3 w-3 text-amber-500 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-[10px] font-medium text-foreground group-hover:text-primary transition-colors">{f.label}</p>
+                          <p className="text-[9px] text-muted-foreground">{f.impact}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
+
             {/* Row 1: Name */}
-            <div>
+            <div id="org-basics" className={sectionClass("org-basics")}>
               <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Organisation Name *</label>
               <Input className="h-8 text-xs" value={ctx.orgName} onChange={(e) => onChange({ ...ctx, orgName: e.target.value })} placeholder="Acme Corp" />
             </div>
 
             {/* Industry — Multi-select tag input */}
-            <div>
+            <div id="org-industry" className={sectionClass("org-industry")}>
               <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Industry Verticals</label>
               <p className="text-[9px] text-muted-foreground mb-2">Select multiple industries — the engine merges regulatory overlays from all selected</p>
               <div
@@ -471,7 +688,6 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
                     )}
                   </div>
                 </div>
-                {/* Dropdown */}
                 {showIndustryDropdown && filteredIndustryOptions.length > 0 && (
                   <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto rounded-lg border border-border bg-popover shadow-lg">
                     {filteredIndustryOptions.map((opt) => (
@@ -488,7 +704,7 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
               </div>
             </div>
 
-            {/* KM Sources Panel — below industry selection */}
+            {/* KM Sources Panel */}
             <KMSourcesPanel kmContext={kmContext} loading={kmLoading} />
 
             {/* Row 2: DPO + Date */}
@@ -519,7 +735,7 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
                 </select>
                 <p className="text-[9px] text-muted-foreground mt-0.5">Scales obligation language to your size</p>
               </div>
-              <div>
+              <div id="org-classification" className={sectionClass("org-classification")}>
                 <label className="text-[11px] font-medium text-muted-foreground mb-1 block">DPDP Classification</label>
                 <select
                   className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -537,7 +753,7 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
 
             {/* Row 4: Geographies + Sub-Sector */}
             <div className="grid grid-cols-2 gap-3">
-              <div>
+              <div id="org-geography" className={sectionClass("org-geography")}>
                 <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Applicable Jurisdictions</label>
                 <select
                   className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -550,7 +766,7 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
                   ))}
                 </select>
               </div>
-              <div>
+              <div id="org-subsector" className={sectionClass("org-subsector")}>
                 <label className="text-[11px] font-medium text-muted-foreground mb-1 block">
                   Sub-Sector(s)
                 </label>
@@ -580,7 +796,6 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
                   {showSubSectorDropdown && filteredSubSectorOptions.length > 0 && (
                     <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto rounded-lg border border-border bg-popover shadow-lg">
                       {industries.length > 1 ? (
-                        // Grouped by industry
                         industries.map((ind) => {
                           const items = filteredSubSectorOptions.filter(o => o.industry === ind);
                           if (items.length === 0) return null;
@@ -616,11 +831,11 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
               </div>
             </div>
 
-            {/* Sector Insights Panel — below sub-sector input */}
+            {/* Sector Insights Panel */}
             <SectorInsightsPanel kmContext={kmContext} loading={kmLoading} onRegenerate={fetchKMContext} />
 
             {/* Row 5: Maturity */}
-            <div>
+            <div id="org-maturity" className={sectionClass("org-maturity")}>
               <div className="flex items-center gap-2 mb-1">
                 <label className="text-[11px] font-medium text-muted-foreground block">Compliance Maturity</label>
                 <AutoDetectedHint field="maturityLevel" extra={industries.length > 1 ? `Highest maturity from ${industries.length} industries` : undefined} />
@@ -645,21 +860,21 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
               </div>
             </div>
 
-            {/* Types of Personal Data — dynamically populated */}
-            <div>
+            {/* Types of Personal Data */}
+            <div id="org-datatypes" className={sectionClass("org-datatypes")}>
               <div className="flex items-center gap-2 mb-1.5">
                 <label className="text-[11px] font-medium text-muted-foreground block">
                   Types of Personal Data
                 </label>
                 <AutoDetectedHint field="personalDataTypes" extra={industries.length > 1 ? `Auto-detected from ${industries.length} industries` : undefined} />
               </div>
-              <p className="text-[9px] text-muted-foreground mb-2">Auto-tailored to your document type & industry — type and press Enter to add custom tags</p>
+              <p className="text-[9px] text-muted-foreground mb-2">Auto-populated from industry knowledge base & AI — type and press Enter to add custom tags</p>
               <div className={cn(
                 "flex flex-wrap gap-1.5 min-h-[32px] rounded-lg border border-border p-2 transition-all duration-500",
                 flashFields.has("personalDataTypes") && "ring-2 ring-primary/40 shadow-[0_0_12px_hsl(var(--primary)/0.15)] border-primary/50"
               )}>
                 {personalDataTypes.length === 0 && !customDataTypeInput && (
-                  <span className="text-[10px] text-muted-foreground italic">Select a document type & industry to auto-populate</span>
+                  <span className="text-[10px] text-muted-foreground italic">Select an industry to auto-populate</span>
                 )}
                 {personalDataTypes.map((dt) => (
                   <Badge
@@ -671,6 +886,7 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
                     )}
                   >
                     {isSensitiveDataType(dt) && <span className="inline-block w-2 h-2 rounded-full bg-destructive flex-shrink-0" />}
+                    {getSourceBadge(dt)}
                     {dt}
                     <button
                       onClick={() => removeDataType(dt)}
@@ -700,8 +916,8 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
               </div>
             </div>
 
-            {/* Processing Activities — Redesigned with catalogue */}
-            <div>
+            {/* Processing Activities */}
+            <div id="org-activities" className={sectionClass("org-activities")}>
               <div className="flex items-center gap-2 mb-1.5">
                 <label className="text-[11px] font-medium text-muted-foreground block">
                   Processing Activities
@@ -709,7 +925,6 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
                 <AutoDetectedHint field="processingActivities" extra={industries.length > 1 ? `Auto-detected from ${industries.length} industries` : undefined} />
               </div>
 
-              {/* Recommended for your industry */}
               {recommended.length > 0 && (
                 <div className="mb-3">
                   <p className="text-[9px] text-primary font-medium mb-1.5 flex items-center gap-1">
@@ -724,7 +939,6 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
                 </div>
               )}
 
-              {/* Other Activities */}
               {other.length > 0 && (
                 <Collapsible>
                   <CollapsibleTrigger className="text-[9px] text-muted-foreground hover:text-foreground flex items-center gap-1 mb-1.5">
@@ -738,7 +952,6 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
                 </Collapsible>
               )}
 
-              {/* Custom / inferred activities not in catalogue */}
               {ctx.processingActivities.filter((a) => !catalogueLabels.has(a)).length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {ctx.processingActivities
@@ -764,7 +977,6 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
                 </div>
               )}
 
-              {/* Custom activity input */}
               <div className="mt-2 flex items-center gap-2">
                 <Input
                   className="h-7 text-[10px] flex-1"
@@ -784,8 +996,113 @@ export default function OrgProfileForm({ ctx, onChange, compact = false, documen
               </div>
             </div>
 
+            {/* Quick Business Facts */}
+            <div id="org-structured-context" className={sectionClass("org-structured-context")}>
+              <label className="text-[11px] font-semibold text-foreground mb-2 block">Quick Business Facts</label>
+              <p className="text-[9px] text-muted-foreground mb-3">These facts are injected as absolute business rules into the generated document</p>
+
+              <div className="space-y-3">
+                {/* Cloud Provider */}
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <label className="text-[10px] font-medium text-muted-foreground">Cloud/Hosting Provider</label>
+                    <ClauseImpactTooltip text="Generates specific data residency clauses, processor agreement requirements, and cloud security obligations" />
+                  </div>
+                  <Input
+                    className="h-7 text-xs"
+                    value={sc.cloudProvider || ""}
+                    onChange={(e) => updateStructuredContext("cloudProvider", e.target.value)}
+                    placeholder="e.g., AWS, Azure, GCP, On-Premise"
+                  />
+                </div>
+
+                {/* DSAR + Breach SLA */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <label className="text-[10px] font-medium text-muted-foreground">DSAR Response SLA</label>
+                      <ClauseImpactTooltip text="Sets the committed response timeline in DSAR procedures and generates SLA monitoring clauses" />
+                    </div>
+                    <select
+                      className="flex h-7 w-full rounded-md border border-input bg-background px-2 py-1 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      value={sc.dsarSla || ""}
+                      onChange={(e) => updateStructuredContext("dsarSla", e.target.value)}
+                    >
+                      <option value="">Select SLA</option>
+                      {DSAR_SLA_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <label className="text-[10px] font-medium text-muted-foreground">Breach Notification SLA</label>
+                      <ClauseImpactTooltip text="Defines breach notification timeline to DPB and affected data principals under S.8(6)" />
+                    </div>
+                    <select
+                      className="flex h-7 w-full rounded-md border border-input bg-background px-2 py-1 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      value={sc.breachNotificationSla || ""}
+                      onChange={(e) => updateStructuredContext("breachNotificationSla", e.target.value)}
+                    >
+                      <option value="">Select SLA</option>
+                      {BREACH_SLA_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Payment Processors */}
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <label className="text-[10px] font-medium text-muted-foreground">Payment Processors</label>
+                    <ClauseImpactTooltip text="Generates PCI DSS references, payment data handling clauses, and processor-specific DPA requirements" />
+                  </div>
+                  <Input
+                    className="h-7 text-xs"
+                    value={sc.paymentProcessors || ""}
+                    onChange={(e) => updateStructuredContext("paymentProcessors", e.target.value)}
+                    placeholder="e.g., Razorpay, Stripe, PayU, CCAvenue"
+                  />
+                </div>
+
+                {/* Children's Data */}
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <label className="text-[10px] font-medium text-muted-foreground">Children's Data Processing</label>
+                    <ClauseImpactTooltip text="Triggers Section 9 obligations: verifiable parental consent, age verification, and children's data protection clauses" />
+                  </div>
+                  <RadioGroup
+                    value={sc.childrenDataProcessing || ""}
+                    onValueChange={(v) => updateStructuredContext("childrenDataProcessing", v)}
+                    className="flex gap-4"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <RadioGroupItem value="yes" id="children-yes" className="h-3 w-3" />
+                      <Label htmlFor="children-yes" className="text-[10px]">Yes</Label>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <RadioGroupItem value="no" id="children-no" className="h-3 w-3" />
+                      <Label htmlFor="children-no" className="text-[10px]">No</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                {/* Key Vendors */}
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <label className="text-[10px] font-medium text-muted-foreground">Key Third-Party Vendors</label>
+                    <ClauseImpactTooltip text="Generates vendor-specific DPA requirements, sub-processor lists, and third-party risk clauses" />
+                  </div>
+                  <Textarea
+                    className="text-xs min-h-[48px] resize-y"
+                    rows={2}
+                    value={sc.keyThirdPartyVendors || ""}
+                    onChange={(e) => updateStructuredContext("keyThirdPartyVendors", e.target.value)}
+                    placeholder="e.g., Salesforce (CRM), Freshworks (Support), AWS (Hosting)"
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Additional Business Context */}
-            <div>
+            <div id="org-context" className={sectionClass("org-context")}>
               <label className="text-[11px] font-medium text-muted-foreground mb-1 block">
                 Additional Business Context & Instructions (Optional)
               </label>

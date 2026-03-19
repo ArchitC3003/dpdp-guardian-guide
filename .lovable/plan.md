@@ -1,88 +1,71 @@
 
 
-## Implementation Plan: Auto-Population Pipeline, Quality Score, Maturity Calibration & Structured Business Context
+# Implementation Plan: 4 Changes to PrivcybHub
 
-### Overview
-Seven changes across 3 files (2 new, 3 modified). No breaking changes to existing UI or edge functions beyond additive prompt injection.
+## Change 1 -- Replace Shield with Cog Icon
 
----
+**Files:** `src/components/AppSidebar.tsx`, `src/pages/Auth.tsx`, `src/pages/ProfileSetup.tsx`
 
-### 1. Create `src/data/industryPersonalDataMap.ts` (new file)
-- Export `INDUSTRY_PERSONAL_DATA_MAP: Record<string, string[]>` with all 17 industries
-- Export `getPersonalDataForIndustries(industries: string[]): string[]` helper
+- In `AppSidebar.tsx`: Replace `Shield` import with `Cog`, replace `<Shield>` JSX with `<Cog>`
+- In `Auth.tsx`: Replace `Shield` import with `Cog`, replace `<Shield>` JSX with `<Cog>`
+- In `ProfileSetup.tsx`: Replace `Shield` import with `Cog`, replace `<Shield>` JSX with `<Cog>`
 
-### 2. Update `src/components/policy-builder/orgContextTypes.ts`
-- Add `StructuredBusinessContext` interface and `structuredContext` field to `OrgContext` + `DEFAULT_ORG_CONTEXT`
-- Replace `getOrgProfileCompleteness()` with `getOrgProfileQualityScore()` returning weighted score, percentage, colour, and `FieldQualityItem[]` with impact strings and sectionRef IDs
-- Add `hasAnyStructuredContext()` helper
-- Include `structuredContext` as a weighted field (weight: 8)
+## Change 2 -- Rebrand to "PrivcybHub"
 
-### 3. Update `src/components/policy-builder/OrgProfileForm.tsx`
-Major additions:
+**Files to update:**
 
-**A. Personal Data Auto-Population Pipeline (Fix 3)**
-- Add `personalDataSources: Record<string, "static" | "ai" | "manual">` state
-- New `useEffect` watching `industries`/`sector`: immediately populates from static `INDUSTRY_PERSONAL_DATA_MAP`, marks as "static"; then background KM enrichment merges AI results marked as "ai"
-- Manual entries tracked as "manual"
-- Never clears user-added items on re-trigger
+| File | What changes |
+|------|-------------|
+| `index.html` | Title, meta description, og:title |
+| `package.json` | name field to "privcybhub" |
+| `src/components/AppSidebar.tsx` | Brand text "DPDP Comply" to "PrivcybHub" |
+| `src/pages/Auth.tsx` | Brand text "DPDP Comply" to "PrivcybHub" |
+| `src/pages/ProfileSetup.tsx` | Brand text "DPDP Comply" to "PrivcybHub" |
+| `src/pages/Dashboard.tsx` | Keep subtitle "DPDP Act, 2023 Compliance Overview" unchanged (no product name there) |
 
-**B. Source Badges on Personal Data Chips (Fix 3 Step 3)**
-- Grey "KB" badge for static items
-- Purple "✨ AI" badge for AI-enriched items
-- Blue "✏️" badge for manual items
-- 🔴 red dot for sensitive data types (existing logic preserved)
+## Change 3 -- Rename Sidebar Nav Item
 
-**C. Decoupled Document Type Phase 2 (Fix 6)**
-- New `useEffect` watching `documentType`: calls KM enrichment with doc-specific context type
-- Merges results on top of Phase 1 without clearing
-- Shows toast: "Added N additional data types for {docType}"
+In `AppSidebar.tsx`, change `mainNav` entry title from `"Repository"` to `"Assessment Repository"`.
 
-**D. Quality Score System (Fix 8)**
-- Replace old `{filled}/{total}` display with colour-coded progress bar (red/amber/green)
-- Show "Quality Score: N%" next to bar
-- Collapsible "Improve your document quality" nudge panel showing unfilled fields with impact text
-- Each nudge item clickable → scrolls to section via `sectionRef` with highlight pulse
-- Add `id` attributes to each form section matching sectionRef values
-- Score recalculates via `useMemo` on every ctx change
+## Change 4 -- Rebuild Repository Page
 
-**E. Structured Business Context Fields (Fix 9)**
-- New "Quick Business Facts" section (id="org-structured-context") ABOVE the textarea with 6 fields:
-  1. Cloud/Hosting Provider (text input)
-  2. DSAR Response SLA (dropdown: 24h–30d)
-  3. Breach Notification SLA (dropdown: 6h–72h)
-  4. Payment Processors (text input)
-  5. Children's Data Processing (radio: Yes/No)
-  6. Key Third-Party Vendors (textarea, 2 rows)
-- Each field has a "📋 Clause Impact" tooltip
-- Wire to `ctx.structuredContext`
+Delete and rebuild both `src/data/repositoryData.ts` and `src/pages/Repository.tsx` from scratch.
 
-### 4. Update `supabase/functions/generate-policy/index.ts`
+### New Data File: `src/data/repositoryData.ts`
 
-**A. Maturity Calibration (Fix 7)**
-- Add `MATURITY_CALIBRATION` constant with detailed Level 1–5 calibration blocks (clause depth, governance structures, language register)
-- Enhance RULE 5 in `FALLBACK_SYSTEM_INSTRUCTION` to reference the calibration block
-- Inject `${maturityBlock}` into the user prompt after sector overlays and before the quality gate
-- Extract `maturityLevel` from request body (already done via destructuring)
+Exports `repositoryPhases` array with 6 phases containing `RepositoryItem` objects. Each item has:
+- `id`, `requirement`, `dpdpRef`, `templateTitle`, `templateContent`, `domain?`, `status`, `notes`
 
-**B. Structured Business Rules (Fix 9 Step 3)**
-- Add `buildStructuredBusinessRules(structuredContext)` function generating "ABSOLUTE BUSINESS RULES" block
-- Extract `structuredContext` from request body
-- Inject `${structuredRules}` into user prompt after maturity calibration block
+Content coverage:
+- **Phase 1 (Org Profile):** 8 items covering incorporation cert, org chart, data flow diagram, DPO appointment, board resolution, processor register, joint controller agreement, regulatory licences
+- **Phase 2 (Policy Matrix):** 37 items covering all privacy notices, consent policies, DPAs, retention, DPIA, children's data, rights procedures, breach response, security, vendor management, training, audit, AI policy, PbD checklist
+- **Phase 3 (Rapid Assessment):** 30 items grouped across Domains A-O with domain field set
+- **Phase 4 (Dept Grid):** 6 items covering dept inventory, flow maps, RACI, self-assessment, gap analysis, corrective action
+- **Phase 5 (File References):** 6 items covering master index, regulatory links, sector guidelines, court judgements, version history, archived docs
+- **Phase 6 (Dashboard Reports):** 7 items covering score report, heat map, penalty map, audit trail, board summary, shared links, version archive
 
----
+Each item includes a full templateContent string (80-300 words) with placeholders like `[Organisation Name]`, `[Date]`, `[DPO Name]`, etc. The 3 templates provided in the spec (DPO Appointment Letter, Board Resolution, Processor Register) will be used verbatim. All others will be written as realistic compliance document templates.
 
-### File Change Summary
+### New Page: `src/pages/Repository.tsx`
 
-| File | Action |
-|---|---|
-| `src/data/industryPersonalDataMap.ts` | Create |
-| `src/components/policy-builder/orgContextTypes.ts` | Edit: add types, replace quality score |
-| `src/components/policy-builder/OrgProfileForm.tsx` | Edit: auto-population pipeline, badges, quality score UI, structured context fields |
-| `supabase/functions/generate-policy/index.ts` | Edit: add maturity calibration + structured business rules to prompt |
+A structured compliance knowledge base page with:
 
-### Safety
-- All existing smart context inference, KM integration, chatbot, consent module unchanged
-- Edge function only receives additive prompt blocks — no restructuring
-- Existing `processingActivities` catalogue UI untouched
-- `streamChat.ts` not modified
+1. **Header**: Title "Assessment Repository" + subtitle + Export Checklist button
+2. **Filter Bar**: Search input, status filter dropdown, phase filter dropdown
+3. **Stats Bar**: 4 cards showing Total / Completed / In Progress / Not Started counts
+4. **Phase Accordions**: 6 collapsible sections, each with:
+   - Folder icon + phase title + count badge + chevron toggle
+   - Table with columns: #, Requirement, DPDP Ref, Template (View button), Status (select dropdown), Notes (textarea)
+   - Phase 3 gets domain sub-sections (A-O), each collapsible
+5. **Template Modal**: Dialog showing template content with Copy to Clipboard and Download as .txt buttons
 
+State management: all local (searchQuery, statusFilter, phaseFilter, expandedPhases, expandedDomains, selectedItem, itemStatuses, itemNotes, copiedId).
+
+Design: dark slate theme with `bg-slate-800/50` cards, alternating table rows, colored status badges (grey/yellow/green).
+
+### Technical Details
+
+- No database changes needed -- all data is static/local
+- No new dependencies required
+- Route `/repository` already exists in `App.tsx` -- no routing changes needed
+- Filtering logic: search matches requirement OR templateTitle; status matches current status; phase shows matching accordion only; stats reflect filtered counts
