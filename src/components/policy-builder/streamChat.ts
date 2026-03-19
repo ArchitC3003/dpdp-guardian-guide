@@ -60,6 +60,7 @@ export async function streamPolicyChat({
         dpoName: orgContext?.dpoName || config.dpoName || "",
         date: orgContext?.date || config.date || "",
         additionalContext: orgContext?.additionalContext || "",
+        structuredContext: orgContext?.structuredContext || {},
       }),
       signal,
     });
