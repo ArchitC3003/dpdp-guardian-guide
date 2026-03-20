@@ -13,19 +13,35 @@ export default function ComplianceProfileSummary({ ctx }: Props) {
   const alerts: { emoji: string; text: string; variant: "destructive" | "default" | "secondary" | "outline" }[] = [];
 
   if (ctx.sdfClassification === "sdf") {
-    alerts.push({ emoji: "⚠", text: "Significant Data Fiduciary — Enhanced obligations under Rules 5, 6, 9, 10, 12 apply", variant: "destructive" });
+    alerts.push({
+      emoji: "⚠",
+      text: "Significant Data Fiduciary — Enhanced obligations under Rules 5, 6, 9, 10, 12 apply",
+      variant: "destructive",
+    });
   }
   if (ctx.processingActivities.includes("Children's Data (under 18)")) {
-    alerts.push({ emoji: "👶", text: "Children's Data Processor — Section 9 + Rule 10 obligations activated", variant: "default" });
+    alerts.push({
+      emoji: "👶",
+      text: "Children's Data Processor — Section 9 + Rule 10 obligations activated",
+      variant: "default",
+    });
   }
   if (ctx.processingActivities.includes("Cross-border Data Transfers")) {
-    alerts.push({ emoji: "🌐", text: "Cross-Border Transfers — DPDP Schedule 1 + adequacy assessment required", variant: "default" });
+    alerts.push({
+      emoji: "🌐",
+      text: "Cross-Border Transfers — DPDP Schedule 1 + adequacy assessment required",
+      variant: "default",
+    });
   }
   if (ctx.industry?.includes("BFSI") || ctx.industry?.includes("Banking") || ctx.industry?.includes("Insurance")) {
     alerts.push({ emoji: "🏦", text: "BFSI Sector — RBI IT Governance overlay applicable", variant: "secondary" });
   }
   if (ctx.industry?.includes("Health")) {
-    alerts.push({ emoji: "🏥", text: "Healthcare Sector — DISHA + NHA Digital Health guidelines applicable", variant: "secondary" });
+    alerts.push({
+      emoji: "🏥",
+      text: "Healthcare Sector — DISHA + NHA Digital Health guidelines applicable",
+      variant: "secondary",
+    });
   }
 
   const maturityLabel = MATURITY_OPTIONS.find((m) => m.value === ctx.maturityLevel)?.label;
