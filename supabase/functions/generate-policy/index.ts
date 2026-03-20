@@ -479,7 +479,7 @@ serve(async (req) => {
       documentType, frameworks, orgName, industry, industryVerticals, orgSize, maturityLevel,
       userMessage, conversationHistory, sdfClassification, geographies,
       processingActivities, personalDataTypes, sector, dpoName, date,
-      additionalContext, structuredContext,
+      additionalContext, structuredContext, assessmentGaps,
     } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
