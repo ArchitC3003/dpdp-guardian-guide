@@ -20,6 +20,7 @@ export async function streamPolicyChat({
   messages,
   config,
   orgContext,
+  assessmentGaps,
   onDelta,
   onDone,
   onError,
