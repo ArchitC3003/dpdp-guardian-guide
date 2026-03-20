@@ -479,7 +479,7 @@ serve(async (req) => {
       documentType, frameworks, orgName, industry, industryVerticals, orgSize, maturityLevel,
       userMessage, conversationHistory, sdfClassification, geographies,
       processingActivities, personalDataTypes, sector, dpoName, date,
-      additionalContext, structuredContext,
+      additionalContext, structuredContext, assessmentGaps,
     } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -606,6 +606,74 @@ RULE C — EXPERT GUIDANCE BLOCKS: At the end of EVERY major section (numbered h
 
 💡 **[Implementation Guidance]**: Provide 2-3 practical, actionable steps on how ${effectiveOrgName} should operationalise this specific section based on their ${effectiveSector} industry context and ${effectiveMaturity} maturity level. Include specific tool recommendations, timeline suggestions, and evidence artifacts where applicable.
 
+RULE D — Every clause MUST reference "${effectiveOrgName}" by name — never "the organisation" or "the company".
+
+RULE E — Every personal data type from the Types of Personal Data list MUST appear in at least one enforceable clause with specific handling requirements.
+
+RULE F — Every processing activity from the Data Processing Activities list MUST be mapped to its legal basis (DPDP Act section) in the document.
+
+RULE G — Industry-specific regulatory obligations MUST be cited with their specific section numbers, not generic references like "applicable regulations".
+
+RULE H — If children's data processing is indicated, add a dedicated "Children's Data Protection" section citing DPDP Act Section 9 with verifiable parental consent, age verification, and prohibition on behavioural monitoring.
+
+RULE I — If compliance maturity is Initial or Developing (Level 1-2), include a "Quick Start Implementation Checklist" appendix with 5-7 immediate action items.
+
+RULE J — If compliance maturity is Managed or Optimising (Level 4-5), include an "Advanced Controls & Certification Pathway" appendix covering ISO 27701, SOC 2 Type II, and continuous improvement frameworks.
+
+${(() => {
+  const isPolicy = !effectiveDocType.toLowerCase().includes("sop") && !effectiveDocType.toLowerCase().includes("procedure");
+  const isSOP = effectiveDocType.toLowerCase().includes("sop") || effectiveDocType.toLowerCase().includes("procedure");
+  if (isPolicy) return `═══ MANDATORY POLICY SKELETON (RULE 11) ═══
+The policy MUST include ALL of the following sections in this order. Do NOT skip any section:
+1. Purpose & Scope (with explicit inclusions and exclusions)
+2. Legal & Regulatory Basis (cite DPDP Act sections, IT Act, sector rules, ISO/NIST controls relevant to ${effectiveSector})
+3. Definitions (minimum 8 defined terms, jurisdiction-aware)
+4. Roles & Responsibilities (RACI matrix format — Data Fiduciary, Data Processor, DPO, Employees, IT Team)
+5. Policy Statements (numbered clauses — MINIMUM 12 substantive clauses)
+6. Implementation Requirements (technical controls + organisational controls)
+7. Exceptions & Deviations Process
+8. Monitoring, Audit & Review Frequency
+9. Non-Compliance Consequences
+10. Version Control table (Version | Date | Author | Change Summary)
+
+Each major section MUST end with:
+📌 [Regulatory Reference] block
+💡 [Implementation Guidance] block
+
+WORD COUNT: This policy MUST be a MINIMUM of 2,500 words. CRITICAL: The document MUST be comprehensive and production-ready. A short or skeletal output is a FAILURE. Expand every section with specifics.`;
+  if (isSOP) return `═══ MANDATORY SOP SKELETON (RULE 12) ═══
+The SOP MUST include ALL of the following sections in this order. Do NOT skip any section:
+1. Objective & Trigger Conditions
+2. Scope & Applicability
+3. Roles (Owner, Performer, Reviewer, Escalation Path)
+4. Step-by-Step Procedure (numbered steps with decision points and conditional branches using IF/THEN logic)
+5. SLA & Timelines table (each step with a time limit)
+6. Evidence & Documentation Requirements (what to log and where)
+7. Escalation Matrix (Level 1 → Level 2 → DPO → Board)
+8. Communication Templates (draft email/notification text where applicable)
+9. Exception Handling (what to do when standard steps cannot be followed)
+10. Review & Update Cycle
+
+Each major section MUST end with:
+📌 [Regulatory Reference] block
+💡 [Implementation Guidance] block
+
+WORD COUNT: This SOP MUST be a MINIMUM of 2,000 words. CRITICAL: The document MUST be comprehensive and production-ready. A short or skeletal output is a FAILURE. Expand every section with specifics.`;
+  return "";
+})()}
+
+${Array.isArray(assessmentGaps) && assessmentGaps.length > 0 ? `═══ GAP REMEDIATION CLAUSES (RULE 15) ═══
+The following assessment gaps have been identified from a completed compliance assessment. Create a dedicated "Gap Remediation Clauses" section in the document that directly addresses EACH identified gap with a specific policy commitment, responsible role, timeline, and evidence requirement:
+
+${assessmentGaps.map((g: string, i: number) => `${i + 1}. ${g}`).join("\n")}
+
+Each gap remediation clause must follow this format:
+- Gap Description
+- Policy Commitment (specific obligation)
+- Responsible Role
+- Implementation Timeline
+- Evidence of Compliance` : ""}
+
 ═══ DRAFTING INSTRUCTION ═══
 Generate a complete, specific, and enforceable ${effectiveDocType} for ${effectiveOrgName}, a ${effectiveSize} ${effectiveSector} organisation classified as ${effectiveSdf} under the DPDP Act 2023.
 
@@ -640,6 +708,8 @@ Before outputting each section, verify:
 7. Does every major section end with 📌 [Regulatory Reference] and 💡 [Implementation Guidance] blocks?
 ${dataTypesList ? `8. Are the specific data types (${dataTypesList}) embedded in relevant clauses instead of generic "personal data"?` : ""}
 ${effectiveAdditionalContext ? `9. Are the user's additional business context instructions reflected in the relevant clauses?` : ""}
+10. Does the document meet the minimum word count requirement?
+11. Are ALL mandatory skeleton sections present?
 
 Generate the FULL document. Do not truncate or summarise. Every section must contain complete, enforceable prose.
 

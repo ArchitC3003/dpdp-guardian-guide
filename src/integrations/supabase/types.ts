@@ -743,6 +743,42 @@ export type Database = {
           },
         ]
       }
+      policy_builder_snapshots: {
+        Row: {
+          change_notes: string | null
+          created_at: string | null
+          document_type: string | null
+          generated_content: string | null
+          id: string
+          is_active: boolean | null
+          org_context: Json | null
+          user_id: string
+          version_number: number | null
+        }
+        Insert: {
+          change_notes?: string | null
+          created_at?: string | null
+          document_type?: string | null
+          generated_content?: string | null
+          id?: string
+          is_active?: boolean | null
+          org_context?: Json | null
+          user_id: string
+          version_number?: number | null
+        }
+        Update: {
+          change_notes?: string | null
+          created_at?: string | null
+          document_type?: string | null
+          generated_content?: string | null
+          id?: string
+          is_active?: boolean | null
+          org_context?: Json | null
+          user_id?: string
+          version_number?: number | null
+        }
+        Relationships: []
+      }
       policy_documents: {
         Row: {
           approver_name: string | null

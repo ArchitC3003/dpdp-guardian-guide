@@ -9,6 +9,7 @@ export interface StreamChatOptions {
   messages: Msg[];
   config: DocumentConfig;
   orgContext?: OrgContext;
+  assessmentGaps?: string[];
   onDelta: (text: string) => void;
   onDone: () => void;
   onError: (error: string) => void;
@@ -19,6 +20,7 @@ export async function streamPolicyChat({
   messages,
   config,
   orgContext,
+  assessmentGaps,
   onDelta,
   onDone,
   onError,
@@ -61,6 +63,7 @@ export async function streamPolicyChat({
         date: orgContext?.date || config.date || "",
         additionalContext: orgContext?.additionalContext || "",
         structuredContext: orgContext?.structuredContext || {},
+        assessmentGaps: assessmentGaps || [],
       }),
       signal,
     });
