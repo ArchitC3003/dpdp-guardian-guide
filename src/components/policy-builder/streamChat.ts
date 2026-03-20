@@ -63,6 +63,7 @@ export async function streamPolicyChat({
         date: orgContext?.date || config.date || "",
         additionalContext: orgContext?.additionalContext || "",
         structuredContext: orgContext?.structuredContext || {},
+        assessmentGaps: assessmentGaps || [],
       }),
       signal,
     });
