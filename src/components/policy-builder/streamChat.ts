@@ -9,6 +9,7 @@ export interface StreamChatOptions {
   messages: Msg[];
   config: DocumentConfig;
   orgContext?: OrgContext;
+  assessmentGaps?: string[];
   onDelta: (text: string) => void;
   onDone: () => void;
   onError: (error: string) => void;
