@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FileText,
   Shield,
@@ -9,6 +9,10 @@ import {
   Tag,
   Sparkles,
   Check,
+  Link2,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
 } from "lucide-react";
 import {
   Tooltip,
@@ -19,6 +23,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -27,6 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import {
   DocumentConfig,
@@ -41,6 +47,8 @@ import {
 import OrgProfileForm from "./OrgProfileForm";
 import ComplianceProfileSummary from "./ComplianceProfileSummary";
 import { OrgContext, DEFAULT_ORG_CONTEXT } from "./orgContextTypes";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   config: DocumentConfig;
@@ -48,12 +56,69 @@ interface Props {
   onGenerate?: () => void;
   orgContext?: OrgContext;
   onOrgContextChange?: (ctx: OrgContext) => void;
+  onAssessmentGapsChange?: (gaps: string[]) => void;
 }
 
-export default function DocumentConfigSection({ config, onChange, onGenerate, orgContext, onOrgContextChange }: Props) {
+interface AssessmentSummary {
+  id: string;
+  org_name: string | null;
+  org_industry: string | null;
+  status: string;
+  created_at: string;
+}
+
+export default function DocumentConfigSection({ config, onChange, onGenerate, orgContext, onOrgContextChange, onAssessmentGapsChange }: Props) {
   const policies = DOCUMENT_TYPES.filter((d) => d.category === "Policy");
   const sops = DOCUMENT_TYPES.filter((d) => d.category === "SOP");
   const ctx = orgContext || DEFAULT_ORG_CONTEXT;
+  const { user } = useAuth();
+
+  const [assessments, setAssessments] = useState<AssessmentSummary[]>([]);
+  const [selectedAssessments, setSelectedAssessments] = useState<string[]>([]);
+  const [assessmentsOpen, setAssessmentsOpen] = useState(false);
+  const [loadingAssessments, setLoadingAssessments] = useState(false);
+  const [loadingGaps, setLoadingGaps] = useState(false);
+
+  // Fetch user's assessments
+  useEffect(() => {
+    if (!user?.id) return;
+    setLoadingAssessments(true);
+    supabase
+      .from("assessments")
+      .select("id, org_name, org_industry, status, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        setAssessments(data || []);
+        setLoadingAssessments(false);
+      });
+  }, [user?.id]);
+
+  // When selected assessments change, extract gaps
+  useEffect(() => {
+    if (selectedAssessments.length === 0) {
+      onAssessmentGapsChange?.([]);
+      return;
+    }
+    setLoadingGaps(true);
+    supabase
+      .from("assessment_checks")
+      .select("domain, check_id, observation, status")
+      .in("assessment_id", selectedAssessments)
+      .then(({ data }) => {
+        const gaps = (data || [])
+          .filter((c) => c.status && c.status !== "Compliant" && c.status !== "compliant")
+          .map((c) => `[${c.domain}] ${c.check_id}: ${c.observation || c.status || "Non-compliant"}`);
+        onAssessmentGapsChange?.(gaps);
+        setLoadingGaps(false);
+      });
+  }, [selectedAssessments]);
+
+  const toggleAssessment = (id: string) => {
+    setSelectedAssessments((prev) =>
+      prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]
+    );
+  };
 
   const toggleFramework = (value: string) => {
     const next = config.frameworks.includes(value)
@@ -127,6 +192,72 @@ export default function DocumentConfigSection({ config, onChange, onGenerate, or
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Assessment Linkage */}
+      {assessments.length > 0 && (
+        <Collapsible open={assessmentsOpen} onOpenChange={setAssessmentsOpen}>
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <CollapsibleTrigger className="w-full px-5 py-3 flex items-center justify-between hover:bg-muted/10 transition-colors">
+              <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                <Link2 className="h-4 w-4 text-primary" />
+                🔗 Link Assessment Findings
+                {selectedAssessments.length > 0 && (
+                  <Badge variant="outline" className="text-[9px] border-primary/40 text-primary ml-1">
+                    {selectedAssessments.length} linked
+                  </Badge>
+                )}
+              </div>
+              {assessmentsOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="px-5 pb-4 space-y-2 border-t border-border pt-3">
+                <p className="text-[10px] text-muted-foreground">
+                  Gaps from linked assessments will inform policy clauses with specific remediation commitments.
+                </p>
+                {loadingAssessments ? (
+                  <div className="flex items-center gap-2 py-3">
+                    <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Loading assessments...</span>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    {assessments.map((a) => (
+                      <label
+                        key={a.id}
+                        className={cn(
+                          "flex items-center gap-3 rounded-lg border px-3 py-2 cursor-pointer transition-all",
+                          selectedAssessments.includes(a.id)
+                            ? "border-primary/40 bg-primary/5"
+                            : "border-border hover:border-primary/20"
+                        )}
+                      >
+                        <Checkbox
+                          checked={selectedAssessments.includes(a.id)}
+                          onCheckedChange={() => toggleAssessment(a.id)}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-foreground truncate">
+                            {a.org_name || "Unnamed Assessment"}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {a.org_industry || "General"} · {a.status} · {new Date(a.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
+                {loadingGaps && (
+                  <div className="flex items-center gap-2 pt-1">
+                    <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                    <span className="text-[10px] text-primary">Extracting assessment gaps...</span>
+                  </div>
+                )}
+              </div>
+            </CollapsibleContent>
+          </div>
+        </Collapsible>
+      )}
 
       {/* Row 2 — Context Configuration */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

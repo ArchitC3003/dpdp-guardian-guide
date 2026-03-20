@@ -8,12 +8,15 @@ import HowToGuide from "@/components/policy-builder/HowToGuide";
 import DocumentConfigSection from "@/components/policy-builder/DocumentConfigSection";
 import FullWidthChat from "@/components/policy-builder/FullWidthChat";
 import FullWidthPreview from "@/components/policy-builder/FullWidthPreview";
+import ClauseLibraryPanel from "@/components/policy-builder/ClauseLibraryPanel";
 import { DocumentConfig, ChatMessage, DOCUMENT_TYPES } from "@/components/policy-builder/types";
 import { streamPolicyChat } from "@/components/policy-builder/streamChat";
 import { generateMockResponse } from "@/components/policy-builder/mockResponses";
 import { OrgContext, DEFAULT_ORG_CONTEXT } from "@/components/policy-builder/orgContextTypes";
 import { usePolicyVersioning } from "@/hooks/usePolicyVersioning";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const DEFAULT_CONFIG: DocumentConfig = {
@@ -34,8 +37,10 @@ export default function PolicySopBuilder() {
   const [latestResponse, setLatestResponse] = useState<string | null>(null);
   const [previewExpanded, setPreviewExpanded] = useState(false);
   const [aiMode, setAiMode] = useState<"live" | "demo">("live");
+  const [assessmentGaps, setAssessmentGaps] = useState<string[]>([]);
   const abortRef = useRef<AbortController | null>(null);
   const { canGenerate, canExport, canEdit, userRoleLabel } = usePermissions();
+  const { user } = useAuth();
 
   const {
     currentDoc,
@@ -59,6 +64,47 @@ export default function PolicySopBuilder() {
       }
     },
     [saveDocument, config]
+  );
+
+  // Auto-save snapshot to policy_builder_snapshots
+  const saveSnapshot = useCallback(
+    async (content: string) => {
+      if (!user?.id) return;
+      try {
+        // Get current max version
+        const { data: existing } = await supabase
+          .from("policy_builder_snapshots" as any)
+          .select("version_number")
+          .eq("user_id", user.id)
+          .eq("document_type", config.documentType)
+          .order("version_number", { ascending: false })
+          .limit(1);
+        
+        const nextVersion = (existing && existing.length > 0 ? (existing[0] as any).version_number : 0) + 1;
+
+        await supabase.from("policy_builder_snapshots" as any).insert({
+          user_id: user.id,
+          document_type: config.documentType,
+          org_context: orgContext as any,
+          generated_content: content,
+          version_number: nextVersion,
+          change_notes: `Auto-saved v${nextVersion}`,
+        });
+      } catch {
+        // Silent fail
+      }
+    },
+    [user?.id, config.documentType, orgContext]
+  );
+
+  const handleCopyToContext = useCallback(
+    (clauseText: string) => {
+      setOrgContext((prev) => ({
+        ...prev,
+        additionalContext: (prev.additionalContext || "") + clauseText,
+      }));
+    },
+    []
   );
 
   const sendMessage = useCallback(
@@ -89,6 +135,7 @@ export default function PolicySopBuilder() {
         messages: apiMessages,
         config,
         orgContext,
+        assessmentGaps,
         signal: controller.signal,
         onDelta: (chunk) => {
           assistantContent += chunk;
@@ -119,6 +166,7 @@ export default function PolicySopBuilder() {
             setPreviewExpanded(true);
             setAiMode("live");
             autoSave(assistantContent, "live");
+            saveSnapshot(assistantContent);
           }
         },
         onError: (error) => {
@@ -141,6 +189,7 @@ export default function PolicySopBuilder() {
             setLatestResponse(mockContent);
             setPreviewExpanded(true);
             autoSave(mockContent, "demo");
+            saveSnapshot(mockContent);
             toast.warning("AI is running in demo mode. Live AI generation will resume when available.", { duration: 6000 });
           } else {
             toast.error(error);
@@ -148,7 +197,7 @@ export default function PolicySopBuilder() {
         },
       });
     },
-    [config, orgContext, isTyping, messages, autoSave]
+    [config, orgContext, isTyping, messages, autoSave, assessmentGaps, saveSnapshot]
   );
 
   const handleGenerate = () => {
@@ -205,6 +254,7 @@ export default function PolicySopBuilder() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <ClauseLibraryPanel onCopyToContext={handleCopyToContext} />
             <Badge variant="outline" className="text-[10px] border-primary/30 text-primary gap-1">
               <FileText className="h-3 w-3" /> 13 Document Types
             </Badge>
@@ -240,6 +290,7 @@ export default function PolicySopBuilder() {
                 onGenerate={canGenerate ? handleGenerate : undefined}
                 orgContext={orgContext}
                 onOrgContextChange={setOrgContext}
+                onAssessmentGapsChange={setAssessmentGaps}
               />
               <Separator />
               {!canGenerate && (
