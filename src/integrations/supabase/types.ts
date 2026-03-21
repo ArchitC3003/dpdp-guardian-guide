@@ -149,32 +149,131 @@ export type Database = {
         }
         Relationships: []
       }
+      artefact_comments: {
+        Row: {
+          artefact_id: string
+          content: string
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          artefact_id: string
+          content: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          artefact_id?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "artefact_comments_artefact_id_fkey"
+            columns: ["artefact_id"]
+            isOneToOne: false
+            referencedRelation: "artefact_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       artefact_files: {
         Row: {
+          author: string | null
+          collection: string | null
           description: string | null
           file_name: string
           file_path: string
+          file_size: number | null
           folder: string
+          framework: string | null
           id: string
+          is_current_version: boolean | null
+          mime_type: string | null
+          parent_id: string | null
+          tags: string[] | null
           uploaded_at: string
+          version_number: number | null
         }
         Insert: {
+          author?: string | null
+          collection?: string | null
           description?: string | null
           file_name: string
           file_path: string
+          file_size?: number | null
           folder: string
+          framework?: string | null
           id?: string
+          is_current_version?: boolean | null
+          mime_type?: string | null
+          parent_id?: string | null
+          tags?: string[] | null
           uploaded_at?: string
+          version_number?: number | null
         }
         Update: {
+          author?: string | null
+          collection?: string | null
           description?: string | null
           file_name?: string
           file_path?: string
+          file_size?: number | null
           folder?: string
+          framework?: string | null
           id?: string
+          is_current_version?: boolean | null
+          mime_type?: string | null
+          parent_id?: string | null
+          tags?: string[] | null
           uploaded_at?: string
+          version_number?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "artefact_files_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "artefact_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      artefact_pins: {
+        Row: {
+          artefact_id: string
+          created_at: string | null
+          id: string
+          pin_type: string
+          user_id: string
+        }
+        Insert: {
+          artefact_id: string
+          created_at?: string | null
+          id?: string
+          pin_type?: string
+          user_id: string
+        }
+        Update: {
+          artefact_id?: string
+          created_at?: string | null
+          id?: string
+          pin_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "artefact_pins_artefact_id_fkey"
+            columns: ["artefact_id"]
+            isOneToOne: false
+            referencedRelation: "artefact_files"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       assessment_checks: {
         Row: {
