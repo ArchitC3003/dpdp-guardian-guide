@@ -1,120 +1,153 @@
 
 
-## Plan: Policy & SOP Builder Depth Upgrade
+## Plan: SaaS-Inspired Artefact Repository Redesign
 
 ### Overview
-5 parts: edge function prompt enhancement, assessment linkage UI, clause library panel, preview enhancements, and template version control DB table. No changes to Assessment Repository Generator, Consent module, or KM layer.
+A major UI overhaul of the Artefact Repository page plus supporting DB schema changes. The current flat folder-based view becomes a modern document management experience with faceted search, grid/list toggle, pinned/recent sections, tagging, and collaboration features. No changes to KM integration, consent module, or other existing pages.
 
 ---
 
-### Part 1: Document Generation Depth — Edge Function
+### 1. Database Schema Changes
 
-**File: `supabase/functions/generate-policy/index.ts`**
+**Alter `artefact_files` table** — add columns for tagging, versioning, collaboration:
 
-Enhance the system prompt (`FALLBACK_SYSTEM_INSTRUCTION`) with additional rules:
-
-- **RULE 11 — POLICY SKELETON**: Enforce mandatory section structure for policies (Purpose & Scope, Legal & Regulatory Basis, Definitions (min 8), RACI Roles, min 12 numbered clauses, Implementation Requirements, Exceptions Process, Monitoring/Audit, Non-Compliance, Version Control table). Each major section must end with Regulatory Reference and Implementation Guidance blocks.
-
-- **RULE 12 — SOP SKELETON**: Enforce SOP structure (Objective & Triggers, Scope, Roles with escalation path, step-by-step with IF/THEN logic, SLA & Timelines table, Evidence requirements, Escalation Matrix L1→L2→DPO→Board, Communication Templates, Exception Handling, Review Cycle).
-
-- **RULE 13 — WORD COUNT**: Policies minimum 2,500 words; SOPs minimum 2,000 words. Add: "CRITICAL: The document MUST be comprehensive and production-ready. A short or skeletal output is a FAILURE."
-
-- **RULE 14 — PERSONALISATION**: Rules A-G as specified (org name in every clause, all personalDataTypes referenced, all processingActivities mapped to legal basis, sector-specific citations with section numbers, children's data section if applicable, Quick Start appendix for maturity <= 2, Advanced Controls appendix for maturity >= 4).
-
-- **RULE 15 — GAP REMEDIATION**: If `assessmentGaps[]` is provided in the request body, create a dedicated "Gap Remediation Clauses" section addressing each gap with a specific policy commitment.
-
-Add `assessmentGaps` to the destructured request body. Inject gap remediation context into the user prompt when present.
-
-Determine whether document is Policy or SOP from `documentType` string (starts with "sop-") and inject the appropriate skeleton rule into the prompt.
-
----
-
-### Part 2: Assessment Linkage — DocumentConfigSection
-
-**File: `src/components/policy-builder/DocumentConfigSection.tsx`**
-
-Add a collapsible "Link Assessment Findings" card below the document type selector:
-
-- Query `assessments` table filtered by `user_id` (via `useAuth`) for completed assessments
-- Show checkboxes for each assessment with org_name, status, industry
-- When checked, query `assessment_checks` for that assessment_id to extract gaps (items with status != "Compliant")
-- Pass extracted gaps up via a new `onAssessmentGapsChange?: (gaps: string[]) => void` prop
-
-**File: `src/pages/PolicySopBuilder.tsx`**
-
-- Add `assessmentGaps` state
-- Pass to `DocumentConfigSection` and forward to `streamChat.ts`
-
-**File: `src/components/policy-builder/streamChat.ts`**
-
-- Add `assessmentGaps` to the request body sent to the edge function
-
----
-
-### Part 3: Clause Library Panel
-
-**File: `src/components/policy-builder/ClauseLibraryPanel.tsx`** (new)
-
-- Right-side collapsible drawer with toggle button "Clause Library"
-- Static seed of 30 clause snippets organized by document type, topic, and regulation
-- Each clause card: title, 2-line preview, regulation badge (color-coded), "Copy to Context" button
-- Search bar for keyword filtering
-- "Copy to Context" appends clause text to `additionalContext` textarea via callback
-
-**Categories**: 5 consent (DPDP), 5 retention (sector-specific), 5 breach notification (DPDP 72h/CERT-In 6h), 5 vendor/third-party, 5 employee obligations, 5 security controls (CERT-In aligned)
-
-**Integration in `src/pages/PolicySopBuilder.tsx`**:
-- Render ClauseLibraryPanel with `onCopyToContext` callback that appends to orgContext.additionalContext
-
----
-
-### Part 4: Document Preview Enhancements
-
-**File: `src/components/policy-builder/FullWidthPreview.tsx`**
-
-**4A — Document Quality Indicator** (above generated content):
-- 3 circular progress indicators: Completeness (sections present vs expected), Personalisation (org name mentions vs generic), Regulatory Coverage (distinct regulation citations)
-- Calculated by parsing the `latestResponse` text for headings, org name occurrences, and regulatory citation patterns like `[DPDP`, `[NIST`, `[ISO`
-
-**4B — Export Options** dropdown additions:
-- Existing: DOCX, PDF
-- Add: "Copy as Markdown" (copies raw text), "Copy as Plain Text" (strip markdown formatting), "Send for Review" (mailto: with subject + first 200 chars as body)
-
-**4C — Section Navigation** sidebar:
-- Parse H2/H3 headings from latestResponse
-- Render as a sticky sidebar on the left (on desktop widths)
-- Each heading is clickable → scrolls to that section via `id` attributes added to rendered headings
-- Highlight current section on scroll using IntersectionObserver
-
----
-
-### Part 5: Template Version Control
-
-**Database migration**: Create `policy_builder_snapshots` table (avoids conflict with existing `policy_versions`):
 ```sql
-CREATE TABLE policy_builder_snapshots (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL,
-  document_type TEXT,
-  org_context JSONB,
-  generated_content TEXT,
-  version_number INTEGER DEFAULT 1,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  is_active BOOLEAN DEFAULT TRUE,
-  change_notes TEXT
-);
-ALTER TABLE policy_builder_snapshots ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can view own snapshots" ON policy_builder_snapshots FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert own snapshots" ON policy_builder_snapshots FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update own snapshots" ON policy_builder_snapshots FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY "Admins can manage snapshots" ON policy_builder_snapshots FOR ALL USING (has_role(auth.uid(), 'admin'));
+ALTER TABLE artefact_files
+  ADD COLUMN tags text[] DEFAULT '{}',
+  ADD COLUMN framework text DEFAULT NULL,
+  ADD COLUMN author text DEFAULT NULL,
+  ADD COLUMN file_size bigint DEFAULT NULL,
+  ADD COLUMN mime_type text DEFAULT NULL,
+  ADD COLUMN version_number integer DEFAULT 1,
+  ADD COLUMN parent_id uuid DEFAULT NULL REFERENCES artefact_files(id),
+  ADD COLUMN is_current_version boolean DEFAULT true,
+  ADD COLUMN collection text DEFAULT NULL;
 ```
 
-**File: `src/pages/PolicySopBuilder.tsx`**:
-- After each generation completes (`onDone`), auto-save to `policy_builder_snapshots` with version_number = max + 1
-- This is in addition to existing `usePolicyVersioning` save
+**Create `artefact_pins` table** — user-specific pins and recents:
 
-Note: The existing `usePolicyVersioning` hook + `VersionHistoryPanel` already provides version history, view, and restore functionality. The new table provides a separate snapshot layer that also stores `org_context` as JSONB for full context reproducibility. The existing Version History button and panel remain as-is.
+```sql
+CREATE TABLE artefact_pins (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  artefact_id uuid NOT NULL REFERENCES artefact_files(id) ON DELETE CASCADE,
+  pin_type text NOT NULL DEFAULT 'pin', -- 'pin' or 'recent'
+  created_at timestamptz DEFAULT now(),
+  UNIQUE(user_id, artefact_id, pin_type)
+);
+ALTER TABLE artefact_pins ENABLE ROW LEVEL SECURITY;
+-- Users can manage own pins
+CREATE POLICY "Users manage own pins" ON artefact_pins FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+```
+
+**Create `artefact_comments` table** — collaboration comments:
+
+```sql
+CREATE TABLE artefact_comments (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  artefact_id uuid NOT NULL REFERENCES artefact_files(id) ON DELETE CASCADE,
+  user_id uuid NOT NULL,
+  content text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE artefact_comments ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Auth users can view comments" ON artefact_comments FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Users can insert own comments" ON artefact_comments FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can delete own comments" ON artefact_comments FOR DELETE TO authenticated USING (auth.uid() = user_id);
+CREATE POLICY "Admins manage comments" ON artefact_comments FOR ALL TO authenticated USING (has_role(auth.uid(), 'admin')) WITH CHECK (has_role(auth.uid(), 'admin'));
+```
+
+---
+
+### 2. Refactor ArtefactRepository Page
+
+**File: `src/pages/ArtefactRepository.tsx`** — complete rewrite
+
+The page becomes a 3-zone layout:
+
+**Zone A — Top Bar**:
+- Search input with debounced full-text search across file_name, description, tags
+- Filter chips: Type (folder), Framework, Author, Date range
+- Grid/List view toggle (two icon buttons)
+- Sort dropdown (Name, Date, Size)
+
+**Zone B — Personalized Dashboard Strip** (horizontal cards, collapsible):
+- **Pinned** section: user's pinned artefacts (from `artefact_pins` where pin_type='pin')
+- **Recent** section: last 5 accessed (from `artefact_pins` where pin_type='recent', ordered by created_at)
+- **Recommended** section: artefacts matching user's profile industry (from `profiles.organisation` cross-referenced with artefact tags)
+
+**Zone C — Main Content Area**:
+- **Grid view**: Cards with file type icon/thumbnail, title, folder badge, framework badge, tags, date, pin/download actions
+- **List view**: Compact table rows (existing style enhanced with tags/framework columns)
+- **Collection sidebar** (left): hierarchical tree of folders + user-created collections for navigation; clicking filters the main view
+- Pagination or infinite scroll for large volumes
+
+**Preserved elements**:
+- Stats cards row (Total + per-folder counts) — kept but restyled as compact pills
+- Admin Upload Panel — kept as-is, moved into a collapsible section
+- KM Admin Panel — kept as-is for admins
+- Privacy notice banner — kept
+
+---
+
+### 3. Grid Card Component
+
+**New file: `src/components/artefacts/ArtefactCard.tsx`**
+
+Each card shows:
+- File type icon (PDF, DOCX, image, etc.) derived from mime_type/extension — large icon or thumbnail placeholder
+- File name (truncated to 2 lines)
+- Folder badge (colour-coded)
+- Framework badge if present
+- Tags as small pills (max 3 visible + "+N more")
+- Upload date in relative format ("2d ago")
+- Action row: Pin toggle, Download, Comment count, Admin delete
+
+---
+
+### 4. Artefact Detail Slide-Over
+
+**New file: `src/components/artefacts/ArtefactDetailPanel.tsx`**
+
+Opens as a Sheet (right slide-over) when clicking a card/row:
+- Full metadata display (name, folder, description, tags, framework, author, dates, size)
+- **Version History** tab: lists all versions (same parent_id), side-by-side comparison of descriptions/metadata
+- **Comments** tab: threaded comments list + input to add comment
+- **Share** section: copy shareable link button (generates a public URL from storage)
+- Download button
+- Admin-only: Edit metadata (tags, framework, description), Delete
+
+---
+
+### 5. Enhanced Upload Panel
+
+**File: `src/components/AdminUploadPanel.tsx`** — extend
+
+Add fields during upload:
+- Tags input (comma-separated, converted to array)
+- Framework dropdown (DPDP Act, GDPR, ISO 27701, etc.)
+- Author text input
+- Collection selector (existing folders + custom)
+
+Store `file.size` as `file_size` and `file.type` as `mime_type` on insert.
+
+---
+
+### 6. Hooks & State
+
+**New file: `src/hooks/useArtefactPins.ts`**
+- Manages pin/unpin and recent tracking for current user
+- `togglePin(artefactId)`, `trackRecent(artefactId)`, `pinnedIds`, `recentFiles`
+
+**Update: `src/hooks/useArtefactContext.ts`**
+- Add support for new columns (tags, framework, author, etc.)
+- Add filtered query support: `fetchArtefacts(filters?: { folder?, framework?, tags?, search?, dateRange? })`
+
+---
+
+### 7. No Routing Changes
+
+The page stays at `/artefacts`. No new routes needed. The detail panel is a Sheet overlay, not a separate page.
 
 ---
 
@@ -122,16 +155,18 @@ Note: The existing `usePolicyVersioning` hook + `VersionHistoryPanel` already pr
 
 | File | Action |
 |---|---|
-| `supabase/functions/generate-policy/index.ts` | Edit: add Rules 11-15, assessmentGaps handling |
-| `src/components/policy-builder/DocumentConfigSection.tsx` | Edit: add Assessment Linkage section |
-| `src/components/policy-builder/ClauseLibraryPanel.tsx` | Create: 30-clause library drawer |
-| `src/components/policy-builder/FullWidthPreview.tsx` | Edit: quality indicators, export options, section nav |
-| `src/components/policy-builder/streamChat.ts` | Edit: pass assessmentGaps |
-| `src/pages/PolicySopBuilder.tsx` | Edit: wire assessmentGaps, clause library, snapshot auto-save |
-| Database migration | Create `policy_builder_snapshots` table |
+| DB migration | Create: alter `artefact_files`, create `artefact_pins`, `artefact_comments` |
+| `src/pages/ArtefactRepository.tsx` | Rewrite: faceted search, grid/list, personalized dashboard |
+| `src/components/artefacts/ArtefactCard.tsx` | Create: grid card component |
+| `src/components/artefacts/ArtefactDetailPanel.tsx` | Create: detail slide-over with versions, comments, sharing |
+| `src/components/AdminUploadPanel.tsx` | Edit: add tags, framework, author, mime_type fields |
+| `src/hooks/useArtefactContext.ts` | Edit: extend interface, add filter support |
+| `src/hooks/useArtefactPins.ts` | Create: pin/recent management hook |
 
 ### Safety
-- Assessment Repository Generator, Consent module, KM layer, App.tsx routing untouched
-- All new UI uses existing shadcn/ui components
-- Edge function changes are additive prompt rules only
+- KMAdminPanel, consent module, policy builder, assessment generator untouched
+- Existing download/delete logic preserved
+- All new tables have proper RLS
+- Uses existing shadcn/ui components (Sheet, Badge, Tabs, ToggleGroup, Command)
+- Teal/green design tokens maintained
 
