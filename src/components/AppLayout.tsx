@@ -3,8 +3,11 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { SessionTimeout } from "./SessionTimeout";
 import { PrivacyAssistant } from "./PrivacyAssistant";
+import { useThemePreferences } from "@/hooks/useThemePreferences";
 
 export function AppLayout() {
+  // Apply saved theme preferences on mount
+  useThemePreferences();
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">

@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Download, LogOut, Trash2, Bot, CheckCircle2, XCircle, Loader2, Save, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ThemeCustomizer } from "@/components/ThemeCustomizer";
 
 export default function AccountSettings() {
   const { user, profile, signOut, refreshProfile } = useAuth();
