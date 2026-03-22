@@ -161,6 +161,9 @@ export default function AccountSettings() {
         </CardContent>
       </Card>
 
+      {/* Display Preferences */}
+      <ThemeCustomizer />
+
       {/* AI Configuration — admin/manager only */}
       {canConfigureAI ? (
       <Card className="bg-slate-800/50 border-slate-700/50">
