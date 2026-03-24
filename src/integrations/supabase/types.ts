@@ -281,10 +281,12 @@ export type Database = {
           check_id: string
           domain: string
           evidence_status: string | null
+          framework_id: string | null
           id: string
           observation: string | null
           owner: string | null
           priority: string | null
+          requirement_id: string | null
           status: string | null
         }
         Insert: {
@@ -292,10 +294,12 @@ export type Database = {
           check_id: string
           domain: string
           evidence_status?: string | null
+          framework_id?: string | null
           id?: string
           observation?: string | null
           owner?: string | null
           priority?: string | null
+          requirement_id?: string | null
           status?: string | null
         }
         Update: {
@@ -303,10 +307,12 @@ export type Database = {
           check_id?: string
           domain?: string
           evidence_status?: string | null
+          framework_id?: string | null
           id?: string
           observation?: string | null
           owner?: string | null
           priority?: string | null
+          requirement_id?: string | null
           status?: string | null
         }
         Relationships: [
@@ -317,7 +323,144 @@ export type Database = {
             referencedRelation: "assessments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "assessment_checks_framework_id_fkey"
+            columns: ["framework_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_frameworks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessment_checks_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
+            referencedRelation: "framework_requirements"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      assessment_frameworks: {
+        Row: {
+          colour: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          effective_date: string | null
+          icon_name: string
+          id: string
+          is_active: boolean
+          is_default: boolean
+          jurisdiction: string
+          name: string
+          regulatory_body: string | null
+          short_code: string
+          updated_at: string
+          version: string
+        }
+        Insert: {
+          colour?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          effective_date?: string | null
+          icon_name?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          jurisdiction?: string
+          name: string
+          regulatory_body?: string | null
+          short_code: string
+          updated_at?: string
+          version?: string
+        }
+        Update: {
+          colour?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          effective_date?: string | null
+          icon_name?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          jurisdiction?: string
+          name?: string
+          regulatory_body?: string | null
+          short_code?: string
+          updated_at?: string
+          version?: string
+        }
+        Relationships: []
+      }
+      assessment_template_frameworks: {
+        Row: {
+          framework_id: string
+          id: string
+          template_id: string
+        }
+        Insert: {
+          framework_id: string
+          id?: string
+          template_id: string
+        }
+        Update: {
+          framework_id?: string
+          id?: string
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_template_frameworks_framework_id_fkey"
+            columns: ["framework_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_frameworks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessment_template_frameworks_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assessment_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          name: string
+          template_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name: string
+          template_type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name?: string
+          template_type?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       assessment_versions: {
         Row: {
@@ -357,6 +500,7 @@ export type Database = {
       assessments: {
         Row: {
           created_at: string
+          framework_ids: string[] | null
           id: string
           notes: string | null
           org_data_subjects: string | null
@@ -368,12 +512,14 @@ export type Database = {
           org_regulators: string | null
           special_status: Json | null
           status: string
+          template_id: string | null
           updated_at: string
           user_id: string
           version: number
         }
         Insert: {
           created_at?: string
+          framework_ids?: string[] | null
           id?: string
           notes?: string | null
           org_data_subjects?: string | null
@@ -385,12 +531,14 @@ export type Database = {
           org_regulators?: string | null
           special_status?: Json | null
           status?: string
+          template_id?: string | null
           updated_at?: string
           user_id: string
           version?: number
         }
         Update: {
           created_at?: string
+          framework_ids?: string[] | null
           id?: string
           notes?: string | null
           org_data_subjects?: string | null
@@ -402,11 +550,20 @@ export type Database = {
           org_regulators?: string | null
           special_status?: Json | null
           status?: string
+          template_id?: string | null
           updated_at?: string
           user_id?: string
           version?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "assessments_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       consent_audit_log: {
         Row: {
@@ -506,6 +663,51 @@ export type Database = {
           },
         ]
       }
+      cross_framework_mappings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          mapping_notes: string | null
+          mapping_type: string
+          source_requirement_id: string
+          target_requirement_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mapping_notes?: string | null
+          mapping_type?: string
+          source_requirement_id: string
+          target_requirement_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mapping_notes?: string | null
+          mapping_type?: string
+          source_requirement_id?: string
+          target_requirement_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cross_framework_mappings_source_requirement_id_fkey"
+            columns: ["source_requirement_id"]
+            isOneToOne: false
+            referencedRelation: "framework_requirements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cross_framework_mappings_target_requirement_id_fkey"
+            columns: ["target_requirement_id"]
+            isOneToOne: false
+            referencedRelation: "framework_requirements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dept_grid: {
         Row: {
           assessment_id: string
@@ -596,6 +798,106 @@ export type Database = {
           is_active?: boolean
         }
         Relationships: []
+      }
+      framework_domains: {
+        Row: {
+          code: string
+          conditional_flag: string | null
+          created_at: string
+          description: string | null
+          display_order: number
+          framework_id: string
+          id: string
+          is_active: boolean
+          name: string
+          penalty_ref: string | null
+          section_ref: string | null
+        }
+        Insert: {
+          code: string
+          conditional_flag?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          framework_id: string
+          id?: string
+          is_active?: boolean
+          name: string
+          penalty_ref?: string | null
+          section_ref?: string | null
+        }
+        Update: {
+          code?: string
+          conditional_flag?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          framework_id?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          penalty_ref?: string | null
+          section_ref?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "framework_domains_framework_id_fkey"
+            columns: ["framework_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_frameworks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      framework_requirements: {
+        Row: {
+          created_at: string
+          description: string
+          display_order: number
+          domain_id: string
+          evidence_type: string
+          guidance: string | null
+          id: string
+          is_active: boolean
+          item_code: string
+          risk_level: string
+          sdf_only: boolean
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          display_order?: number
+          domain_id: string
+          evidence_type?: string
+          guidance?: string | null
+          id?: string
+          is_active?: boolean
+          item_code: string
+          risk_level?: string
+          sdf_only?: boolean
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          display_order?: number
+          domain_id?: string
+          evidence_type?: string
+          guidance?: string | null
+          id?: string
+          is_active?: boolean
+          item_code?: string
+          risk_level?: string
+          sdf_only?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "framework_requirements_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "framework_domains"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       grievances: {
         Row: {
