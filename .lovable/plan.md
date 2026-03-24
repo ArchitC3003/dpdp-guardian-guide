@@ -1,70 +1,46 @@
 
 
-## Plan: Test Upload Verification + User Theme Customization Panel
+## Plan: Multi-Framework Assessment Engine — Database Migration
 
-### Part 1: Upload Panel Verification
+### Overview
+A single SQL migration that creates 6 new tables, alters 2 existing tables, adds RLS policies, updated_at triggers, and seeds the DPDP framework with all 15 domains and 88 requirements from `assessmentDomains.ts`.
 
-The upload panel (`AdminUploadPanel.tsx`) already includes all required fields (tags, framework, author, file_size, mime_type). The DB schema confirms `artefact_files` has these columns. No code changes needed for upload — this is a manual testing step.
+### Migration SQL Structure
 
-### Part 2: User Theme Customization Panel
+**1. Create Tables** (in dependency order):
+- `assessment_frameworks` — framework registry
+- `framework_domains` — domains per framework (FK → assessment_frameworks)
+- `framework_requirements` — requirements per domain (FK → framework_domains)
+- `assessment_templates` — reusable assessment templates
+- `assessment_template_frameworks` — M2M join (FK → templates + frameworks)
+- `cross_framework_mappings` — requirement-to-requirement mappings (FK → framework_requirements)
 
-Create a "Display Preferences" panel that lets each user customize accent colors and chart palettes, persisted in `localStorage` and applied via CSS custom property overrides.
+**2. Alter Existing Tables**:
+- `assessments`: add `template_id` (uuid FK → assessment_templates, nullable), `framework_ids` (uuid[] default '{}')
+- `assessment_checks`: add `framework_id` (uuid FK → assessment_frameworks, nullable), `requirement_id` (uuid FK → framework_requirements, nullable)
 
----
+**3. RLS Policies** (same pattern for all 6 new tables):
+- Enable RLS
+- `SELECT` for `authenticated`: `USING (is_active = true)` (or `USING (true)` for join tables without is_active)
+- `INSERT/UPDATE/DELETE` for `authenticated`: admin-only via `has_role(auth.uid(), 'admin')`
 
-### Implementation
+**4. Triggers**:
+- `updated_at` trigger on `assessment_frameworks` and `assessment_templates` using existing `update_updated_at_column()` function
 
-**A. New Component: `src/components/ThemeCustomizer.tsx`**
-
-A collapsible card (accessible from Account Settings) with:
-- **Accent Color Picker**: 6 preset palettes (Teal/default, Blue, Purple, Rose, Amber, Indigo) — each sets `--primary`, `--ring`, `--chart-1` through `--chart-5`, and gradient utilities
-- **Chart Color Scheme**: 4 preset chart palettes (Default, Warm, Cool, High Contrast) — overrides `--chart-1` through `--chart-5`
-- **Card Style**: Toggle between default and "glass" card variant
-- Live preview swatch showing the selected colors
-- "Reset to Default" button
-
-State is stored in `localStorage` under `privcybhub-theme-prefs`. On app mount, a `useThemePreferences` hook reads prefs and applies CSS variable overrides to `document.documentElement.style`.
-
-**B. New Hook: `src/hooks/useThemePreferences.ts`**
-
-- Reads/writes `localStorage` key `privcybhub-theme-prefs`
-- Exports `{ preferences, setPreferences, resetToDefault }`
-- On mount + on change, applies CSS custom property overrides to `:root`
-- Predefined palette maps for each accent choice
-
-**C. Modify: `src/pages/AccountSettings.tsx`**
-
-- Import and render `ThemeCustomizer` as a new Card section titled "Display Preferences" between the Profile and AI Configuration cards
-
-**D. Modify: `src/components/AppLayout.tsx`**
-
-- Import `useThemePreferences` hook at layout level so theme overrides are always applied on app load (single call, no UI)
-
----
-
-### Palette Presets
-
-| Name | Primary HSL | Chart 1-5 |
-|---|---|---|
-| Teal (default) | 158 64% 51% | current defaults |
-| Ocean Blue | 210 90% 50% | blue-gradient series |
-| Royal Purple | 270 70% 55% | purple-gradient series |
-| Rose | 350 80% 55% | pink/rose-gradient series |
-| Amber Gold | 38 92% 50% | warm-gradient series |
-| Indigo | 240 75% 57% | indigo-gradient series |
-
-### File Summary
-
-| File | Action |
-|---|---|
-| `src/components/ThemeCustomizer.tsx` | Create |
-| `src/hooks/useThemePreferences.ts` | Create |
-| `src/pages/AccountSettings.tsx` | Edit: add ThemeCustomizer card |
-| `src/components/AppLayout.tsx` | Edit: mount useThemePreferences hook |
+**5. Seed Data**:
+- Insert DPDP Act 2023 framework with a fixed UUID
+- Insert all 15 domains (A–O) with fixed UUIDs, mapping `conditional` and `section`/`penalty` fields
+- Insert all 88 requirements across all domains, with `sdf_only` flag set for L.7–L.10
+- Create a default "DPDP Full Assessment" template linked to the DPDP framework
 
 ### Safety
-- No DB changes — purely client-side localStorage
-- No modification to existing color tokens in `index.css` — overrides applied via JS
-- All existing pages automatically pick up changes since they use CSS variables
-- Reset button restores original theme
+- All ALTERs use `ADD COLUMN IF NOT EXISTS` pattern (or just nullable columns with defaults) — no data loss
+- No modification to existing rows in `assessments` or `assessment_checks`
+- Existing assessment workflow continues to work unchanged
+- No changes to application code in this migration
+
+### File
+| File | Action |
+|---|---|
+| `supabase/migrations/[timestamp]_multi_framework_engine.sql` | Create: full migration with schema + RLS + triggers + seed |
 
