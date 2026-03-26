@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/sidebar";
 import { NavLink } from "@/components/NavLink";
 import { Badge } from "@/components/ui/badge";
-import { Cog, LayoutDashboard, ClipboardList, Share2, FolderOpen, Building2, FileText, Search, Grid3X3, Paperclip, BarChart3, LogOut, Settings2, Bot, Users, BookMarked, Shield, ScrollText, Scale, AlertTriangle, FileSearch, BookOpen } from "lucide-react";
+import { Cog, LayoutDashboard, ClipboardList, Share2, FolderOpen, Building2, FileText, Search, Grid3X3, Paperclip, BarChart3, LogOut, Settings2, Bot, Users, BookMarked, Shield, ScrollText, Scale, AlertTriangle, FileSearch, BookOpen, LayoutTemplate } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -133,6 +133,19 @@ export function AppSidebar() {
                           <div className="flex flex-col">
                             <span>Framework Manager</span>
                             <span className="text-[10px] text-muted-foreground leading-tight">Manage assessment frameworks & controls</span>
+                          </div>
+                        )}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild>
+                      <NavLink to="/admin/assessment-templates" className="hover:bg-sidebar-accent" activeClassName="bg-sidebar-accent text-primary font-medium">
+                        <LayoutTemplate className="h-4 w-4 mr-2 shrink-0 self-start mt-0.5" />
+                        {!collapsed && (
+                          <div className="flex flex-col">
+                            <span>Assessment Templates</span>
+                            <span className="text-[10px] text-muted-foreground leading-tight">Configure assessment frameworks</span>
                           </div>
                         )}
                       </NavLink>

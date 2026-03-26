@@ -27,6 +27,7 @@ import PolicySopBuilder from "./pages/PolicySopBuilder";
 import PolicyLibrary from "./pages/PolicyLibrary";
 import AdminAiConfig from "./pages/AdminAiConfig";
 import AdminFrameworkManager from "./pages/AdminFrameworkManager";
+import AdminAssessmentTemplates from "./pages/AdminAssessmentTemplates";
 import PrivacyPreferences from "./pages/PrivacyPreferences";
 import ConsentLedger from "./pages/admin/ConsentLedger";
 import NoticeManager from "./pages/admin/NoticeManager";
@@ -86,6 +87,7 @@ const App = () => (
               <Route path="/settings/users" element={<UserManagement />} />
               <Route path="/admin/ai-config" element={<AdminAiConfig />} />
               <Route path="/admin/frameworks" element={<AdminFrameworkManager />} />
+              <Route path="/admin/assessment-templates" element={<AdminAssessmentTemplates />} />
               <Route path="/admin/consent-ledger" element={<ConsentLedger />} />
               <Route path="/admin/notice-manager" element={<NoticeManager />} />
               <Route path="/admin/rights-desk" element={<RightsDesk />} />
