@@ -326,6 +326,43 @@ export default function Dashboard() {
           })()}
         </CardContent>
       </Card>
+
+      {/* Template Picker Dialog */}
+      <Dialog open={showTemplatePicker} onOpenChange={setShowTemplatePicker}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Select Assessment Template</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto py-2">
+            {templates.map((t) => (
+              <Card key={t.id} className={cn("border-border bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer", t.is_default && "ring-1 ring-primary/50")}>
+                <CardContent className="p-4 space-y-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-sm">{t.name}</p>
+                      {t.is_default && <Badge variant="outline" className="text-[9px] border-primary/40 text-primary">Default</Badge>}
+                    </div>
+                    {t.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{t.description}</p>}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {t.frameworks.map((fw) => (
+                      <Badge key={fw.id} variant="outline" className="text-[9px]">
+                        {fw.short_code} · {fw.jurisdiction}
+                      </Badge>
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">{t.requirement_count} requirements</span>
+                    <Button size="sm" onClick={() => createFromTemplate(t)} disabled={creatingFromTemplate}>
+                      {creatingFromTemplate ? "Creating…" : "Select"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
