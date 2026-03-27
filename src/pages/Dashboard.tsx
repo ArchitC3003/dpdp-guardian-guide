@@ -7,12 +7,23 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Trash2, ExternalLink, ClipboardList, BarChart3, CheckCircle2, Layers, Shield, FileText, AlertTriangle, BookMarked, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Assessment = Tables<"assessments">;
+
+interface TemplateCard {
+  id: string;
+  name: string;
+  description: string | null;
+  template_type: string;
+  is_default: boolean;
+  frameworks: { id: string; short_code: string; jurisdiction: string; name: string }[];
+  requirement_count: number;
+}
 
 interface PolicyDocRow {
   id: string;
