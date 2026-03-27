@@ -1,15 +1,15 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DOMAINS, type Domain } from "@/data/assessmentDomains";
 import { RiskBadge } from "@/components/RiskBadge";
-import { ArrowRight } from "lucide-react";
-import type { Json } from "@/integrations/supabase/types";
+import { ArrowRight, Loader2 } from "lucide-react";
 
 interface CheckRow {
   id?: string;
@@ -28,34 +28,163 @@ interface SpecialStatus {
   [key: string]: boolean | undefined;
 }
 
+interface FrameworkInfo {
+  id: string;
+  name: string;
+  short_code: string;
+  colour: string;
+}
+
+interface RequirementMeta {
+  frameworkId: string;
+  requirementId: string;
+}
+
 export default function PhaseRapidAssessment() {
   const { assessmentId } = useParams();
   const navigate = useNavigate();
-  const [selectedDomain, setSelectedDomain] = useState("A");
+  const [selectedDomain, setSelectedDomain] = useState("");
   const [checks, setChecks] = useState<Record<string, CheckRow>>({});
   const [specialStatus, setSpecialStatus] = useState<SpecialStatus>({});
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [isLegacy, setIsLegacy] = useState(false);
+  const [frameworks, setFrameworks] = useState<FrameworkInfo[]>([]);
+  const [selectedFrameworkId, setSelectedFrameworkId] = useState<string | null>(null);
+  const [allDomains, setAllDomains] = useState<Domain[]>([]);
+  const [domainFrameworkMap, setDomainFrameworkMap] = useState<Record<string, string>>({});
+  const [requirementMetaMap, setRequirementMetaMap] = useState<Record<string, RequirementMeta>>({});
 
   useEffect(() => {
     if (!assessmentId) return;
-    // Load checks
-    supabase.from("assessment_checks").select("*").eq("assessment_id", assessmentId)
-      .then(({ data }) => {
-        const map: Record<string, CheckRow> = {};
-        (data || []).forEach((d) => { map[d.check_id] = d; });
-        setChecks(map);
-      });
-    // Load special status
-    supabase.from("assessments").select("special_status").eq("id", assessmentId).single()
-      .then(({ data }) => {
-        if (data?.special_status) setSpecialStatus(data.special_status as unknown as SpecialStatus);
-      });
+    loadAssessmentData();
   }, [assessmentId]);
+
+  async function loadAssessmentData() {
+    if (!assessmentId) return;
+    setLoading(true);
+
+    // 1. Load assessment
+    const { data: assessment } = await supabase
+      .from("assessments")
+      .select("framework_ids, special_status")
+      .eq("id", assessmentId)
+      .single();
+
+    const ss = (assessment?.special_status as unknown as SpecialStatus) || {};
+    setSpecialStatus(ss);
+
+    const fwIds = (assessment?.framework_ids || []) as string[];
+
+    if (!fwIds.length) {
+      // Legacy fallback
+      setIsLegacy(true);
+      setAllDomains(DOMAINS);
+      setSelectedDomain(DOMAINS[0]?.code || "A");
+      setFrameworks([]);
+      setSelectedFrameworkId(null);
+    } else {
+      setIsLegacy(false);
+
+      // 2. Load frameworks
+      const { data: fwRows } = await supabase
+        .from("assessment_frameworks")
+        .select("id, name, short_code, colour")
+        .in("id", fwIds);
+
+      const fws: FrameworkInfo[] = (fwRows || []).map((f) => ({
+        id: f.id,
+        name: f.name,
+        short_code: f.short_code,
+        colour: f.colour,
+      }));
+      setFrameworks(fws);
+      setSelectedFrameworkId(fws[0]?.id || null);
+
+      // 3. Load domains
+      const { data: domainRows } = await supabase
+        .from("framework_domains")
+        .select("*")
+        .in("framework_id", fwIds)
+        .eq("is_active", true)
+        .order("display_order");
+
+      const domainIds = (domainRows || []).map((d) => d.id);
+      const dfMap: Record<string, string> = {};
+      (domainRows || []).forEach((d) => { dfMap[d.code] = d.framework_id; });
+      setDomainFrameworkMap(dfMap);
+
+      // 4. Load requirements
+      const { data: reqRows } = domainIds.length
+        ? await supabase
+            .from("framework_requirements")
+            .select("*")
+            .in("domain_id", domainIds)
+            .eq("is_active", true)
+            .order("display_order")
+        : { data: [] };
+
+      // 5. Transform
+      const metaMap: Record<string, RequirementMeta> = {};
+      const transformed: Domain[] = (domainRows || []).map((d) => {
+        const items = (reqRows || [])
+          .filter((r) => r.domain_id === d.id)
+          .map((r) => {
+            metaMap[r.item_code] = {
+              frameworkId: d.framework_id,
+              requirementId: r.id,
+            };
+            return {
+              id: r.item_code,
+              description: r.description,
+              risk: r.risk_level as "high" | "standard" | "critical",
+              evidence: r.evidence_type,
+            };
+          });
+
+        const sdfOnlyItems = (reqRows || [])
+          .filter((r) => r.domain_id === d.id && r.sdf_only)
+          .map((r) => r.item_code);
+
+        return {
+          code: d.code,
+          name: d.name,
+          section: d.section_ref || "",
+          penalty: d.penalty_ref || "",
+          conditional: d.conditional_flag || undefined,
+          sdfOnly: sdfOnlyItems.length ? sdfOnlyItems : undefined,
+          items,
+        } as Domain;
+      });
+
+      setRequirementMetaMap(metaMap);
+      setAllDomains(transformed);
+      setSelectedDomain(transformed[0]?.code || "");
+    }
+
+    // Load checks
+    const { data: checkData } = await supabase
+      .from("assessment_checks")
+      .select("*")
+      .eq("assessment_id", assessmentId);
+
+    const map: Record<string, CheckRow> = {};
+    (checkData || []).forEach((d) => { map[d.check_id] = d; });
+    setChecks(map);
+
+    setLoading(false);
+  }
+
+  // Filter domains by selected framework tab
+  const activeDomains = useMemo(() => {
+    if (isLegacy || frameworks.length <= 1) return allDomains;
+    if (!selectedFrameworkId) return allDomains;
+    return allDomains.filter((d) => domainFrameworkMap[d.code] === selectedFrameworkId);
+  }, [allDomains, isLegacy, frameworks, selectedFrameworkId, domainFrameworkMap]);
 
   const isDomainEnabled = (domain: Domain) => {
     if (domain.conditional === "children") return !!specialStatus.children;
     if (domain.conditional === "consentMgr") return !!specialStatus.consentMgr;
-    if (domain.conditional === "processor") return true; // No specific flag for this in special_status
     return true;
   };
 
@@ -75,17 +204,52 @@ export default function PhaseRapidAssessment() {
     if (existing?.id) {
       await supabase.from("assessment_checks").update({ [field]: value }).eq("id", existing.id);
     } else {
+      const meta = requirementMetaMap[checkId];
+      const insertPayload: Record<string, unknown> = {
+        assessment_id: assessmentId,
+        check_id: checkId,
+        domain,
+        [field]: value,
+      };
+      if (!isLegacy && meta) {
+        insertPayload.framework_id = meta.frameworkId;
+        insertPayload.requirement_id = meta.requirementId;
+      }
       const { data } = await supabase
         .from("assessment_checks")
-        .insert({ assessment_id: assessmentId, check_id: checkId, domain, [field]: value })
+        .insert(insertPayload)
         .select()
         .single();
       if (data) setChecks((prev) => ({ ...prev, [checkId]: { ...updated, id: data.id } }));
     }
     setSaving(false);
-  }, [assessmentId, checks]);
+  }, [assessmentId, checks, isLegacy, requirementMetaMap]);
 
-  const currentDomain = DOMAINS.find((d) => d.code === selectedDomain)!;
+  // Ensure selectedDomain is valid when activeDomains change
+  useEffect(() => {
+    if (activeDomains.length && !activeDomains.find((d) => d.code === selectedDomain)) {
+      setSelectedDomain(activeDomains[0].code);
+    }
+  }, [activeDomains, selectedDomain]);
+
+  const currentDomain = activeDomains.find((d) => d.code === selectedDomain);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!currentDomain) {
+    return (
+      <div className="text-center py-12 text-muted-foreground">
+        No domains found for this assessment.
+      </div>
+    );
+  }
+
   const enabled = isDomainEnabled(currentDomain);
 
   return (
@@ -101,12 +265,26 @@ export default function PhaseRapidAssessment() {
         </Button>
       </div>
 
+      {/* Framework Tabs */}
+      {frameworks.length > 1 && (
+        <Tabs value={selectedFrameworkId || ""} onValueChange={setSelectedFrameworkId}>
+          <TabsList>
+            {frameworks.map((fw) => (
+              <TabsTrigger key={fw.id} value={fw.id} className="gap-2">
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: fw.colour }} />
+                {fw.short_code}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      )}
+
       <div className="flex gap-4">
         {/* Domain Picker */}
         <div className="w-[220px] shrink-0">
           <ScrollArea className="h-[calc(100vh-220px)]">
             <div className="space-y-1 pr-2">
-              {DOMAINS.map((d) => {
+              {activeDomains.map((d) => {
                 const en = isDomainEnabled(d);
                 const progress = getDomainProgress(d);
                 return (
@@ -142,7 +320,6 @@ export default function PhaseRapidAssessment() {
 
         {/* Assessment Items */}
         <div className="flex-1 min-w-0 space-y-4">
-          {/* Domain Header */}
           <Card className="border-border bg-card">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
@@ -153,14 +330,15 @@ export default function PhaseRapidAssessment() {
                     <p className="text-xs text-muted-foreground">{currentDomain.section}</p>
                   </div>
                 </div>
-                <span className="text-sm font-mono font-bold bg-penalty-red/10 text-penalty-red px-3 py-1.5 rounded-lg">
-                  {currentDomain.penalty}
-                </span>
+                {currentDomain.penalty && (
+                  <span className="text-sm font-mono font-bold bg-penalty-red/10 text-penalty-red px-3 py-1.5 rounded-lg">
+                    {currentDomain.penalty}
+                  </span>
+                )}
               </div>
             </CardContent>
           </Card>
 
-          {/* Items */}
           {!enabled ? (
             <Card className="border-border bg-card">
               <CardContent className="py-12 text-center text-muted-foreground">
