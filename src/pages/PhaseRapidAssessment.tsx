@@ -205,16 +205,13 @@ export default function PhaseRapidAssessment() {
       await supabase.from("assessment_checks").update({ [field]: value }).eq("id", existing.id);
     } else {
       const meta = requirementMetaMap[checkId];
-      const insertPayload: Record<string, unknown> = {
+      const insertPayload = {
         assessment_id: assessmentId,
         check_id: checkId,
         domain,
         [field]: value,
+        ...((!isLegacy && meta) ? { framework_id: meta.frameworkId, requirement_id: meta.requirementId } : {}),
       };
-      if (!isLegacy && meta) {
-        insertPayload.framework_id = meta.frameworkId;
-        insertPayload.requirement_id = meta.requirementId;
-      }
       const { data } = await supabase
         .from("assessment_checks")
         .insert(insertPayload)
