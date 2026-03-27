@@ -1,46 +1,78 @@
 
 
-## Plan: Multi-Framework Assessment Engine — Database Migration
+## Plan: Database-Driven Rapid Assessment with Multi-Framework Tabs
 
 ### Overview
-A single SQL migration that creates 6 new tables, alters 2 existing tables, adds RLS policies, updated_at triggers, and seeds the DPDP framework with all 15 domains and 88 requirements from `assessmentDomains.ts`.
+Modify `PhaseRapidAssessment.tsx` to load domains/requirements from Supabase when the assessment has `framework_ids`, falling back to the static `DOMAINS` import for legacy assessments. Add a framework tab bar for multi-framework assessments.
 
-### Migration SQL Structure
+### Changes
 
-**1. Create Tables** (in dependency order):
-- `assessment_frameworks` — framework registry
-- `framework_domains` — domains per framework (FK → assessment_frameworks)
-- `framework_requirements` — requirements per domain (FK → framework_domains)
-- `assessment_templates` — reusable assessment templates
-- `assessment_template_frameworks` — M2M join (FK → templates + frameworks)
-- `cross_framework_mappings` — requirement-to-requirement mappings (FK → framework_requirements)
+**File: `src/pages/PhaseRapidAssessment.tsx`** (modify)
 
-**2. Alter Existing Tables**:
-- `assessments`: add `template_id` (uuid FK → assessment_templates, nullable), `framework_ids` (uuid[] default '{}')
-- `assessment_checks`: add `framework_id` (uuid FK → assessment_frameworks, nullable), `requirement_id` (uuid FK → framework_requirements, nullable)
+1. **New state variables**:
+   - `frameworks`: array of `{ id, name, short_code, colour }` for the assessment's frameworks
+   - `activeDomains`: `Domain[]` — the working domain list (either from DB or static)
+   - `selectedFrameworkId`: string | null — active framework tab filter
+   - `isLegacy`: boolean — whether to use static data
+   - `loading`: boolean
 
-**3. RLS Policies** (same pattern for all 6 new tables):
-- Enable RLS
-- `SELECT` for `authenticated`: `USING (is_active = true)` (or `USING (true)` for join tables without is_active)
-- `INSERT/UPDATE/DELETE` for `authenticated`: admin-only via `has_role(auth.uid(), 'admin')`
+2. **Data loading on mount** (refactor the existing `useEffect`):
+   - Fetch assessment row including `framework_ids` and `special_status`
+   - If `framework_ids` is empty/null → set `isLegacy = true`, use `DOMAINS` from static import
+   - If `framework_ids` has values:
+     - Query `assessment_frameworks` for those IDs → populate `frameworks` state
+     - Query `framework_domains` filtered by those framework IDs, ordered by `display_order`
+     - Query `framework_requirements` for those domain IDs, ordered by `display_order`
+     - Transform into `Domain[]` shape: map `section_ref` → `section`, `penalty_ref` → `penalty`, `conditional_flag` → `conditional`, requirements → `items` with `item_code` → `id`, `risk_level` → `risk`, `evidence_type` → `evidence`, `guidance` → `evidence` fallback
+     - Track `sdfOnly` items (where `sdf_only = true`)
+     - Set `selectedFrameworkId` to first framework
+   - Load `assessment_checks` as before
 
-**4. Triggers**:
-- `updated_at` trigger on `assessment_frameworks` and `assessment_templates` using existing `update_updated_at_column()` function
+3. **Framework tab bar** (new UI element):
+   - Render above the domain picker only when `frameworks.length > 1`
+   - Use shadcn `Tabs` component with framework short_codes as triggers
+   - Filter `activeDomains` by the selected framework's domains
 
-**5. Seed Data**:
-- Insert DPDP Act 2023 framework with a fixed UUID
-- Insert all 15 domains (A–O) with fixed UUIDs, mapping `conditional` and `section`/`penalty` fields
-- Insert all 88 requirements across all domains, with `sdf_only` flag set for L.7–L.10
-- Create a default "DPDP Full Assessment" template linked to the DPDP framework
+4. **Domain list and items rendering**:
+   - Replace `DOMAINS` references with `activeDomains` (filtered by selected framework tab)
+   - All existing rendering logic stays identical
 
-### Safety
-- All ALTERs use `ADD COLUMN IF NOT EXISTS` pattern (or just nullable columns with defaults) — no data loss
-- No modification to existing rows in `assessments` or `assessment_checks`
-- Existing assessment workflow continues to work unchanged
-- No changes to application code in this migration
+5. **Save logic update** (`updateCheck`):
+   - For non-legacy assessments, include `framework_id` and `requirement_id` in the insert call
+   - Need a lookup map from `item_code` → `{ frameworkId, requirementId }` built during data transform
+   - Legacy assessments continue inserting without these fields
 
-### File
+### Technical Details
+
+**DB → Domain transform**:
+```text
+framework_domains row → Domain {
+  code: row.code,
+  name: row.name,
+  section: row.section_ref,
+  penalty: row.penalty_ref,
+  conditional: row.conditional_flag,
+  sdfOnly: [items where sdf_only=true].map(i => i.item_code),
+  items: framework_requirements[].map(r => ({
+    id: r.item_code,
+    description: r.description,
+    risk: r.risk_level,
+    evidence: r.evidence_type
+  }))
+}
+```
+
+**Requirement metadata map** (for save):
+```text
+Map<item_code, { frameworkId: string, requirementId: string }>
+```
+
+Built during transform, used in `updateCheck` to set `framework_id` and `requirement_id` on new `assessment_checks` rows.
+
+### Files
 | File | Action |
 |---|---|
-| `supabase/migrations/[timestamp]_multi_framework_engine.sql` | Create: full migration with schema + RLS + triggers + seed |
+| `src/pages/PhaseRapidAssessment.tsx` | Modify: add DB loading, framework tabs, metadata-enriched saves |
+
+No database changes needed — all tables already exist.
 
