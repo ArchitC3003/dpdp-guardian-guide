@@ -207,7 +207,7 @@ export default function Dashboard() {
             {isAdmin && <span className="ml-2 inline-flex items-center gap-1 text-xs text-primary font-semibold"><Shield className="h-3 w-3" /> Admin View</span>}
           </p>
         </div>
-        <Button onClick={createAssessment} className="gradient-primary">
+        <Button onClick={handleNewAssessment} className="gradient-primary">
           <Plus className="h-4 w-4 mr-2" /> New Assessment
         </Button>
       </div>
