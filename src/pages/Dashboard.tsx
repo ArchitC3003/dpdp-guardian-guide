@@ -48,6 +48,9 @@ export default function Dashboard() {
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [loading, setLoading] = useState(true);
   const [policyDocs, setPolicyDocs] = useState<PolicyDocRow[]>([]);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [templates, setTemplates] = useState<TemplateCard[]>([]);
+  const [creatingFromTemplate, setCreatingFromTemplate] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -56,7 +59,6 @@ export default function Dashboard() {
   }, [user, isAdmin]);
 
   const loadAssessments = async () => {
-    // Admin sees all assessments; regular users see only their own (enforced by RLS)
     const { data } = await supabase
       .from("assessments")
       .select("*")
@@ -74,7 +76,70 @@ export default function Dashboard() {
     setPolicyDocs((data as PolicyDocRow[]) ?? []);
   };
 
-  const createAssessment = async () => {
+  const loadTemplates = async (): Promise<TemplateCard[]> => {
+    const { data: tpls } = await supabase
+      .from("assessment_templates")
+      .select("id, name, description, template_type, is_default")
+      .eq("is_active", true)
+      .order("is_default", { ascending: false });
+    if (!tpls || tpls.length === 0) return [];
+
+    const { data: links } = await supabase
+      .from("assessment_template_frameworks")
+      .select("template_id, framework_id");
+
+    const { data: frameworks } = await supabase
+      .from("assessment_frameworks")
+      .select("id, short_code, jurisdiction, name")
+      .eq("is_active", true);
+
+    const { data: domains } = await supabase
+      .from("framework_domains")
+      .select("id, framework_id")
+      .eq("is_active", true);
+
+    const { data: reqs } = await supabase
+      .from("framework_requirements")
+      .select("id, domain_id")
+      .eq("is_active", true);
+
+    const domainsByFw: Record<string, string[]> = {};
+    (domains ?? []).forEach((d) => {
+      if (!domainsByFw[d.framework_id]) domainsByFw[d.framework_id] = [];
+      domainsByFw[d.framework_id].push(d.id);
+    });
+
+    const reqsByDomain: Record<string, number> = {};
+    (reqs ?? []).forEach((r) => {
+      reqsByDomain[r.domain_id] = (reqsByDomain[r.domain_id] || 0) + 1;
+    });
+
+    const cards: TemplateCard[] = tpls.map((t) => {
+      const fwIds = (links ?? []).filter((l) => l.template_id === t.id).map((l) => l.framework_id);
+      const fws = (frameworks ?? []).filter((f) => fwIds.includes(f.id));
+      let reqCount = 0;
+      fwIds.forEach((fid) => {
+        (domainsByFw[fid] ?? []).forEach((did) => {
+          reqCount += reqsByDomain[did] || 0;
+        });
+      });
+      return { ...t, frameworks: fws, requirement_count: reqCount };
+    });
+    return cards;
+  };
+
+  const handleNewAssessment = async () => {
+    if (!user) return;
+    const cards = await loadTemplates();
+    if (cards.length === 0) {
+      await createAssessmentLegacy();
+    } else {
+      setTemplates(cards);
+      setShowTemplatePicker(true);
+    }
+  };
+
+  const createAssessmentLegacy = async () => {
     if (!user) return;
     const { data, error } = await supabase
       .from("assessments")
@@ -85,6 +150,29 @@ export default function Dashboard() {
       toast.error("Failed to create assessment");
       return;
     }
+    toast.success("Assessment created");
+    navigate(`/assessment/${data.id}/org-profile`);
+  };
+
+  const createFromTemplate = async (template: TemplateCard) => {
+    if (!user || creatingFromTemplate) return;
+    setCreatingFromTemplate(true);
+    const frameworkIds = template.frameworks.map((f) => f.id);
+    const { data, error } = await supabase
+      .from("assessments")
+      .insert({
+        user_id: user.id,
+        template_id: template.id,
+        framework_ids: frameworkIds,
+      })
+      .select()
+      .single();
+    setCreatingFromTemplate(false);
+    if (error) {
+      toast.error("Failed to create assessment");
+      return;
+    }
+    setShowTemplatePicker(false);
     toast.success("Assessment created");
     navigate(`/assessment/${data.id}/org-profile`);
   };
