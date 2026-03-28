@@ -44,10 +44,10 @@ const consentAdminNav = [
   { title: "Audit Log", subtitle: "Tamper-evident event log", url: "/consent/audit-log", icon: FileSearch },
 ];
 
-const phases = [
+const getPhases = (fwCount: number) => [
   { title: "① Org Profile", url: "org-profile", icon: Building2 },
   { title: "② Policy Matrix", url: "policy-matrix", icon: FileText },
-  { title: "③ Rapid Assessment", url: "rapid-assessment", icon: Search },
+  { title: fwCount > 1 ? `③ Assessment (${fwCount} frameworks)` : "③ Rapid Assessment", url: "rapid-assessment", icon: Search },
   { title: "④ Dept Grid", url: "dept-grid", icon: Grid3X3 },
   { title: "⑤ File References", url: "file-references", icon: Paperclip },
   { title: "⑥ Dashboard", url: "dashboard", icon: BarChart3 },
