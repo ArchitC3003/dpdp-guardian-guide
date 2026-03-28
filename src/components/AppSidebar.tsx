@@ -63,6 +63,21 @@ export function AppSidebar() {
   const assessmentMatch = location.pathname.match(/\/assessment\/([^/]+)/);
   const assessmentId = assessmentMatch?.[1];
 
+  const [frameworkCount, setFrameworkCount] = useState(0);
+
+  useEffect(() => {
+    if (!assessmentId) { setFrameworkCount(0); return; }
+    (async () => {
+      const { data } = await supabase
+        .from("assessments")
+        .select("framework_ids")
+        .eq("id", assessmentId)
+        .single();
+      const ids = (data?.framework_ids as string[] | null) ?? [];
+      setFrameworkCount(ids.length);
+    })();
+  }, [assessmentId]);
+
   const renderNavItem = (item: { title: string; subtitle: string; url: string; icon: any }) => (
     <SidebarMenuItem key={item.title}>
       <SidebarMenuButton asChild>
