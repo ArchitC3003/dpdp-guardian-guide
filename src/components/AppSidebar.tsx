@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,31 +17,48 @@ import {
 } from "@/components/ui/sidebar";
 import { NavLink } from "@/components/NavLink";
 import { Badge } from "@/components/ui/badge";
-import { Cog, LayoutDashboard, ClipboardList, Share2, FolderOpen, Building2, FileText, Search, Grid3X3, Paperclip, BarChart3, LogOut, Settings2, Bot, Users, BookMarked, Shield, ScrollText, Scale, AlertTriangle, FileSearch, BookOpen, LayoutTemplate } from "lucide-react";
+import {
+  Cog, LayoutDashboard, ClipboardList, FolderOpen, Building2,
+  FileText, Search, Grid3X3, Paperclip, BarChart3, LogOut,
+  Settings2, Bot, Users, BookMarked, Shield, ScrollText,
+  Scale, AlertTriangle, FileSearch,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const mainNav = [
+type NavItem = { title: string; subtitle: string; url: string; icon: any };
+
+const overviewNav: NavItem[] = [
   { title: "Dashboard", subtitle: "Compliance overview & risk summary", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Assessments", subtitle: "Run DPDP gap & risk assessments", url: "/assessments", icon: ClipboardList },
-  { title: "Shared Reports", subtitle: "Export & share compliance reports", url: "/shared", icon: Share2 },
-  { title: "Assessment Repository", subtitle: "88 DPDP requirements with AI templates", url: "/repository", icon: FolderOpen },
-  { title: "Artefact Repository", subtitle: "Org documents — Admin managed", url: "/artefacts", icon: Building2 },
-  { title: "Policy & SOP Builder", subtitle: "AI-powered policy & SOP generator", url: "/policy-sop-builder", icon: Bot },
-  { title: "Policy Register", subtitle: "Official policy lifecycle register", url: "/policy-library", icon: BookMarked },
-  { title: "Settings", subtitle: "App configuration & preferences", url: "/settings", icon: Settings2 },
 ];
 
-const consentUserNav = [
-  { title: "Privacy Preferences", subtitle: "Manage consent & exercise rights", url: "/privacy-preferences", icon: Shield },
+const assessNav: NavItem[] = [
+  { title: "Assessments", subtitle: "Run & manage gap assessments", url: "/assessments", icon: ClipboardList },
+  { title: "Templates & Reference", subtitle: "Requirement templates & checklists", url: "/repository", icon: FolderOpen },
 ];
 
-const consentAdminNav = [
-  { title: "Consent Ledger", subtitle: "All consent receipts", url: "/consent/ledger", icon: ScrollText },
-  { title: "Notice Manager", subtitle: "Create & publish notices", url: "/consent/notices", icon: FileText },
+const buildNav: NavItem[] = [
+  { title: "Policy Builder", subtitle: "AI-powered policy & SOP generator", url: "/policy-sop-builder", icon: Bot },
+  { title: "Policy Register", subtitle: "Policy lifecycle management", url: "/policy-library", icon: BookMarked },
+  { title: "Organisation Documents", subtitle: "Org documents & evidence library", url: "/artefacts", icon: Building2 },
+];
+
+const privacyOpsNav: NavItem[] = [
+  { title: "Consent Ledger", subtitle: "Consent receipts & records", url: "/consent/ledger", icon: ScrollText },
+  { title: "Notice Manager", subtitle: "Create & publish privacy notices", url: "/consent/notices", icon: FileText },
   { title: "Rights Desk", subtitle: "Data principal rights requests", url: "/consent/rights-desk", icon: Scale },
-  { title: "Grievance Console", subtitle: "Complaints & grievances", url: "/consent/grievances", icon: AlertTriangle },
+  { title: "Grievances", subtitle: "Complaints & grievance redressal", url: "/consent/grievances", icon: AlertTriangle },
   { title: "Audit Log", subtitle: "Tamper-evident event log", url: "/consent/audit-log", icon: FileSearch },
+];
+
+const myPrivacyNav: NavItem[] = [
+  { title: "Privacy Preferences", subtitle: "Manage your consent & data rights", url: "/privacy-preferences", icon: Shield },
+];
+
+const adminNav: NavItem[] = [
+  { title: "User Management", subtitle: "Manage team roles & access", url: "/settings/users", icon: Users },
+  { title: "AI Configuration", subtitle: "Manage AI prompts & models", url: "/admin/ai-config", icon: Bot },
+  { title: "Settings", subtitle: "Account & app configuration", url: "/settings", icon: Settings2 },
 ];
 
 const getPhases = (fwCount: number) => [
@@ -78,7 +95,7 @@ export function AppSidebar() {
     })();
   }, [assessmentId]);
 
-  const renderNavItem = (item: { title: string; subtitle: string; url: string; icon: any }) => (
+  const renderNavItem = (item: NavItem) => (
     <SidebarMenuItem key={item.title}>
       <SidebarMenuButton asChild>
         <NavLink to={item.url} end={item.url === "/dashboard" || item.url === "/assessments"} className="hover:bg-sidebar-accent" activeClassName="bg-sidebar-accent text-primary font-medium">
@@ -92,6 +109,15 @@ export function AppSidebar() {
         </NavLink>
       </SidebarMenuButton>
     </SidebarMenuItem>
+  );
+
+  const renderSection = (label: string, items: NavItem[]) => (
+    <SidebarGroup key={label}>
+      <SidebarGroupLabel>{label}</SidebarGroupLabel>
+      <SidebarGroupContent>
+        <SidebarMenu>{items.map(renderNavItem)}</SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
   );
 
   return (
@@ -108,82 +134,12 @@ export function AppSidebar() {
           )}
         </div>
 
-        {/* Main Nav */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {mainNav.map(renderNavItem)}
-              {canManageUsers && (
-                <>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <NavLink to="/settings/users" className="hover:bg-sidebar-accent" activeClassName="bg-sidebar-accent text-primary font-medium">
-                        <Users className="h-4 w-4 mr-2 shrink-0 self-start mt-0.5" />
-                        {!collapsed && (
-                          <div className="flex flex-col">
-                            <span>User Management</span>
-                            <span className="text-[10px] text-muted-foreground leading-tight">Manage team roles & access</span>
-                          </div>
-                        )}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <NavLink to="/admin/ai-config" className="hover:bg-sidebar-accent" activeClassName="bg-sidebar-accent text-primary font-medium">
-                        <Bot className="h-4 w-4 mr-2 shrink-0 self-start mt-0.5" />
-                        {!collapsed && (
-                          <div className="flex flex-col">
-                            <span>AI Configuration</span>
-                            <span className="text-[10px] text-muted-foreground leading-tight">Manage AI prompts & training</span>
-                          </div>
-                        )}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <NavLink to="/admin/frameworks" className="hover:bg-sidebar-accent" activeClassName="bg-sidebar-accent text-primary font-medium">
-                        <BookOpen className="h-4 w-4 mr-2 shrink-0 self-start mt-0.5" />
-                        {!collapsed && (
-                          <div className="flex flex-col">
-                            <span>Framework Manager</span>
-                            <span className="text-[10px] text-muted-foreground leading-tight">Manage assessment frameworks & controls</span>
-                          </div>
-                        )}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <NavLink to="/admin/assessment-templates" className="hover:bg-sidebar-accent" activeClassName="bg-sidebar-accent text-primary font-medium">
-                        <LayoutTemplate className="h-4 w-4 mr-2 shrink-0 self-start mt-0.5" />
-                        {!collapsed && (
-                          <div className="flex flex-col">
-                            <span>Assessment Templates</span>
-                            <span className="text-[10px] text-muted-foreground leading-tight">Configure assessment frameworks</span>
-                          </div>
-                        )}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </>
-              )}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Consent & Rights — User Facing */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Consent & Rights</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {consentUserNav.map(renderNavItem)}
-              {canManageUsers && consentAdminNav.map(renderNavItem)}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {renderSection("Overview", overviewNav)}
+        {renderSection("Assess", assessNav)}
+        {renderSection("Build", buildNav)}
+        {canManageUsers && renderSection("Privacy Operations", privacyOpsNav)}
+        {renderSection("My Privacy", myPrivacyNav)}
+        {canManageUsers && renderSection("Administration", adminNav)}
 
         {/* Assessment Phases */}
         {assessmentId && (
