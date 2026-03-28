@@ -1,6 +1,8 @@
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Sidebar,
   SidebarContent,
@@ -42,10 +44,10 @@ const consentAdminNav = [
   { title: "Audit Log", subtitle: "Tamper-evident event log", url: "/consent/audit-log", icon: FileSearch },
 ];
 
-const phases = [
+const getPhases = (fwCount: number) => [
   { title: "① Org Profile", url: "org-profile", icon: Building2 },
   { title: "② Policy Matrix", url: "policy-matrix", icon: FileText },
-  { title: "③ Rapid Assessment", url: "rapid-assessment", icon: Search },
+  { title: fwCount > 1 ? `③ Assessment (${fwCount} frameworks)` : "③ Rapid Assessment", url: "rapid-assessment", icon: Search },
   { title: "④ Dept Grid", url: "dept-grid", icon: Grid3X3 },
   { title: "⑤ File References", url: "file-references", icon: Paperclip },
   { title: "⑥ Dashboard", url: "dashboard", icon: BarChart3 },
@@ -60,6 +62,21 @@ export function AppSidebar() {
 
   const assessmentMatch = location.pathname.match(/\/assessment\/([^/]+)/);
   const assessmentId = assessmentMatch?.[1];
+
+  const [frameworkCount, setFrameworkCount] = useState(0);
+
+  useEffect(() => {
+    if (!assessmentId) { setFrameworkCount(0); return; }
+    (async () => {
+      const { data } = await supabase
+        .from("assessments")
+        .select("framework_ids")
+        .eq("id", assessmentId)
+        .single();
+      const ids = (data?.framework_ids as string[] | null) ?? [];
+      setFrameworkCount(ids.length);
+    })();
+  }, [assessmentId]);
 
   const renderNavItem = (item: { title: string; subtitle: string; url: string; icon: any }) => (
     <SidebarMenuItem key={item.title}>
@@ -174,7 +191,7 @@ export function AppSidebar() {
             <SidebarGroupLabel>Assessment Phases</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {phases.map((phase) => (
+                {getPhases(frameworkCount).map((phase) => (
                   <SidebarMenuItem key={phase.url}>
                     <SidebarMenuButton asChild>
                       <NavLink
