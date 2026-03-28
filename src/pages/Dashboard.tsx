@@ -6,6 +6,7 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/StatusBadge";
+import { FrameworkBadge } from "@/components/FrameworkBadge";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Trash2, ExternalLink, ClipboardList, BarChart3, CheckCircle2, Layers, Shield, FileText, AlertTriangle, BookMarked, ChevronRight } from "lucide-react";
@@ -14,6 +15,13 @@ import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Assessment = Tables<"assessments">;
+
+interface FrameworkInfo {
+  id: string;
+  short_code: string;
+  colour: string;
+  name: string;
+}
 
 interface TemplateCard {
   id: string;
@@ -51,12 +59,26 @@ export default function Dashboard() {
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [templates, setTemplates] = useState<TemplateCard[]>([]);
   const [creatingFromTemplate, setCreatingFromTemplate] = useState(false);
+  const [frameworkMap, setFrameworkMap] = useState<Record<string, FrameworkInfo>>({});
 
   useEffect(() => {
     if (!user) return;
     loadAssessments();
     loadPolicyDocs();
+    loadFrameworks();
   }, [user, isAdmin]);
+
+  const loadFrameworks = async () => {
+    const { data } = await supabase
+      .from("assessment_frameworks")
+      .select("id, short_code, colour, name")
+      .eq("is_active", true);
+    if (data) {
+      const map: Record<string, FrameworkInfo> = {};
+      data.forEach((f) => { map[f.id] = f; });
+      setFrameworkMap(map);
+    }
+  };
 
   const loadAssessments = async () => {
     const { data } = await supabase
@@ -187,6 +209,24 @@ export default function Dashboard() {
     loadAssessments();
   };
 
+  const getAssessmentFrameworks = (a: Assessment): FrameworkInfo[] => {
+    const ids = (a.framework_ids as string[] | null) ?? [];
+    return ids.map((id) => frameworkMap[id]).filter(Boolean);
+  };
+
+  // Framework distribution across all assessments
+  const frameworkDistribution = (() => {
+    const counts: Record<string, { info: FrameworkInfo; count: number }> = {};
+    assessments.forEach((a) => {
+      const fws = getAssessmentFrameworks(a);
+      fws.forEach((fw) => {
+        if (!counts[fw.id]) counts[fw.id] = { info: fw, count: 0 };
+        counts[fw.id].count++;
+      });
+    });
+    return Object.values(counts);
+  })();
+
   const inProgress = assessments.filter((a) => a.status === "In Progress").length;
   const completed = assessments.filter((a) => a.status === "Completed").length;
 
@@ -194,7 +234,7 @@ export default function Dashboard() {
     { label: "Total Assessments", value: assessments.length, icon: ClipboardList },
     { label: "In Progress", value: inProgress, icon: BarChart3 },
     { label: "Completed", value: completed, icon: CheckCircle2 },
-    { label: "Domains Covered", value: 14, icon: Layers },
+    { label: "Frameworks", value: frameworkDistribution.length || 1, icon: Layers },
   ];
 
   return (
@@ -229,6 +269,28 @@ export default function Dashboard() {
         ))}
       </div>
 
+      {/* Framework Distribution */}
+      {frameworkDistribution.length > 1 && (
+        <Card className="border-border bg-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Layers className="h-5 w-5 text-primary" /> Framework Distribution
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-3">
+              {frameworkDistribution.map(({ info, count }) => (
+                <div key={info.id} className="flex items-center gap-2 rounded-lg bg-secondary/50 px-3 py-2">
+                  <FrameworkBadge shortCode={info.short_code} colour={info.colour} />
+                  <span className="text-sm text-muted-foreground">{info.name}</span>
+                  <span className="text-xs font-bold">{count}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Recent Assessments */}
       <Card className="border-border bg-card">
         <CardHeader>
@@ -248,27 +310,35 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="space-y-2">
-              {assessments.map((a) => (
-                <div key={a.id} className="flex items-center justify-between p-4 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors">
-                  <div className="flex items-center gap-4 min-w-0">
-                    <div className="min-w-0">
-                      <p className="font-medium truncate">{a.org_name || "Untitled Assessment"}</p>
-                      <p className="text-xs text-muted-foreground">
-                        v{a.version} · Updated {new Date(a.updated_at).toLocaleDateString()}
-                      </p>
+              {assessments.map((a) => {
+                const fws = getAssessmentFrameworks(a);
+                return (
+                  <div key={a.id} className="flex items-center justify-between p-4 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors">
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-medium truncate">{a.org_name || "Untitled Assessment"}</p>
+                          {fws.map((fw) => (
+                            <FrameworkBadge key={fw.id} shortCode={fw.short_code} colour={fw.colour} />
+                          ))}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          v{a.version} · Updated {new Date(a.updated_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <StatusBadge status={a.status} />
                     </div>
-                    <StatusBadge status={a.status} />
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button size="sm" variant="outline" onClick={() => navigate(`/assessment/${a.id}/org-profile`)}>
+                        <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open
+                      </Button>
+                      <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive" onClick={() => deleteAssessment(a.id)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Button size="sm" variant="outline" onClick={() => navigate(`/assessment/${a.id}/org-profile`)}>
-                      <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open
-                    </Button>
-                    <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive" onClick={() => deleteAssessment(a.id)}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
