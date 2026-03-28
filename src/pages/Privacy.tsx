@@ -9,7 +9,7 @@ export default function Privacy() {
 
         <section className="space-y-3">
           <h2 className="text-xl font-semibold">1. Who We Are</h2>
-          <p className="text-muted-foreground">PrivcybHub is a privacy and cyber compliance platform. Operator: [Organisation Name], [Registered Address]. Contact: privacy@privcybhub.com</p>
+          <p className="text-muted-foreground">PrivcybHub is a privacy and cyber compliance platform. <p className="text-muted-foreground">PrivcybHub is a privacy and cyber compliance platform. Operator: PrivcybHub, Pune, Maharashtra, India. Contact: privacy@privcybhub.com</p>. Contact: privacy@privcybhub.com</p>
         </section>
 
         <section className="space-y-3">
