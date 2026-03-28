@@ -61,7 +61,7 @@ export default function Privacy() {
 
         <section className="space-y-3">
           <h2 className="text-xl font-semibold">9. Contact</h2>
-          <p className="text-muted-foreground">Data Protection Officer: [DPO Name]<br />Email: privacy@privcybhub.com</p>
+          <p className="text-muted-foreground">Data Protection Officer: <p className="text-muted-foreground">Data Protection Officer: Privacy Office, PrivcybHub<br />Email: privacy@privcybhub.com</p><br />Email: privacy@privcybhub.com</p>
         </section>
       </div>
     </div>
