@@ -1,78 +1,52 @@
 
 
-## Plan: Database-Driven Rapid Assessment with Multi-Framework Tabs
+## Restructure Sidebar Navigation
 
-### Overview
-Modify `PhaseRapidAssessment.tsx` to load domains/requirements from Supabase when the assessment has `framework_ids`, falling back to the static `DOMAINS` import for legacy assessments. Add a framework tab bar for multi-framework assessments.
+### Summary
+Replace the flat 16-item sidebar with 7 grouped sections, removing "Shared Reports" from nav (keeping route), and reorganizing items by functional domain.
 
 ### Changes
 
-**File: `src/pages/PhaseRapidAssessment.tsx`** (modify)
+**File 1: `src/components/AppSidebar.tsx`** (rewrite nav arrays and group rendering)
 
-1. **New state variables**:
-   - `frameworks`: array of `{ id, name, short_code, colour }` for the assessment's frameworks
-   - `activeDomains`: `Domain[]` — the working domain list (either from DB or static)
-   - `selectedFrameworkId`: string | null — active framework tab filter
-   - `isLegacy`: boolean — whether to use static data
-   - `loading`: boolean
+Replace `mainNav`, `consentUserNav`, `consentAdminNav` with these section arrays:
 
-2. **Data loading on mount** (refactor the existing `useEffect`):
-   - Fetch assessment row including `framework_ids` and `special_status`
-   - If `framework_ids` is empty/null → set `isLegacy = true`, use `DOMAINS` from static import
-   - If `framework_ids` has values:
-     - Query `assessment_frameworks` for those IDs → populate `frameworks` state
-     - Query `framework_domains` filtered by those framework IDs, ordered by `display_order`
-     - Query `framework_requirements` for those domain IDs, ordered by `display_order`
-     - Transform into `Domain[]` shape: map `section_ref` → `section`, `penalty_ref` → `penalty`, `conditional_flag` → `conditional`, requirements → `items` with `item_code` → `id`, `risk_level` → `risk`, `evidence_type` → `evidence`, `guidance` → `evidence` fallback
-     - Track `sdfOnly` items (where `sdf_only = true`)
-     - Set `selectedFrameworkId` to first framework
-   - Load `assessment_checks` as before
+| Section | Label | Visibility | Items |
+|---------|-------|-----------|-------|
+| Overview | "Overview" | all | Dashboard |
+| Assess | "Assess" | all | Assessments, Templates & Reference |
+| Build | "Build" | all | Policy Builder, Policy Register, Organisation Documents |
+| Privacy Ops | "Privacy Operations" | canManageUsers | Consent Ledger, Notice Manager, Rights Desk, Grievances, Audit Log |
+| My Privacy | "My Privacy" | all | Privacy Preferences |
+| Administration | "Administration" | canManageUsers | User Management, AI Configuration, Settings |
+| Assessment Phases | "Assessment Phases" | contextual (assessmentId) | Keep existing phases exactly |
 
-3. **Framework tab bar** (new UI element):
-   - Render above the domain picker only when `frameworks.length > 1`
-   - Use shadcn `Tabs` component with framework short_codes as triggers
-   - Filter `activeDomains` by the selected framework's domains
+Key details:
+- Remove "Shared Reports" from sidebar (was `Share2` icon, `/shared`)
+- Remove duplicate "Assessments" entry (currently both `/dashboard` and `/assessments` render Dashboard — keep `/assessments` route only in "Assess" section)
+- Remove Framework Manager and Assessment Templates from sidebar (they're admin sub-features accessible from Settings/AI Config)
+- Rename items per spec: "Assessment Repository" → "Templates & Reference", "Artefact Repository" → "Organisation Documents", "Policy & SOP Builder" → "Policy Builder"
+- Update URLs for Privacy Ops to use `/admin/` prefix as specified
+- Each section renders as its own `SidebarGroup` with `SidebarGroupLabel`
+- Reuse existing `renderNavItem` function — no changes needed
+- Keep logo, footer, phases, collapsed behaviour exactly as-is
+- Remove unused `Share2`, `BookOpen`, `LayoutTemplate` imports; keep all others
 
-4. **Domain list and items rendering**:
-   - Replace `DOMAINS` references with `activeDomains` (filtered by selected framework tab)
-   - All existing rendering logic stays identical
+**File 2: `src/App.tsx`** (no route changes)
+- Keep `/shared` route alive (just not in sidebar)
+- Keep `/assessments` route as-is
+- No changes needed per the spec
 
-5. **Save logic update** (`updateCheck`):
-   - For non-legacy assessments, include `framework_id` and `requirement_id` in the insert call
-   - Need a lookup map from `item_code` → `{ frameworkId, requirementId }` built during data transform
-   - Legacy assessments continue inserting without these fields
+### What stays the same
+- `getPhases()` function and Assessment Phases conditional rendering
+- Footer with profile info and sign out
+- Logo/brand header
+- `renderNavItem` helper
+- All page components untouched
+- All routes in App.tsx untouched
+- Collapsed sidebar icon-only behaviour
 
-### Technical Details
-
-**DB → Domain transform**:
-```text
-framework_domains row → Domain {
-  code: row.code,
-  name: row.name,
-  section: row.section_ref,
-  penalty: row.penalty_ref,
-  conditional: row.conditional_flag,
-  sdfOnly: [items where sdf_only=true].map(i => i.item_code),
-  items: framework_requirements[].map(r => ({
-    id: r.item_code,
-    description: r.description,
-    risk: r.risk_level,
-    evidence: r.evidence_type
-  }))
-}
-```
-
-**Requirement metadata map** (for save):
-```text
-Map<item_code, { frameworkId: string, requirementId: string }>
-```
-
-Built during transform, used in `updateCheck` to set `framework_id` and `requirement_id` on new `assessment_checks` rows.
-
-### Files
-| File | Action |
-|---|---|
-| `src/pages/PhaseRapidAssessment.tsx` | Modify: add DB loading, framework tabs, metadata-enriched saves |
-
-No database changes needed — all tables already exist.
+### Item count
+- Regular users: 7 items across 4 sections
+- Admin users: 12 items across 6 sections (down from 16+)
 
