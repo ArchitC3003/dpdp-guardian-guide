@@ -191,7 +191,7 @@ export function AppSidebar() {
             <SidebarGroupLabel>Assessment Phases</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {phases.map((phase) => (
+                {getPhases(frameworkCount).map((phase) => (
                   <SidebarMenuItem key={phase.url}>
                     <SidebarMenuButton asChild>
                       <NavLink
