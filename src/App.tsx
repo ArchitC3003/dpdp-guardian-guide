@@ -11,6 +11,7 @@ import Auth from "./pages/Auth";
 import ProfileSetup from "./pages/ProfileSetup";
 import Dashboard from "./pages/Dashboard";
 import SharedReports from "./pages/SharedReports";
+import Assessments from "./pages/Assessments";
 import Repository from "./pages/Repository";
 import ArtefactRepository from "./pages/ArtefactRepository";
 import AccountSettings from "./pages/AccountSettings";
@@ -76,7 +77,7 @@ const App = () => (
             <Route path="/privacy-preferences" element={<PrivacyPreferences />} />
             <Route element={<ProtectedRoutes />}>
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/assessments" element={<Dashboard />} />
+              <Route path="/assessments" element={<Assessments />} />
               <Route path="/shared" element={<SharedReports />} />
               <Route path="/repository" element={<Repository />} />
               <Route path="/artefacts" element={<ArtefactRepository />} />

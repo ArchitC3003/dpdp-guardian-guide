@@ -5,11 +5,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusBadge } from "@/components/StatusBadge";
 import { FrameworkBadge } from "@/components/FrameworkBadge";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Trash2, ExternalLink, ClipboardList, BarChart3, CheckCircle2, Layers, Shield, FileText, AlertTriangle, BookMarked, ChevronRight } from "lucide-react";
+import { Plus, Trash2, ExternalLink, ClipboardList, BarChart3, CheckCircle2, Shield, Search } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
@@ -33,29 +35,15 @@ interface TemplateCard {
   requirement_count: number;
 }
 
-interface PolicyDocRow {
-  id: string;
-  title: string;
-  status: string;
-  review_date: string | null;
-  updated_at: string;
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  Draft: "border-amber-500/40 text-amber-400 bg-amber-500/10",
-  "Under Review": "border-orange-500/40 text-orange-400 bg-orange-500/10",
-  Approved: "border-emerald-500/40 text-emerald-400 bg-emerald-500/10",
-  Published: "border-primary/40 text-primary bg-primary/10",
-  Retired: "border-muted-foreground/40 text-muted-foreground bg-muted/20",
-};
-
-export default function Dashboard() {
+export default function Assessments() {
   const { user } = useAuth();
   const { isAdmin } = useIsAdmin();
   const navigate = useNavigate();
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [policyDocs, setPolicyDocs] = useState<PolicyDocRow[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("updated");
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [templates, setTemplates] = useState<TemplateCard[]>([]);
   const [creatingFromTemplate, setCreatingFromTemplate] = useState(false);
@@ -64,7 +52,6 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user) return;
     loadAssessments();
-    loadPolicyDocs();
     loadFrameworks();
   }, [user, isAdmin]);
 
@@ -87,15 +74,6 @@ export default function Dashboard() {
       .order("updated_at", { ascending: false });
     setAssessments(data || []);
     setLoading(false);
-  };
-
-  const loadPolicyDocs = async () => {
-    const { data } = await supabase
-      .from("policy_documents")
-      .select("id, title, status, review_date, updated_at")
-      .order("updated_at", { ascending: false })
-      .limit(5);
-    setPolicyDocs((data as PolicyDocRow[]) ?? []);
   };
 
   const loadTemplates = async (): Promise<TemplateCard[]> => {
@@ -214,18 +192,22 @@ export default function Dashboard() {
     return ids.map((id) => frameworkMap[id]).filter(Boolean);
   };
 
-  // Framework distribution across all assessments
-  const frameworkDistribution = (() => {
-    const counts: Record<string, { info: FrameworkInfo; count: number }> = {};
-    assessments.forEach((a) => {
-      const fws = getAssessmentFrameworks(a);
-      fws.forEach((fw) => {
-        if (!counts[fw.id]) counts[fw.id] = { info: fw, count: 0 };
-        counts[fw.id].count++;
-      });
+  // Filter and sort
+  const filteredAssessments = assessments
+    .filter((a) => {
+      if (statusFilter !== "all" && a.status !== statusFilter) return false;
+      if (searchQuery) {
+        const name = (a.org_name || "").toLowerCase();
+        if (!name.includes(searchQuery.toLowerCase())) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortBy === "updated") return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      if (sortBy === "created") return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      if (sortBy === "name") return (a.org_name || "").localeCompare(b.org_name || "");
+      return 0;
     });
-    return Object.values(counts);
-  })();
 
   const inProgress = assessments.filter((a) => a.status === "In Progress").length;
   const completed = assessments.filter((a) => a.status === "Completed").length;
@@ -234,23 +216,26 @@ export default function Dashboard() {
     { label: "Total Assessments", value: assessments.length, icon: ClipboardList },
     { label: "In Progress", value: inProgress, icon: BarChart3 },
     { label: "Completed", value: completed, icon: CheckCircle2 },
-    { label: "Frameworks", value: frameworkDistribution.length || 1, icon: Layers },
   ];
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <h1 className="text-2xl font-bold">Assessments</h1>
           <p className="text-muted-foreground">
-            Compliance overview & quick actions
+            Create and manage compliance assessments
             {isAdmin && <span className="ml-2 inline-flex items-center gap-1 text-xs text-primary font-semibold"><Shield className="h-3 w-3" /> Admin View</span>}
           </p>
         </div>
+        <Button onClick={handleNewAssessment} className="gradient-primary">
+          <Plus className="h-4 w-4 mr-2" /> New Assessment
+        </Button>
       </div>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {stats.map((s) => (
           <Card key={s.label} className="border-border bg-card">
             <CardContent className="pt-6">
@@ -266,35 +251,43 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Framework Distribution */}
-      {frameworkDistribution.length > 1 && (
-        <Card className="border-border bg-card">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Layers className="h-5 w-5 text-primary" /> Framework Distribution
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-3">
-              {frameworkDistribution.map(({ info, count }) => (
-                <div key={info.id} className="flex items-center gap-2 rounded-lg bg-secondary/50 px-3 py-2">
-                  <FrameworkBadge shortCode={info.short_code} colour={info.colour} />
-                  <span className="text-sm text-muted-foreground">{info.name}</span>
-                  <span className="text-xs font-bold">{count}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Filter Bar */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by organisation name…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="In Progress">In Progress</SelectItem>
+            <SelectItem value="Completed">Completed</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger className="w-full sm:w-[200px]">
+            <SelectValue placeholder="Sort by" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="updated">Recently Updated</SelectItem>
+            <SelectItem value="created">Recently Created</SelectItem>
+            <SelectItem value="name">Name A–Z</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-      {/* Recent Assessments */}
+      {/* Assessment List */}
       <Card className="border-border bg-card">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-lg">Recent Assessments</CardTitle>
-          <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate("/assessments")}>
-            View All <ChevronRight className="h-3 w-3 ml-1" />
-          </Button>
+        <CardHeader>
+          <CardTitle className="text-lg">All Assessments</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -303,14 +296,23 @@ export default function Dashboard() {
                 <div key={i} className="h-16 bg-muted/50 rounded-lg animate-pulse" />
               ))}
             </div>
-          ) : assessments.length === 0 ? (
+          ) : filteredAssessments.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <ClipboardList className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>No assessments yet. Create your first one from the Assessments page.</p>
+              {assessments.length === 0 ? (
+                <>
+                  <p>No assessments yet. Create your first assessment to get started.</p>
+                  <Button onClick={handleNewAssessment} className="mt-4 gradient-primary">
+                    <Plus className="h-4 w-4 mr-2" /> New Assessment
+                  </Button>
+                </>
+              ) : (
+                <p>No assessments match your filters.</p>
+              )}
             </div>
           ) : (
             <div className="space-y-2">
-              {assessments.slice(0, 3).map((a) => {
+              {filteredAssessments.map((a) => {
                 const fws = getAssessmentFrameworks(a);
                 return (
                   <div key={a.id} className="flex items-center justify-between p-4 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors">
@@ -323,7 +325,7 @@ export default function Dashboard() {
                           ))}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          v{a.version} · Updated {new Date(a.updated_at).toLocaleDateString()}
+                          v{a.version} · Created {new Date(a.created_at).toLocaleDateString()} · Updated {new Date(a.updated_at).toLocaleDateString()}
                         </p>
                       </div>
                       <StatusBadge status={a.status} />
@@ -341,59 +343,6 @@ export default function Dashboard() {
               })}
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Policy Register Widget */}
-      <Card className="border-border bg-card">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <BookMarked className="h-5 w-5 text-primary" /> Policy Register Status
-          </CardTitle>
-          <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate("/policy-library")}>
-            View All <ChevronRight className="h-3 w-3 ml-1" />
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {(() => {
-            const expiring = policyDocs.filter((d) => {
-              if (!d.review_date) return false;
-              const diff = new Date(d.review_date).getTime() - Date.now();
-              return diff > 0 && diff <= 30 * 86400000;
-            });
-            return (
-              <>
-                {expiring.length > 0 && (
-                  <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 mb-3 flex items-center gap-2">
-                    <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                    <p className="text-[11px] text-amber-300">{expiring.length} polic{expiring.length === 1 ? "y" : "ies"} due for review</p>
-                  </div>
-                )}
-                {policyDocs.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-6">No policies generated yet</p>
-                ) : (
-                  <div className="space-y-1.5">
-                    {policyDocs.map((d) => (
-                      <div key={d.id} className="flex items-center justify-between p-2.5 rounded-lg bg-secondary/50">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
-                          <span className="text-sm font-medium truncate">{d.title}</span>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <Badge variant="outline" className={cn("text-[8px]", STATUS_COLORS[d.status] ?? "")}>{d.status}</Badge>
-                          {d.review_date && (
-                            <span className="text-[10px] text-muted-foreground">
-                              {new Date(d.review_date).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
-            );
-          })()}
         </CardContent>
       </Card>
 
