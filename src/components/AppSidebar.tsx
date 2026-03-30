@@ -21,7 +21,7 @@ import {
   Cog, LayoutDashboard, ClipboardList, FolderOpen, Building2,
   FileText, Search, Grid3X3, Paperclip, BarChart3, LogOut,
   Settings2, Bot, Users, BookMarked, Shield, ScrollText,
-  Scale, AlertTriangle, FileSearch,
+  Scale, AlertTriangle, FileSearch, BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -56,6 +56,7 @@ const myPrivacyNav: NavItem[] = [
 ];
 
 const adminNav: NavItem[] = [
+  { title: "Framework Manager", subtitle: "Manage assessment frameworks", url: "/admin/frameworks", icon: BookOpen },
   { title: "User Management", subtitle: "Manage team roles & access", url: "/settings/users", icon: Users },
   { title: "AI Configuration", subtitle: "Manage AI prompts & models", url: "/admin/ai-config", icon: Bot },
   { title: "Settings", subtitle: "Account & app configuration", url: "/settings", icon: Settings2 },
