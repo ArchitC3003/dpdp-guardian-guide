@@ -849,6 +849,50 @@ export type Database = {
           },
         ]
       }
+      framework_policy_artefacts: {
+        Row: {
+          artefact_name: string
+          category_code: string
+          category_name: string
+          created_at: string
+          display_order: number
+          framework_id: string
+          id: string
+          is_active: boolean
+          item_code: string
+        }
+        Insert: {
+          artefact_name: string
+          category_code: string
+          category_name: string
+          created_at?: string
+          display_order?: number
+          framework_id: string
+          id?: string
+          is_active?: boolean
+          item_code: string
+        }
+        Update: {
+          artefact_name?: string
+          category_code?: string
+          category_name?: string
+          created_at?: string
+          display_order?: number
+          framework_id?: string
+          id?: string
+          is_active?: boolean
+          item_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "framework_policy_artefacts_framework_id_fkey"
+            columns: ["framework_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_frameworks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       framework_requirements: {
         Row: {
           created_at: string
