@@ -799,6 +799,47 @@ export type Database = {
         }
         Relationships: []
       }
+      framework_dept_controls: {
+        Row: {
+          control_description: string
+          control_id: number
+          created_at: string
+          display_order: number
+          framework_id: string
+          id: string
+          is_active: boolean
+          risk_level: string
+        }
+        Insert: {
+          control_description: string
+          control_id: number
+          created_at?: string
+          display_order?: number
+          framework_id: string
+          id?: string
+          is_active?: boolean
+          risk_level?: string
+        }
+        Update: {
+          control_description?: string
+          control_id?: number
+          created_at?: string
+          display_order?: number
+          framework_id?: string
+          id?: string
+          is_active?: boolean
+          risk_level?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "framework_dept_controls_framework_id_fkey"
+            columns: ["framework_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_frameworks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       framework_domains: {
         Row: {
           code: string
