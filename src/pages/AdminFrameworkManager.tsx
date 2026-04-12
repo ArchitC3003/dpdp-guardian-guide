@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Navigate } from "react-router-dom";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,11 +11,14 @@ import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Plus, BookOpen, Shield, Edit2, Trash2, ChevronRight } from "lucide-react";
+import { Plus, BookOpen, Shield, Edit2, Trash2, ChevronRight, Upload, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import * as XLSX from "xlsx";
 
 /* ─── Types ────────────────────────────────────────────── */
 interface Framework {
@@ -83,6 +86,14 @@ export default function AdminFrameworkManager() {
   const [editingFw, setEditingFw] = useState<Partial<Framework>>({});
   const [editingDomain, setEditingDomain] = useState<Partial<Domain>>({});
   const [editingReq, setEditingReq] = useState<Partial<Requirement>>({});
+
+  // Excel import states
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importDialog, setImportDialog] = useState(false);
+  const [importMode, setImportMode] = useState<"replace" | "append">("append");
+  const [importing, setImporting] = useState(false);
+  const [parsedRows, setParsedRows] = useState<Record<string, string>[]>([]);
+  const [parsedSummary, setParsedSummary] = useState({ domains: 0, requirements: 0, rows: 0 });
 
   /* ── Fetch frameworks ─────────────────────────────────── */
   const fetchFrameworks = useCallback(async () => {
@@ -236,6 +247,163 @@ export default function AdminFrameworkManager() {
     fetchRequirements(selectedDomain.id);
   };
 
+  /* ── Excel Import ──────────────────────────────────────── */
+  const normalizeHeader = (h: string) => h.trim().toLowerCase().replace(/[\s_-]+/g, "_");
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const wb = XLSX.read(evt.target?.result, { type: "array" });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json<Record<string, string>>(sheet, { defval: "" });
+        if (rows.length === 0) { toast.error("No data rows found in spreadsheet"); return; }
+        // Detect unique domains
+        const headerMap: Record<string, string> = {};
+        Object.keys(rows[0]).forEach(k => { headerMap[normalizeHeader(k)] = k; });
+        const domainCodeKey = headerMap["domain_code"] || headerMap["domaincode"] || headerMap["domain"];
+        const domainNameKey = headerMap["domain_name"] || headerMap["domainname"];
+        if (!domainCodeKey) { toast.error("Missing 'Domain Code' column in spreadsheet"); return; }
+        const uniqueDomains = new Set<string>();
+        rows.forEach(r => { const code = String(r[domainCodeKey] || "").trim(); if (code) uniqueDomains.add(code); });
+        setParsedRows(rows);
+        setParsedSummary({ domains: uniqueDomains.size, requirements: rows.length, rows: rows.length });
+        setImportDialog(true);
+      } catch (err) {
+        toast.error("Failed to parse file");
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = "";
+  };
+
+  const executeImport = async () => {
+    if (!selectedFw || parsedRows.length === 0) return;
+    setImporting(true);
+    try {
+      const headerMap: Record<string, string> = {};
+      Object.keys(parsedRows[0]).forEach(k => { headerMap[normalizeHeader(k)] = k; });
+      const col = (row: Record<string, string>, ...keys: string[]) => {
+        for (const k of keys) { const mapped = headerMap[k]; if (mapped && row[mapped]) return String(row[mapped]).trim(); }
+        return "";
+      };
+      const validRisk = new Set(["critical", "high", "standard"]);
+      const validEvidence = new Set(["Document", "Policy", "Process", "Technical", "Interview"]);
+      const isTruthy = (v: string) => ["yes", "true", "1"].includes(v.toLowerCase());
+
+      // If replace mode, delete existing domains (cascade will delete requirements)
+      if (importMode === "replace") {
+        const { error } = await supabase.from("framework_domains").delete().eq("framework_id", selectedFw.id);
+        if (error) throw error;
+      }
+
+      // Group rows by domain
+      const domainMap = new Map<string, { name: string; sectionRef: string; penaltyRef: string; desc: string; rows: Record<string, string>[] }>();
+      parsedRows.forEach(r => {
+        const code = col(r, "domain_code", "domaincode", "domain");
+        if (!code) return;
+        if (!domainMap.has(code)) {
+          domainMap.set(code, {
+            name: col(r, "domain_name", "domainname") || code,
+            sectionRef: col(r, "section_ref", "sectionref", "section"),
+            penaltyRef: col(r, "penalty_ref", "penaltyref", "penalty"),
+            desc: col(r, "domain_description", "domaindescription"),
+            rows: [],
+          });
+        }
+        domainMap.get(code)!.rows.push(r);
+      });
+
+      let totalDomains = 0, totalReqs = 0;
+      let domainOrder = 0;
+      for (const [code, info] of domainMap) {
+        // Insert domain
+        const { data: domainData, error: domErr } = await supabase
+          .from("framework_domains")
+          .insert({
+            framework_id: selectedFw.id,
+            code,
+            name: info.name,
+            section_ref: info.sectionRef || null,
+            penalty_ref: info.penaltyRef || null,
+            description: info.desc || null,
+            display_order: domainOrder++,
+            is_active: true,
+          })
+          .select("id")
+          .single();
+        if (domErr) {
+          if (importMode === "append" && domErr.code === "23505") {
+            // Duplicate domain in append mode — fetch existing
+            const { data: existing } = await supabase
+              .from("framework_domains")
+              .select("id")
+              .eq("framework_id", selectedFw.id)
+              .eq("code", code)
+              .single();
+            if (existing) {
+              // Insert requirements under existing domain
+              const reqs = info.rows.map((r, i) => {
+                const riskRaw = col(r, "risk_level", "risklevel", "risk").toLowerCase();
+                const evRaw = col(r, "evidence_type", "evidencetype", "evidence");
+                return {
+                  domain_id: existing.id,
+                  item_code: col(r, "item_code", "itemcode", "requirement_code", "requirementcode", "code") || `${code}.${i + 1}`,
+                  description: col(r, "description", "requirement", "requirement_description"),
+                  guidance: col(r, "guidance", "notes") || null,
+                  risk_level: validRisk.has(riskRaw) ? riskRaw : "standard",
+                  evidence_type: validEvidence.has(evRaw) ? evRaw : "Document",
+                  sdf_only: isTruthy(col(r, "sdf_only", "sdfonly", "sdf")),
+                  display_order: i,
+                  is_active: true,
+                };
+              });
+              if (reqs.length > 0) {
+                const { error: reqErr } = await supabase.from("framework_requirements").insert(reqs);
+                if (reqErr && reqErr.code !== "23505") throw reqErr;
+                totalReqs += reqs.length;
+              }
+            }
+            continue;
+          }
+          throw domErr;
+        }
+        totalDomains++;
+        // Insert requirements
+        const reqs = info.rows.map((r, i) => {
+          const riskRaw = col(r, "risk_level", "risklevel", "risk").toLowerCase();
+          const evRaw = col(r, "evidence_type", "evidencetype", "evidence");
+          return {
+            domain_id: domainData.id,
+            item_code: col(r, "item_code", "itemcode", "requirement_code", "requirementcode", "code") || `${code}.${i + 1}`,
+            description: col(r, "description", "requirement", "requirement_description"),
+            guidance: col(r, "guidance", "notes") || null,
+            risk_level: validRisk.has(riskRaw) ? riskRaw : "standard",
+            evidence_type: validEvidence.has(evRaw) ? evRaw : "Document",
+            sdf_only: isTruthy(col(r, "sdf_only", "sdfonly", "sdf")),
+            display_order: i,
+            is_active: true,
+          };
+        });
+        if (reqs.length > 0) {
+          const { error: reqErr } = await supabase.from("framework_requirements").insert(reqs);
+          if (reqErr) throw reqErr;
+          totalReqs += reqs.length;
+        }
+      }
+
+      toast.success(`Imported ${totalDomains} domains and ${totalReqs} requirements`);
+      setImportDialog(false);
+      fetchDomains(selectedFw.id);
+    } catch (err: any) {
+      toast.error(err.message || "Import failed");
+    } finally {
+      setImporting(false);
+    }
+  };
+
   /* ── Guards ───────────────────────────────────────────── */
   if (adminLoading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
   if (!isAdmin) return <Navigate to="/dashboard" replace />;
@@ -308,15 +476,21 @@ export default function AdminFrameworkManager() {
         </Card>
 
         {/* ─── MIDDLE: Domains ──────────────────────────── */}
-        <Card className="flex flex-col">
+         <Card className="flex flex-col">
           <CardHeader className="py-3 px-4 flex-row items-center justify-between space-y-0">
             <CardTitle className="text-sm font-semibold">
               {selectedFw ? `Domains — ${selectedFw.short_code}` : "Domains"}
             </CardTitle>
             {selectedFw && (
-              <Button size="sm" onClick={() => { setEditingDomain({}); setDomainDialog(true); }}>
-                <Plus className="h-3 w-3 mr-1" /> Add
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                  <Upload className="h-3 w-3 mr-1" /> Import Excel
+                </Button>
+                <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleFileSelect} />
+                <Button size="sm" onClick={() => { setEditingDomain({}); setDomainDialog(true); }}>
+                  <Plus className="h-3 w-3 mr-1" /> Add
+                </Button>
+              </div>
             )}
           </CardHeader>
           <Separator />
@@ -525,6 +699,60 @@ export default function AdminFrameworkManager() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setReqDialog(false)}>Cancel</Button>
             <Button onClick={saveRequirement}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Import Preview Dialog ──────────────────────── */}
+      <Dialog open={importDialog} onOpenChange={setImportDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Import Excel — {selectedFw?.short_code}</DialogTitle>
+            <DialogDescription>
+              Found <strong>{parsedSummary.domains}</strong> domains and <strong>{parsedSummary.requirements}</strong> requirements from {parsedSummary.rows} rows.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <RadioGroup value={importMode} onValueChange={(v) => setImportMode(v as "replace" | "append")} className="flex gap-4">
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="append" id="append" />
+                <Label htmlFor="append">Append (skip duplicates)</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="replace" id="replace" />
+                <Label htmlFor="replace" className="text-destructive">Replace existing</Label>
+              </div>
+            </RadioGroup>
+            {parsedRows.length > 0 && (
+              <ScrollArea className="max-h-[280px] border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      {Object.keys(parsedRows[0]).slice(0, 6).map(h => (
+                        <TableHead key={h} className="text-xs whitespace-nowrap">{h}</TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {parsedRows.slice(0, 5).map((row, i) => (
+                      <TableRow key={i}>
+                        {Object.keys(parsedRows[0]).slice(0, 6).map(h => (
+                          <TableCell key={h} className="text-xs py-1.5 max-w-[200px] truncate">{String(row[h] || "")}</TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {parsedRows.length > 5 && <p className="text-xs text-muted-foreground text-center py-2">… and {parsedRows.length - 5} more rows</p>}
+              </ScrollArea>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImportDialog(false)}>Cancel</Button>
+            <Button onClick={executeImport} disabled={importing}>
+              {importing && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+              {importing ? "Importing…" : "Import"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
