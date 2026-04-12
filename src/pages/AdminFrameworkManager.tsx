@@ -476,15 +476,21 @@ export default function AdminFrameworkManager() {
         </Card>
 
         {/* ─── MIDDLE: Domains ──────────────────────────── */}
-        <Card className="flex flex-col">
+         <Card className="flex flex-col">
           <CardHeader className="py-3 px-4 flex-row items-center justify-between space-y-0">
             <CardTitle className="text-sm font-semibold">
               {selectedFw ? `Domains — ${selectedFw.short_code}` : "Domains"}
             </CardTitle>
             {selectedFw && (
-              <Button size="sm" onClick={() => { setEditingDomain({}); setDomainDialog(true); }}>
-                <Plus className="h-3 w-3 mr-1" /> Add
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                  <Upload className="h-3 w-3 mr-1" /> Import Excel
+                </Button>
+                <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleFileSelect} />
+                <Button size="sm" onClick={() => { setEditingDomain({}); setDomainDialog(true); }}>
+                  <Plus className="h-3 w-3 mr-1" /> Add
+                </Button>
+              </div>
             )}
           </CardHeader>
           <Separator />
