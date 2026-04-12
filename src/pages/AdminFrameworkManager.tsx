@@ -247,6 +247,163 @@ export default function AdminFrameworkManager() {
     fetchRequirements(selectedDomain.id);
   };
 
+  /* ── Excel Import ──────────────────────────────────────── */
+  const normalizeHeader = (h: string) => h.trim().toLowerCase().replace(/[\s_-]+/g, "_");
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const wb = XLSX.read(evt.target?.result, { type: "array" });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json<Record<string, string>>(sheet, { defval: "" });
+        if (rows.length === 0) { toast.error("No data rows found in spreadsheet"); return; }
+        // Detect unique domains
+        const headerMap: Record<string, string> = {};
+        Object.keys(rows[0]).forEach(k => { headerMap[normalizeHeader(k)] = k; });
+        const domainCodeKey = headerMap["domain_code"] || headerMap["domaincode"] || headerMap["domain"];
+        const domainNameKey = headerMap["domain_name"] || headerMap["domainname"];
+        if (!domainCodeKey) { toast.error("Missing 'Domain Code' column in spreadsheet"); return; }
+        const uniqueDomains = new Set<string>();
+        rows.forEach(r => { const code = String(r[domainCodeKey] || "").trim(); if (code) uniqueDomains.add(code); });
+        setParsedRows(rows);
+        setParsedSummary({ domains: uniqueDomains.size, requirements: rows.length, rows: rows.length });
+        setImportDialog(true);
+      } catch (err) {
+        toast.error("Failed to parse file");
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = "";
+  };
+
+  const executeImport = async () => {
+    if (!selectedFw || parsedRows.length === 0) return;
+    setImporting(true);
+    try {
+      const headerMap: Record<string, string> = {};
+      Object.keys(parsedRows[0]).forEach(k => { headerMap[normalizeHeader(k)] = k; });
+      const col = (row: Record<string, string>, ...keys: string[]) => {
+        for (const k of keys) { const mapped = headerMap[k]; if (mapped && row[mapped]) return String(row[mapped]).trim(); }
+        return "";
+      };
+      const validRisk = new Set(["critical", "high", "standard"]);
+      const validEvidence = new Set(["Document", "Policy", "Process", "Technical", "Interview"]);
+      const isTruthy = (v: string) => ["yes", "true", "1"].includes(v.toLowerCase());
+
+      // If replace mode, delete existing domains (cascade will delete requirements)
+      if (importMode === "replace") {
+        const { error } = await supabase.from("framework_domains").delete().eq("framework_id", selectedFw.id);
+        if (error) throw error;
+      }
+
+      // Group rows by domain
+      const domainMap = new Map<string, { name: string; sectionRef: string; penaltyRef: string; desc: string; rows: Record<string, string>[] }>();
+      parsedRows.forEach(r => {
+        const code = col(r, "domain_code", "domaincode", "domain");
+        if (!code) return;
+        if (!domainMap.has(code)) {
+          domainMap.set(code, {
+            name: col(r, "domain_name", "domainname") || code,
+            sectionRef: col(r, "section_ref", "sectionref", "section"),
+            penaltyRef: col(r, "penalty_ref", "penaltyref", "penalty"),
+            desc: col(r, "domain_description", "domaindescription"),
+            rows: [],
+          });
+        }
+        domainMap.get(code)!.rows.push(r);
+      });
+
+      let totalDomains = 0, totalReqs = 0;
+      let domainOrder = 0;
+      for (const [code, info] of domainMap) {
+        // Insert domain
+        const { data: domainData, error: domErr } = await supabase
+          .from("framework_domains")
+          .insert({
+            framework_id: selectedFw.id,
+            code,
+            name: info.name,
+            section_ref: info.sectionRef || null,
+            penalty_ref: info.penaltyRef || null,
+            description: info.desc || null,
+            display_order: domainOrder++,
+            is_active: true,
+          })
+          .select("id")
+          .single();
+        if (domErr) {
+          if (importMode === "append" && domErr.code === "23505") {
+            // Duplicate domain in append mode — fetch existing
+            const { data: existing } = await supabase
+              .from("framework_domains")
+              .select("id")
+              .eq("framework_id", selectedFw.id)
+              .eq("code", code)
+              .single();
+            if (existing) {
+              // Insert requirements under existing domain
+              const reqs = info.rows.map((r, i) => {
+                const riskRaw = col(r, "risk_level", "risklevel", "risk").toLowerCase();
+                const evRaw = col(r, "evidence_type", "evidencetype", "evidence");
+                return {
+                  domain_id: existing.id,
+                  item_code: col(r, "item_code", "itemcode", "requirement_code", "requirementcode", "code") || `${code}.${i + 1}`,
+                  description: col(r, "description", "requirement", "requirement_description"),
+                  guidance: col(r, "guidance", "notes") || null,
+                  risk_level: validRisk.has(riskRaw) ? riskRaw : "standard",
+                  evidence_type: validEvidence.has(evRaw) ? evRaw : "Document",
+                  sdf_only: isTruthy(col(r, "sdf_only", "sdfonly", "sdf")),
+                  display_order: i,
+                  is_active: true,
+                };
+              });
+              if (reqs.length > 0) {
+                const { error: reqErr } = await supabase.from("framework_requirements").insert(reqs);
+                if (reqErr && reqErr.code !== "23505") throw reqErr;
+                totalReqs += reqs.length;
+              }
+            }
+            continue;
+          }
+          throw domErr;
+        }
+        totalDomains++;
+        // Insert requirements
+        const reqs = info.rows.map((r, i) => {
+          const riskRaw = col(r, "risk_level", "risklevel", "risk").toLowerCase();
+          const evRaw = col(r, "evidence_type", "evidencetype", "evidence");
+          return {
+            domain_id: domainData.id,
+            item_code: col(r, "item_code", "itemcode", "requirement_code", "requirementcode", "code") || `${code}.${i + 1}`,
+            description: col(r, "description", "requirement", "requirement_description"),
+            guidance: col(r, "guidance", "notes") || null,
+            risk_level: validRisk.has(riskRaw) ? riskRaw : "standard",
+            evidence_type: validEvidence.has(evRaw) ? evRaw : "Document",
+            sdf_only: isTruthy(col(r, "sdf_only", "sdfonly", "sdf")),
+            display_order: i,
+            is_active: true,
+          };
+        });
+        if (reqs.length > 0) {
+          const { error: reqErr } = await supabase.from("framework_requirements").insert(reqs);
+          if (reqErr) throw reqErr;
+          totalReqs += reqs.length;
+        }
+      }
+
+      toast.success(`Imported ${totalDomains} domains and ${totalReqs} requirements`);
+      setImportDialog(false);
+      fetchDomains(selectedFw.id);
+    } catch (err: any) {
+      toast.error(err.message || "Import failed");
+    } finally {
+      setImporting(false);
+    }
+  };
+
   /* ── Guards ───────────────────────────────────────────── */
   if (adminLoading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
   if (!isAdmin) return <Navigate to="/dashboard" replace />;
