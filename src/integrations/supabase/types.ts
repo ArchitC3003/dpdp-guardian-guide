@@ -984,6 +984,53 @@ export type Database = {
           },
         ]
       }
+      framework_special_flags: {
+        Row: {
+          created_at: string
+          display_order: number
+          flag_hint: string | null
+          flag_key: string
+          flag_label: string
+          framework_id: string
+          id: string
+          is_active: boolean
+          triggers_domain: string | null
+          triggers_requirement: string | null
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          flag_hint?: string | null
+          flag_key: string
+          flag_label: string
+          framework_id: string
+          id?: string
+          is_active?: boolean
+          triggers_domain?: string | null
+          triggers_requirement?: string | null
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          flag_hint?: string | null
+          flag_key?: string
+          flag_label?: string
+          framework_id?: string
+          id?: string
+          is_active?: boolean
+          triggers_domain?: string | null
+          triggers_requirement?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "framework_special_flags_framework_id_fkey"
+            columns: ["framework_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_frameworks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       grievances: {
         Row: {
           acknowledged_at: string | null
