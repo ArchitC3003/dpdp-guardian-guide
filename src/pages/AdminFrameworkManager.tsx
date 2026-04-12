@@ -702,6 +702,60 @@ export default function AdminFrameworkManager() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ─── Import Preview Dialog ──────────────────────── */}
+      <Dialog open={importDialog} onOpenChange={setImportDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Import Excel — {selectedFw?.short_code}</DialogTitle>
+            <DialogDescription>
+              Found <strong>{parsedSummary.domains}</strong> domains and <strong>{parsedSummary.requirements}</strong> requirements from {parsedSummary.rows} rows.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <RadioGroup value={importMode} onValueChange={(v) => setImportMode(v as "replace" | "append")} className="flex gap-4">
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="append" id="append" />
+                <Label htmlFor="append">Append (skip duplicates)</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="replace" id="replace" />
+                <Label htmlFor="replace" className="text-destructive">Replace existing</Label>
+              </div>
+            </RadioGroup>
+            {parsedRows.length > 0 && (
+              <ScrollArea className="max-h-[280px] border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      {Object.keys(parsedRows[0]).slice(0, 6).map(h => (
+                        <TableHead key={h} className="text-xs whitespace-nowrap">{h}</TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {parsedRows.slice(0, 5).map((row, i) => (
+                      <TableRow key={i}>
+                        {Object.keys(parsedRows[0]).slice(0, 6).map(h => (
+                          <TableCell key={h} className="text-xs py-1.5 max-w-[200px] truncate">{String(row[h] || "")}</TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {parsedRows.length > 5 && <p className="text-xs text-muted-foreground text-center py-2">… and {parsedRows.length - 5} more rows</p>}
+              </ScrollArea>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImportDialog(false)}>Cancel</Button>
+            <Button onClick={executeImport} disabled={importing}>
+              {importing && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+              {importing ? "Importing…" : "Import"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
