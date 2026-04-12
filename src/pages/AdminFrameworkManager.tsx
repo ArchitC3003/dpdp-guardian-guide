@@ -87,6 +87,14 @@ export default function AdminFrameworkManager() {
   const [editingDomain, setEditingDomain] = useState<Partial<Domain>>({});
   const [editingReq, setEditingReq] = useState<Partial<Requirement>>({});
 
+  // Excel import states
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importDialog, setImportDialog] = useState(false);
+  const [importMode, setImportMode] = useState<"replace" | "append">("append");
+  const [importing, setImporting] = useState(false);
+  const [parsedRows, setParsedRows] = useState<Record<string, string>[]>([]);
+  const [parsedSummary, setParsedSummary] = useState({ domains: 0, requirements: 0, rows: 0 });
+
   /* ── Fetch frameworks ─────────────────────────────────── */
   const fetchFrameworks = useCallback(async () => {
     const { data, error } = await supabase
