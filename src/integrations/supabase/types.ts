@@ -1379,6 +1379,7 @@ export type Database = {
         Row: {
           approved: string | null
           assessment_id: string
+          framework_id: string | null
           id: string
           item_id: string
           last_reviewed: string | null
@@ -1389,6 +1390,7 @@ export type Database = {
         Insert: {
           approved?: string | null
           assessment_id: string
+          framework_id?: string | null
           id?: string
           item_id: string
           last_reviewed?: string | null
@@ -1399,6 +1401,7 @@ export type Database = {
         Update: {
           approved?: string | null
           assessment_id?: string
+          framework_id?: string | null
           id?: string
           item_id?: string
           last_reviewed?: string | null
@@ -1412,6 +1415,13 @@ export type Database = {
             columns: ["assessment_id"]
             isOneToOne: false
             referencedRelation: "assessments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "policy_items_framework_id_fkey"
+            columns: ["framework_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_frameworks"
             referencedColumns: ["id"]
           },
         ]
