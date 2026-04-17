@@ -16,9 +16,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Plus, BookOpen, Shield, Edit2, Trash2, ChevronRight, Upload, Loader2 } from "lucide-react";
+import { Plus, BookOpen, Edit2, ChevronRight, Upload, Loader2, Download, FileSpreadsheet, AlertCircle, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import * as XLSX from "xlsx";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { parsePack, validatePack, downloadTemplate, type ParsedPack, type ValidationResult } from "@/utils/assessmentPackParser";
 
 /* ─── Types ────────────────────────────────────────────── */
 interface Framework {
@@ -87,13 +88,17 @@ export default function AdminFrameworkManager() {
   const [editingDomain, setEditingDomain] = useState<Partial<Domain>>({});
   const [editingReq, setEditingReq] = useState<Partial<Requirement>>({});
 
-  // Excel import states
+  // Pack import states
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [importDialog, setImportDialog] = useState(false);
-  const [importMode, setImportMode] = useState<"replace" | "append">("append");
+  const [packDialog, setPackDialog] = useState(false);
+  const [packStep, setPackStep] = useState<1 | 2 | 3>(1);
+  const [packMode, setPackMode] = useState<"create" | "populate">("create");
+  const [populateTargetId, setPopulateTargetId] = useState<string>("");
+  const [packFile, setPackFile] = useState<File | null>(null);
+  const [parsedPack, setParsedPack] = useState<ParsedPack | null>(null);
+  const [validation, setValidation] = useState<ValidationResult>({ errors: [], warnings: [] });
   const [importing, setImporting] = useState(false);
-  const [parsedRows, setParsedRows] = useState<Record<string, string>[]>([]);
-  const [parsedSummary, setParsedSummary] = useState({ domains: 0, requirements: 0, rows: 0 });
+  const [importProgress, setImportProgress] = useState("");
 
   /* ── Fetch frameworks ─────────────────────────────────── */
   const fetchFrameworks = useCallback(async () => {
@@ -247,160 +252,242 @@ export default function AdminFrameworkManager() {
     fetchRequirements(selectedDomain.id);
   };
 
-  /* ── Excel Import ──────────────────────────────────────── */
-  const normalizeHeader = (h: string) => h.trim().toLowerCase().replace(/[\s_-]+/g, "_");
+  /* ── Pack Upload ──────────────────────────────────────── */
+  const openPackDialog = () => {
+    setPackStep(1);
+    setPackMode("create");
+    setPopulateTargetId("");
+    setPackFile(null);
+    setParsedPack(null);
+    setValidation({ errors: [], warnings: [] });
+    setPackDialog(true);
+  };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePackFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      try {
-        const wb = XLSX.read(evt.target?.result, { type: "array" });
-        const sheet = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json<Record<string, string>>(sheet, { defval: "" });
-        if (rows.length === 0) { toast.error("No data rows found in spreadsheet"); return; }
-        // Detect unique domains
-        const headerMap: Record<string, string> = {};
-        Object.keys(rows[0]).forEach(k => { headerMap[normalizeHeader(k)] = k; });
-        const domainCodeKey = headerMap["domain_code"] || headerMap["domaincode"] || headerMap["domain"];
-        const domainNameKey = headerMap["domain_name"] || headerMap["domainname"];
-        if (!domainCodeKey) { toast.error("Missing 'Domain Code' column in spreadsheet"); return; }
-        const uniqueDomains = new Set<string>();
-        rows.forEach(r => { const code = String(r[domainCodeKey] || "").trim(); if (code) uniqueDomains.add(code); });
-        setParsedRows(rows);
-        setParsedSummary({ domains: uniqueDomains.size, requirements: rows.length, rows: rows.length });
-        setImportDialog(true);
-      } catch (err) {
-        toast.error("Failed to parse file");
-      }
-    };
-    reader.readAsArrayBuffer(file);
+    setPackFile(file);
     e.target.value = "";
   };
 
-  const executeImport = async () => {
-    if (!selectedFw || parsedRows.length === 0) return;
-    setImporting(true);
+  const goToPreview = async () => {
+    if (!packFile) { toast.error("Please select an XLSX file"); return; }
+    if (packMode === "populate" && !populateTargetId) { toast.error("Select a framework to populate"); return; }
     try {
-      const headerMap: Record<string, string> = {};
-      Object.keys(parsedRows[0]).forEach(k => { headerMap[normalizeHeader(k)] = k; });
-      const col = (row: Record<string, string>, ...keys: string[]) => {
-        for (const k of keys) { const mapped = headerMap[k]; if (mapped && row[mapped]) return String(row[mapped]).trim(); }
-        return "";
-      };
-      const validRisk = new Set(["critical", "high", "standard"]);
-      const validEvidence = new Set(["Document", "Policy", "Process", "Technical", "Interview"]);
-      const isTruthy = (v: string) => ["yes", "true", "1"].includes(v.toLowerCase());
+      const parsed = await parsePack(packFile);
+      const existingCodes = frameworks.map(f => f.short_code.toUpperCase());
+      const result = validatePack(parsed, packMode, existingCodes);
+      setParsedPack(parsed);
+      setValidation(result);
+      setPackStep(2);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to parse XLSX");
+    }
+  };
 
-      // If replace mode, delete existing domains (cascade will delete requirements)
-      if (importMode === "replace") {
-        const { error } = await supabase.from("framework_domains").delete().eq("framework_id", selectedFw.id);
-        if (error) throw error;
+  const executePackImport = async () => {
+    if (!parsedPack) return;
+    if (validation.errors.length > 0) { toast.error("Please fix validation errors first"); return; }
+
+    setImporting(true);
+    setPackStep(3);
+    try {
+      // 1. Resolve framework_id
+      let frameworkId: string;
+      let frameworkName: string;
+      if (packMode === "create") {
+        setImportProgress("Creating framework…");
+        const { data: newFw, error: fwErr } = await supabase
+          .from("assessment_frameworks")
+          .insert({
+            name: parsedPack.info.name!,
+            short_code: parsedPack.info.short_code!.toUpperCase(),
+            version: parsedPack.info.version || "1.0",
+            jurisdiction: parsedPack.info.jurisdiction || "Global",
+            regulatory_body: parsedPack.info.regulatory_body || null,
+            description: parsedPack.info.description || null,
+            effective_date: parsedPack.info.effective_date || null,
+            colour: parsedPack.info.colour || "#3B82F6",
+            icon_name: parsedPack.info.icon_name || "Shield",
+            is_active: true,
+            is_default: false,
+          })
+          .select("id, name")
+          .single();
+        if (fwErr) throw fwErr;
+        frameworkId = newFw.id;
+        frameworkName = newFw.name;
+      } else {
+        const tgt = frameworks.find(f => f.id === populateTargetId);
+        if (!tgt) throw new Error("Target framework not found");
+        frameworkId = tgt.id;
+        frameworkName = tgt.name;
       }
 
-      // Group rows by domain
-      const domainMap = new Map<string, { name: string; sectionRef: string; penaltyRef: string; desc: string; rows: Record<string, string>[] }>();
-      parsedRows.forEach(r => {
-        const code = col(r, "domain_code", "domaincode", "domain");
-        if (!code) return;
-        if (!domainMap.has(code)) {
-          domainMap.set(code, {
-            name: col(r, "domain_name", "domainname") || code,
-            sectionRef: col(r, "section_ref", "sectionref", "section"),
-            penaltyRef: col(r, "penalty_ref", "penaltyref", "penalty"),
-            desc: col(r, "domain_description", "domaindescription"),
+      // 2. Group checklist by domain & insert domains
+      setImportProgress("Importing domains…");
+      const domainMap = new Map<string, { name: string; section_ref?: string; penalty_ref?: string; description?: string; rows: typeof parsedPack.checklist }>();
+      parsedPack.checklist.forEach(r => {
+        if (!domainMap.has(r.domain_code)) {
+          domainMap.set(r.domain_code, {
+            name: r.domain_name,
+            section_ref: r.section_ref,
+            penalty_ref: r.penalty_ref,
+            description: r.domain_description,
             rows: [],
           });
         }
-        domainMap.get(code)!.rows.push(r);
+        domainMap.get(r.domain_code)!.rows.push(r);
       });
 
-      let totalDomains = 0, totalReqs = 0;
+      const domainIdByCode = new Map<string, string>();
       let domainOrder = 0;
+      let domainsCreated = 0;
       for (const [code, info] of domainMap) {
-        // Insert domain
-        const { data: domainData, error: domErr } = await supabase
+        // Check if domain already exists for this framework
+        const { data: existing } = await supabase
           .from("framework_domains")
+          .select("id")
+          .eq("framework_id", frameworkId)
+          .eq("code", code)
+          .maybeSingle();
+        if (existing) {
+          domainIdByCode.set(code, existing.id);
+        } else {
+          const { data: dom, error: dErr } = await supabase
+            .from("framework_domains")
+            .insert({
+              framework_id: frameworkId,
+              code,
+              name: info.name,
+              section_ref: info.section_ref || null,
+              penalty_ref: info.penalty_ref || null,
+              description: info.description || null,
+              display_order: domainOrder,
+              is_active: true,
+            })
+            .select("id")
+            .single();
+          if (dErr) throw dErr;
+          domainIdByCode.set(code, dom.id);
+          domainsCreated++;
+        }
+        domainOrder++;
+      }
+
+      // 3. Insert requirements
+      setImportProgress("Importing requirements…");
+      const reqRows = parsedPack.checklist.map((r, i) => ({
+        domain_id: domainIdByCode.get(r.domain_code)!,
+        item_code: r.item_code,
+        description: r.description,
+        guidance: r.guidance || null,
+        risk_level: r.risk_level || "standard",
+        evidence_type: r.evidence_type || "Document",
+        sdf_only: r.sdf_only ?? false,
+        display_order: i,
+        is_active: true,
+      }));
+      let reqsCreated = 0;
+      if (reqRows.length > 0) {
+        const { data: insertedReqs, error: rErr } = await supabase
+          .from("framework_requirements")
+          .insert(reqRows)
+          .select("id");
+        if (rErr && rErr.code !== "23505") throw rErr;
+        reqsCreated = insertedReqs?.length ?? 0;
+      }
+
+      // 4. Insert artefacts
+      let artefactsCreated = 0;
+      if (parsedPack.artefacts.length > 0) {
+        setImportProgress("Importing artefacts…");
+        const artRows = parsedPack.artefacts.map((a, i) => ({
+          framework_id: frameworkId,
+          category_code: a.category_code,
+          category_name: a.category_name,
+          item_code: a.item_code,
+          artefact_name: a.artefact_name,
+          display_order: i,
+          is_active: true,
+        }));
+        const { error: aErr } = await supabase.from("framework_policy_artefacts").insert(artRows);
+        if (aErr && aErr.code !== "23505") throw aErr;
+        artefactsCreated = artRows.length;
+      }
+
+      // 5. Insert dept controls
+      let controlsCreated = 0;
+      if (parsedPack.deptControls.length > 0) {
+        setImportProgress("Importing dept controls…");
+        const ctrlRows = parsedPack.deptControls.map((c, i) => ({
+          framework_id: frameworkId,
+          control_id: c.control_id,
+          control_description: c.control_description,
+          risk_level: c.risk_level || "standard",
+          display_order: i,
+          is_active: true,
+        }));
+        const { error: cErr } = await supabase.from("framework_dept_controls").insert(ctrlRows);
+        if (cErr && cErr.code !== "23505") throw cErr;
+        controlsCreated = ctrlRows.length;
+      }
+
+      // 6. Insert special flags
+      let flagsCreated = 0;
+      if (parsedPack.flags.length > 0) {
+        setImportProgress("Importing special flags…");
+        const flagRows = parsedPack.flags.map((f, i) => ({
+          framework_id: frameworkId,
+          flag_key: f.flag_key,
+          flag_label: f.flag_label,
+          flag_hint: f.flag_hint || null,
+          triggers_domain: f.triggers_domain || null,
+          triggers_requirement: f.triggers_requirement || null,
+          display_order: i,
+          is_active: true,
+        }));
+        const { error: fErr } = await supabase.from("framework_special_flags").insert(flagRows);
+        if (fErr && fErr.code !== "23505") throw fErr;
+        flagsCreated = flagRows.length;
+      }
+
+      // 7. Default template + link (only for create-new)
+      if (packMode === "create") {
+        setImportProgress("Setting up template…");
+        const { data: tpl } = await supabase
+          .from("assessment_templates")
           .insert({
-            framework_id: selectedFw.id,
-            code,
-            name: info.name,
-            section_ref: info.sectionRef || null,
-            penalty_ref: info.penaltyRef || null,
-            description: info.desc || null,
-            display_order: domainOrder++,
+            name: `${frameworkName} — Default`,
+            description: `Default assessment template for ${frameworkName}`,
+            template_type: "single",
             is_active: true,
+            is_default: false,
           })
           .select("id")
           .single();
-        if (domErr) {
-          if (importMode === "append" && domErr.code === "23505") {
-            // Duplicate domain in append mode — fetch existing
-            const { data: existing } = await supabase
-              .from("framework_domains")
-              .select("id")
-              .eq("framework_id", selectedFw.id)
-              .eq("code", code)
-              .single();
-            if (existing) {
-              // Insert requirements under existing domain
-              const reqs = info.rows.map((r, i) => {
-                const riskRaw = col(r, "risk_level", "risklevel", "risk").toLowerCase();
-                const evRaw = col(r, "evidence_type", "evidencetype", "evidence");
-                return {
-                  domain_id: existing.id,
-                  item_code: col(r, "item_code", "itemcode", "requirement_code", "requirementcode", "code") || `${code}.${i + 1}`,
-                  description: col(r, "description", "requirement", "requirement_description"),
-                  guidance: col(r, "guidance", "notes") || null,
-                  risk_level: validRisk.has(riskRaw) ? riskRaw : "standard",
-                  evidence_type: validEvidence.has(evRaw) ? evRaw : "Document",
-                  sdf_only: isTruthy(col(r, "sdf_only", "sdfonly", "sdf")),
-                  display_order: i,
-                  is_active: true,
-                };
-              });
-              if (reqs.length > 0) {
-                const { error: reqErr } = await supabase.from("framework_requirements").insert(reqs);
-                if (reqErr && reqErr.code !== "23505") throw reqErr;
-                totalReqs += reqs.length;
-              }
-            }
-            continue;
-          }
-          throw domErr;
-        }
-        totalDomains++;
-        // Insert requirements
-        const reqs = info.rows.map((r, i) => {
-          const riskRaw = col(r, "risk_level", "risklevel", "risk").toLowerCase();
-          const evRaw = col(r, "evidence_type", "evidencetype", "evidence");
-          return {
-            domain_id: domainData.id,
-            item_code: col(r, "item_code", "itemcode", "requirement_code", "requirementcode", "code") || `${code}.${i + 1}`,
-            description: col(r, "description", "requirement", "requirement_description"),
-            guidance: col(r, "guidance", "notes") || null,
-            risk_level: validRisk.has(riskRaw) ? riskRaw : "standard",
-            evidence_type: validEvidence.has(evRaw) ? evRaw : "Document",
-            sdf_only: isTruthy(col(r, "sdf_only", "sdfonly", "sdf")),
-            display_order: i,
-            is_active: true,
-          };
-        });
-        if (reqs.length > 0) {
-          const { error: reqErr } = await supabase.from("framework_requirements").insert(reqs);
-          if (reqErr) throw reqErr;
-          totalReqs += reqs.length;
+        if (tpl) {
+          await supabase.from("assessment_template_frameworks").insert({
+            template_id: tpl.id,
+            framework_id: frameworkId,
+          });
         }
       }
 
-      toast.success(`Imported ${totalDomains} domains and ${totalReqs} requirements`);
-      setImportDialog(false);
-      fetchDomains(selectedFw.id);
+      toast.success(
+        `Imported ${frameworkName}: ${domainsCreated} domains, ${reqsCreated} requirements, ${artefactsCreated} artefacts, ${controlsCreated} controls, ${flagsCreated} flags`,
+      );
+      setPackDialog(false);
+      await fetchFrameworks();
+      // Auto-select imported framework
+      const refetched = await supabase.from("assessment_frameworks").select("*").eq("id", frameworkId).single();
+      if (refetched.data) setSelectedFw(refetched.data);
     } catch (err: any) {
       toast.error(err.message || "Import failed");
+      setPackStep(2);
     } finally {
       setImporting(false);
+      setImportProgress("");
     }
   };
 
@@ -418,11 +505,19 @@ export default function AdminFrameworkManager() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-160px)]">
         {/* ─── LEFT: Frameworks ──────────────────────────── */}
         <Card className="flex flex-col">
-          <CardHeader className="py-3 px-4 flex-row items-center justify-between space-y-0">
+          <CardHeader className="py-3 px-4 flex-row items-center justify-between space-y-0 gap-1">
             <CardTitle className="text-sm font-semibold">Frameworks</CardTitle>
-            <Button size="sm" onClick={() => { setEditingFw({}); setFwDialog(true); }}>
-              <Plus className="h-3 w-3 mr-1" /> Add
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button size="sm" variant="ghost" className="h-8 px-2" onClick={downloadTemplate} title="Download XLSX template">
+                <Download className="h-3 w-3" />
+              </Button>
+              <Button size="sm" variant="outline" className="h-8 px-2" onClick={openPackDialog}>
+                <Upload className="h-3 w-3 mr-1" /> Upload Pack
+              </Button>
+              <Button size="sm" className="h-8 px-2" onClick={() => { setEditingFw({}); setFwDialog(true); }}>
+                <Plus className="h-3 w-3 mr-1" /> Add
+              </Button>
+            </div>
           </CardHeader>
           <Separator />
           <ScrollArea className="flex-1">
@@ -482,15 +577,9 @@ export default function AdminFrameworkManager() {
               {selectedFw ? `Domains — ${selectedFw.short_code}` : "Domains"}
             </CardTitle>
             {selectedFw && (
-              <div className="flex items-center gap-1">
-                <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                  <Upload className="h-3 w-3 mr-1" /> Import Excel
-                </Button>
-                <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleFileSelect} />
-                <Button size="sm" onClick={() => { setEditingDomain({}); setDomainDialog(true); }}>
-                  <Plus className="h-3 w-3 mr-1" /> Add
-                </Button>
-              </div>
+              <Button size="sm" onClick={() => { setEditingDomain({}); setDomainDialog(true); }}>
+                <Plus className="h-3 w-3 mr-1" /> Add
+              </Button>
             )}
           </CardHeader>
           <Separator />
@@ -703,56 +792,242 @@ export default function AdminFrameworkManager() {
         </DialogContent>
       </Dialog>
 
-      {/* ─── Import Preview Dialog ──────────────────────── */}
-      <Dialog open={importDialog} onOpenChange={setImportDialog}>
-        <DialogContent className="max-w-2xl">
+      {/* ─── Pack Upload Dialog (3-step) ────────────────── */}
+      <Dialog open={packDialog} onOpenChange={(o) => !importing && setPackDialog(o)}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle>Import Excel — {selectedFw?.short_code}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <FileSpreadsheet className="h-5 w-5 text-primary" />
+              Upload Assessment Pack
+              <Badge variant="outline" className="ml-2 text-xs">Step {packStep} of 3</Badge>
+            </DialogTitle>
             <DialogDescription>
-              Found <strong>{parsedSummary.domains}</strong> domains and <strong>{parsedSummary.requirements}</strong> requirements from {parsedSummary.rows} rows.
+              {packStep === 1 && "Upload a 4-sheet XLSX (Framework Info, Checklist, Artefacts, Dept Controls)."}
+              {packStep === 2 && "Review parsed data and validation results before importing."}
+              {packStep === 3 && "Importing into the database…"}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <RadioGroup value={importMode} onValueChange={(v) => setImportMode(v as "replace" | "append")} className="flex gap-4">
-              <div className="flex items-center gap-2">
-                <RadioGroupItem value="append" id="append" />
-                <Label htmlFor="append">Append (skip duplicates)</Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <RadioGroupItem value="replace" id="replace" />
-                <Label htmlFor="replace" className="text-destructive">Replace existing</Label>
-              </div>
-            </RadioGroup>
-            {parsedRows.length > 0 && (
-              <ScrollArea className="max-h-[280px] border rounded-md">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      {Object.keys(parsedRows[0]).slice(0, 6).map(h => (
-                        <TableHead key={h} className="text-xs whitespace-nowrap">{h}</TableHead>
+
+          {/* ── Step 1: Upload ─────────────────────────── */}
+          {packStep === 1 && (
+            <div className="space-y-4 py-2 flex-1">
+              <RadioGroup value={packMode} onValueChange={(v) => setPackMode(v as "create" | "populate")} className="flex gap-6">
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="create" id="m-create" />
+                  <Label htmlFor="m-create">Create New Framework</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="populate" id="m-pop" />
+                  <Label htmlFor="m-pop">Populate Existing Framework</Label>
+                </div>
+              </RadioGroup>
+
+              {packMode === "populate" && (
+                <div>
+                  <Label className="text-xs">Target Framework</Label>
+                  <Select value={populateTargetId} onValueChange={setPopulateTargetId}>
+                    <SelectTrigger><SelectValue placeholder="Choose framework…" /></SelectTrigger>
+                    <SelectContent>
+                      {frameworks.map(f => (
+                        <SelectItem key={f.id} value={f.id}>{f.name} ({f.short_code})</SelectItem>
                       ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {parsedRows.slice(0, 5).map((row, i) => (
-                      <TableRow key={i}>
-                        {Object.keys(parsedRows[0]).slice(0, 6).map(h => (
-                          <TableCell key={h} className="text-xs py-1.5 max-w-[200px] truncate">{String(row[h] || "")}</TableCell>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div
+                className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:bg-muted/30 cursor-pointer transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
+                <p className="text-sm font-medium">{packFile ? packFile.name : "Click to select an .xlsx file"}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {packFile ? `${(packFile.size / 1024).toFixed(1)} KB` : "Or drag & drop here"}
+                </p>
+                <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handlePackFileSelect} />
+              </div>
+
+              <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/30 rounded-md p-3">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>Sheets expected: <code>Framework_Info</code>, <code>Checklist</code>, <code>Artefacts</code>, <code>Dept_Controls</code>. Use Download Template above to get started.</span>
+              </div>
+            </div>
+          )}
+
+          {/* ── Step 2: Preview ────────────────────────── */}
+          {packStep === 2 && parsedPack && (
+            <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
+              {parsedPack.info.name && (
+                <div className="flex items-center gap-3 text-sm bg-muted/30 rounded-md p-3">
+                  <span className="h-2 w-2 rounded-full" style={{ background: parsedPack.info.colour || "#3B82F6" }} />
+                  <strong>{parsedPack.info.name}</strong>
+                  {parsedPack.info.short_code && <Badge variant="outline" className="text-[10px]">{parsedPack.info.short_code}</Badge>}
+                  {parsedPack.info.jurisdiction && <span className="text-xs text-muted-foreground">· {parsedPack.info.jurisdiction}</span>}
+                  {parsedPack.info.version && <span className="text-xs text-muted-foreground">· v{parsedPack.info.version}</span>}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div className="border rounded-md p-3">
+                  <div className="text-xs text-muted-foreground">Checklist</div>
+                  <div className="text-lg font-bold">
+                    {new Set(parsedPack.checklist.map(c => c.domain_code)).size} dom · {parsedPack.checklist.length} req
+                  </div>
+                </div>
+                <div className="border rounded-md p-3">
+                  <div className="text-xs text-muted-foreground">Artefacts</div>
+                  <div className="text-lg font-bold">
+                    {new Set(parsedPack.artefacts.map(a => a.category_code)).size} cat · {parsedPack.artefacts.length} item
+                  </div>
+                </div>
+                <div className="border rounded-md p-3">
+                  <div className="text-xs text-muted-foreground">Dept Controls</div>
+                  <div className="text-lg font-bold">{parsedPack.deptControls.length} ctrl</div>
+                </div>
+                <div className="border rounded-md p-3">
+                  <div className="text-xs text-muted-foreground">Special Flags</div>
+                  <div className="text-lg font-bold">{parsedPack.flags.length} flag</div>
+                </div>
+              </div>
+
+              {(validation.errors.length > 0 || validation.warnings.length > 0) && (
+                <div className="space-y-1.5 max-h-[120px] overflow-y-auto">
+                  {validation.errors.map((e, i) => (
+                    <div key={`e-${i}`} className="flex items-start gap-2 text-xs bg-destructive/10 text-destructive rounded-md p-2">
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" /><span>{e}</span>
+                    </div>
+                  ))}
+                  {validation.warnings.map((w, i) => (
+                    <div key={`w-${i}`} className="flex items-start gap-2 text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-md p-2">
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" /><span>{w}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <Tabs defaultValue="checklist" className="flex-1 overflow-hidden flex flex-col">
+                <TabsList className="grid grid-cols-4 w-full">
+                  <TabsTrigger value="checklist">Checklist ({parsedPack.checklist.length})</TabsTrigger>
+                  <TabsTrigger value="artefacts">Artefacts ({parsedPack.artefacts.length})</TabsTrigger>
+                  <TabsTrigger value="controls">Controls ({parsedPack.deptControls.length})</TabsTrigger>
+                  <TabsTrigger value="flags">Flags ({parsedPack.flags.length})</TabsTrigger>
+                </TabsList>
+                <TabsContent value="checklist" className="flex-1 overflow-hidden mt-2">
+                  <ScrollArea className="h-[260px] border rounded-md">
+                    <Table>
+                      <TableHeader><TableRow>
+                        <TableHead className="text-xs">Domain</TableHead>
+                        <TableHead className="text-xs">Item</TableHead>
+                        <TableHead className="text-xs">Description</TableHead>
+                        <TableHead className="text-xs">Risk</TableHead>
+                      </TableRow></TableHeader>
+                      <TableBody>
+                        {parsedPack.checklist.slice(0, 20).map((r, i) => (
+                          <TableRow key={i}>
+                            <TableCell className="text-xs"><Badge variant="outline" className="text-[10px] font-mono">{r.domain_code}</Badge> {r.domain_name}</TableCell>
+                            <TableCell className="text-xs font-mono">{r.item_code}</TableCell>
+                            <TableCell className="text-xs max-w-[300px] truncate">{r.description}</TableCell>
+                            <TableCell className="text-xs"><Badge variant="outline" className={cn("text-[10px]", riskColor[r.risk_level] || riskColor.standard)}>{r.risk_level}</Badge></TableCell>
+                          </TableRow>
                         ))}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                {parsedRows.length > 5 && <p className="text-xs text-muted-foreground text-center py-2">… and {parsedRows.length - 5} more rows</p>}
-              </ScrollArea>
-            )}
-          </div>
+                      </TableBody>
+                    </Table>
+                    {parsedPack.checklist.length > 20 && <p className="text-xs text-muted-foreground text-center py-2">… and {parsedPack.checklist.length - 20} more</p>}
+                  </ScrollArea>
+                </TabsContent>
+                <TabsContent value="artefacts" className="flex-1 overflow-hidden mt-2">
+                  <ScrollArea className="h-[260px] border rounded-md">
+                    <Table>
+                      <TableHeader><TableRow>
+                        <TableHead className="text-xs">Category</TableHead>
+                        <TableHead className="text-xs">Code</TableHead>
+                        <TableHead className="text-xs">Name</TableHead>
+                      </TableRow></TableHeader>
+                      <TableBody>
+                        {parsedPack.artefacts.slice(0, 20).map((a, i) => (
+                          <TableRow key={i}>
+                            <TableCell className="text-xs">{a.category_name}</TableCell>
+                            <TableCell className="text-xs font-mono">{a.item_code}</TableCell>
+                            <TableCell className="text-xs">{a.artefact_name}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                </TabsContent>
+                <TabsContent value="controls" className="flex-1 overflow-hidden mt-2">
+                  <ScrollArea className="h-[260px] border rounded-md">
+                    <Table>
+                      <TableHeader><TableRow>
+                        <TableHead className="text-xs">ID</TableHead>
+                        <TableHead className="text-xs">Description</TableHead>
+                        <TableHead className="text-xs">Risk</TableHead>
+                      </TableRow></TableHeader>
+                      <TableBody>
+                        {parsedPack.deptControls.slice(0, 20).map((c, i) => (
+                          <TableRow key={i}>
+                            <TableCell className="text-xs font-mono">{c.control_id}</TableCell>
+                            <TableCell className="text-xs">{c.control_description}</TableCell>
+                            <TableCell className="text-xs"><Badge variant="outline" className={cn("text-[10px]", riskColor[c.risk_level] || riskColor.standard)}>{c.risk_level}</Badge></TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                </TabsContent>
+                <TabsContent value="flags" className="flex-1 overflow-hidden mt-2">
+                  <ScrollArea className="h-[260px] border rounded-md">
+                    <Table>
+                      <TableHeader><TableRow>
+                        <TableHead className="text-xs">Key</TableHead>
+                        <TableHead className="text-xs">Label</TableHead>
+                        <TableHead className="text-xs">Hint</TableHead>
+                      </TableRow></TableHeader>
+                      <TableBody>
+                        {parsedPack.flags.map((f, i) => (
+                          <TableRow key={i}>
+                            <TableCell className="text-xs font-mono">{f.flag_key}</TableCell>
+                            <TableCell className="text-xs">{f.flag_label}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">{f.flag_hint || "—"}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                </TabsContent>
+              </Tabs>
+            </div>
+          )}
+
+          {/* ── Step 3: Executing ──────────────────────── */}
+          {packStep === 3 && (
+            <div className="py-12 flex flex-col items-center justify-center gap-3">
+              <Loader2 className="h-8 w-8 text-primary animate-spin" />
+              <p className="text-sm font-medium">{importProgress || "Importing…"}</p>
+              <p className="text-xs text-muted-foreground">Please don't close this window.</p>
+            </div>
+          )}
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setImportDialog(false)}>Cancel</Button>
-            <Button onClick={executeImport} disabled={importing}>
-              {importing && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
-              {importing ? "Importing…" : "Import"}
-            </Button>
+            {packStep === 1 && (
+              <>
+                <Button variant="outline" onClick={() => setPackDialog(false)}>Cancel</Button>
+                <Button onClick={goToPreview} disabled={!packFile}>Next →</Button>
+              </>
+            )}
+            {packStep === 2 && (
+              <>
+                <Button variant="outline" onClick={() => setPackStep(1)}>← Back</Button>
+                <Button onClick={executePackImport} disabled={validation.errors.length > 0 || importing}>
+                  {validation.errors.length > 0 ? (
+                    <><AlertCircle className="h-3 w-3 mr-1" /> Fix Errors First</>
+                  ) : (
+                    <><CheckCircle2 className="h-3 w-3 mr-1" /> Import →</>
+                  )}
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
