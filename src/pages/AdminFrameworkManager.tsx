@@ -88,13 +88,17 @@ export default function AdminFrameworkManager() {
   const [editingDomain, setEditingDomain] = useState<Partial<Domain>>({});
   const [editingReq, setEditingReq] = useState<Partial<Requirement>>({});
 
-  // Excel import states
+  // Pack import states
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [importDialog, setImportDialog] = useState(false);
-  const [importMode, setImportMode] = useState<"replace" | "append">("append");
+  const [packDialog, setPackDialog] = useState(false);
+  const [packStep, setPackStep] = useState<1 | 2 | 3>(1);
+  const [packMode, setPackMode] = useState<"create" | "populate">("create");
+  const [populateTargetId, setPopulateTargetId] = useState<string>("");
+  const [packFile, setPackFile] = useState<File | null>(null);
+  const [parsedPack, setParsedPack] = useState<ParsedPack | null>(null);
+  const [validation, setValidation] = useState<ValidationResult>({ errors: [], warnings: [] });
   const [importing, setImporting] = useState(false);
-  const [parsedRows, setParsedRows] = useState<Record<string, string>[]>([]);
-  const [parsedSummary, setParsedSummary] = useState({ domains: 0, requirements: 0, rows: 0 });
+  const [importProgress, setImportProgress] = useState("");
 
   /* ── Fetch frameworks ─────────────────────────────────── */
   const fetchFrameworks = useCallback(async () => {
