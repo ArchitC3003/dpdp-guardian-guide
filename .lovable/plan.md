@@ -1,61 +1,95 @@
 
+## Plan: Universal Assessment Pack — DPDP Seed + 4-Sheet Upload
 
-## Plan: Excel Bulk Import for Framework Domains & Requirements
+This replaces the current narrow "Import Excel" (domains only) with a complete "Assessment Pack" upload that creates an entire framework — info, requirements, policy artefacts, dept controls, and special flags — from one XLSX. Plus seeds the existing DPDP framework with all the supporting data.
 
-### Overview
-Add an "Import from Excel" button to the Framework Manager that lets admins upload an `.xlsx` file to bulk-populate a framework's domains and requirements. The Excel file is parsed client-side using the `xlsx` (SheetJS) library — no backend changes needed since the existing Supabase tables and RLS policies already support admin inserts.
+### Part 1 — Database (migrations)
 
-### Expected Excel Format
-The admin uploads a workbook where **Sheet 1** contains rows with these columns:
+The 3 supporting tables and their RLS already exist (`framework_policy_artefacts`, `framework_dept_controls`, `framework_special_flags`). Two remaining DB tasks:
 
-| Domain Code | Domain Name | Section Ref | Penalty Ref | Item Code | Description | Guidance | Risk Level | Evidence Type | SDF Only |
-|---|---|---|---|---|---|---|---|---|---|
-| A | Notice & Consent | S.5-6 | ₹50Cr | A.1 | Publish privacy notice | Must be clear... | high | Document | No |
+1. **`policy_items.framework_id`** — add nullable FK to `assessment_frameworks(id)` (only if the column doesn't exist yet).
+2. **Seed DPDP data** (resolve framework_id dynamically by `short_code='DPDP'` or name ILIKE):
+   - 37 policy artefacts (P.01–P.11, S.01–S.12, R.01–R.09, C.01–C.05) into `framework_policy_artefacts`
+   - 14 department controls into `framework_dept_controls`
+   - 8 special status flags (sdf, consentMgr, children, crossBorder, legacy, thirdSchedule, intermediary, startup) into `framework_special_flags`
+   - All inserts wrapped with `ON CONFLICT DO NOTHING` so re-running is safe.
 
-- Domains are auto-deduced from unique `Domain Code` + `Domain Name` pairs
-- `display_order` is auto-assigned based on row order
-- Columns like Guidance, Section Ref, Penalty Ref are optional
+### Part 2 — UI: Framework Manager rewrite
 
-### Changes
+**File: `src/pages/AdminFrameworkManager.tsx`**
 
-**1. Install `xlsx` package** (SheetJS — client-side Excel parser, ~200KB)
+- **Remove** the existing "Import Excel" button + dialog from the Domains panel (line ~487 + dialog at ~710).
+- **Add** two buttons in the **Frameworks panel header**, next to "Add":
+  - `Download Template` — generates a 4-sheet blank XLSX
+  - `Upload Pack` — opens a 3-step dialog
 
-**2. File: `src/pages/AdminFrameworkManager.tsx`**
-- Add an "Import Excel" button next to "Add" in the Frameworks panel header (visible when a framework is selected)
-- Add a hidden `<input type="file" accept=".xlsx,.xls,.csv">` ref
-- On file select:
-  1. Parse with `xlsx.read()` → get first sheet as JSON array
-  2. Show a preview dialog with parsed row count, detected domains count, and sample rows
-  3. On confirm:
-     - Extract unique domains → batch insert into `framework_domains`
-     - For each domain, collect its requirements → batch insert into `framework_requirements`
-     - Use `display_order` based on row position
-     - Map risk_level/evidence_type to valid values with sensible defaults
-  4. Refresh the domains list
-  5. Show success toast with counts
+**File: `src/utils/assessmentPackParser.ts`** (new helper)
+- `parsePack(file)` → returns `{ info, flags, checklist, artefacts, deptControls }`
+- `validatePack(parsed, mode, existingShortCodes)` → returns `{ errors[], warnings[] }`
+- `buildTemplateXlsx()` → returns Blob for download
 
-**3. Preview/Confirm Dialog**
-- Shows: "Found X domains, Y requirements from Z rows"
-- Table preview of first 5 rows
-- Option to choose behavior: "Replace existing" (delete then insert) or "Append" (skip duplicates by item_code)
-- Import button with loading spinner
+### 3-Step Upload Dialog (shadcn Dialog, max-w-5xl)
 
-### How Assessment Creation Already Works
-The existing assessment flow in `Assessments.tsx` and `PhaseRapidAssessment.tsx` already queries `framework_domains` and `framework_requirements` dynamically based on `framework_ids`. So once domains/requirements are imported via Excel for any framework, assessments created with that framework will automatically use them — no changes needed to the assessment pages.
+```text
+┌─ Step 1: Upload ────────────────────────────────────┐
+│  ○ Create New Framework  ○ Populate Existing [▼]   │
+│  ┌─ Drag & drop .xlsx here ─────────┐               │
+│  │           [📥 Upload icon]        │               │
+│  └──────────────────────────────────┘               │
+│  [Download Template]              [Cancel] [Next →] │
+└─────────────────────────────────────────────────────┘
 
-### Technical Details
-- SheetJS (`xlsx`) parses entirely client-side — no edge function needed
-- Batch inserts use Supabase `.insert([...])` with arrays (existing RLS admin policies allow this)
-- Column header matching is case-insensitive and flexible (e.g., "domain_code" or "Domain Code")
-- Invalid/missing risk_level defaults to "standard", evidence_type defaults to "Document"
-- SDF Only column accepts "Yes"/"True"/"1" as truthy
+┌─ Step 2: Preview & Validate ────────────────────────┐
+│  Framework Info: ● GDPR · EU/EEA · v2016/679        │
+│  ┌─Checklist─┐ ┌─Artefacts─┐ ┌─Controls─┐ ┌─Flags─┐│
+│  │ 8 dom · 92│ │ 4 cat · 37│ │  14 ctrl │ │ 8 flg ││
+│  └───────────┘ └───────────┘ └──────────┘ └───────┘│
+│  ⚠ Validation: [❌ errors] [⚠ warnings]             │
+│  [Tabs: Checklist | Artefacts | Controls | Flags]   │
+│  preview table: first 20 rows + "X more"            │
+│              [← Back]              [Import →]       │
+└─────────────────────────────────────────────────────┘
 
-### Files Modified
-- `package.json` — add `xlsx` dependency
-- `src/pages/AdminFrameworkManager.tsx` — add import button, file input, preview dialog, parsing logic
+Step 3: Execute → progress toast → success toast → close
+```
 
-### No Changes To
-- Database schema (tables already exist)
-- Assessment pages (they already query framework data dynamically)
-- Sidebar, routing, or any other pages
+### Import execution order
 
+1. If "Create New": insert `assessment_frameworks` row (validate `short_code` unique).
+2. Group Sheet 2 by `domain_code` → insert unique `framework_domains` (display_order = first appearance).
+3. Insert `framework_requirements` (resolve `domain_id` from step 2).
+4. If Sheet 3 present → insert `framework_policy_artefacts`.
+5. If Sheet 4 present → insert `framework_dept_controls`.
+6. If Sheet 1 has flag rows → insert `framework_special_flags`.
+7. Create default `assessment_templates` row + link in `assessment_template_frameworks`.
+8. Toast: "Imported [name]: X domains, Y reqs, Z artefacts, W controls".
+9. Refresh list, auto-select imported framework.
+
+### Validation rules
+
+| Type | Check |
+|---|---|
+| ❌ Error | Sheet 2 missing |
+| ❌ Error | Missing required columns: `domain_code`, `domain_name`, `item_code`, `description`, `risk_level` |
+| ❌ Error | `risk_level` not in (`critical`, `high`, `standard`) |
+| ❌ Error | Duplicate `item_code` in Sheet 2 |
+| ❌ Error | Create-new mode: missing `name` / `short_code` |
+| ❌ Error | Create-new mode: `short_code` already in DB |
+| ⚠ Warning | Sheet 1, 3, or 4 missing |
+| ⚠ Warning | No special flags |
+
+### Assessment integration (no changes needed)
+
+`Assessments.tsx` and `PhaseRapidAssessment.tsx` already query `framework_domains` + `framework_requirements` dynamically by `framework_ids`. Any framework imported via Pack works in assessments automatically. `framework_policy_artefacts`, `framework_dept_controls`, `framework_special_flags` are already wired into PhaseDeptGrid and PhasePolicyMatrix where applicable.
+
+### Files touched
+
+| File | Change |
+|---|---|
+| migration (new) | DPDP seed: 37 + 14 + 8 rows; add `policy_items.framework_id` if missing |
+| `src/utils/assessmentPackParser.ts` (new) | parse / validate / template builder |
+| `src/pages/AdminFrameworkManager.tsx` | remove old Import Excel UI, add Upload Pack + Download Template + 3-step dialog |
+| `package.json` | `xlsx` already installed; add `file-saver` for template download |
+
+### Notes on the earlier login issue
+Unrelated to this feature. The Google OAuth code is correct and works on the published URL — preview environments occasionally proxy-block OAuth. We can revisit if it still fails on the published URL after this work lands.
