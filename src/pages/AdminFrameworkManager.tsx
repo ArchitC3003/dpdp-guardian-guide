@@ -252,160 +252,243 @@ export default function AdminFrameworkManager() {
     fetchRequirements(selectedDomain.id);
   };
 
-  /* ── Excel Import ──────────────────────────────────────── */
-  const normalizeHeader = (h: string) => h.trim().toLowerCase().replace(/[\s_-]+/g, "_");
+  /* ── Pack Upload ──────────────────────────────────────── */
+  const openPackDialog = () => {
+    setPackStep(1);
+    setPackMode("create");
+    setPopulateTargetId("");
+    setPackFile(null);
+    setParsedPack(null);
+    setValidation({ errors: [], warnings: [] });
+    setPackDialog(true);
+  };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePackFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      try {
-        const wb = XLSX.read(evt.target?.result, { type: "array" });
-        const sheet = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json<Record<string, string>>(sheet, { defval: "" });
-        if (rows.length === 0) { toast.error("No data rows found in spreadsheet"); return; }
-        // Detect unique domains
-        const headerMap: Record<string, string> = {};
-        Object.keys(rows[0]).forEach(k => { headerMap[normalizeHeader(k)] = k; });
-        const domainCodeKey = headerMap["domain_code"] || headerMap["domaincode"] || headerMap["domain"];
-        const domainNameKey = headerMap["domain_name"] || headerMap["domainname"];
-        if (!domainCodeKey) { toast.error("Missing 'Domain Code' column in spreadsheet"); return; }
-        const uniqueDomains = new Set<string>();
-        rows.forEach(r => { const code = String(r[domainCodeKey] || "").trim(); if (code) uniqueDomains.add(code); });
-        setParsedRows(rows);
-        setParsedSummary({ domains: uniqueDomains.size, requirements: rows.length, rows: rows.length });
-        setImportDialog(true);
-      } catch (err) {
-        toast.error("Failed to parse file");
-      }
-    };
-    reader.readAsArrayBuffer(file);
+    setPackFile(file);
     e.target.value = "";
   };
 
-  const executeImport = async () => {
-    if (!selectedFw || parsedRows.length === 0) return;
-    setImporting(true);
+  const goToPreview = async () => {
+    if (!packFile) { toast.error("Please select an XLSX file"); return; }
+    if (packMode === "populate" && !populateTargetId) { toast.error("Select a framework to populate"); return; }
     try {
-      const headerMap: Record<string, string> = {};
-      Object.keys(parsedRows[0]).forEach(k => { headerMap[normalizeHeader(k)] = k; });
-      const col = (row: Record<string, string>, ...keys: string[]) => {
-        for (const k of keys) { const mapped = headerMap[k]; if (mapped && row[mapped]) return String(row[mapped]).trim(); }
-        return "";
-      };
-      const validRisk = new Set(["critical", "high", "standard"]);
-      const validEvidence = new Set(["Document", "Policy", "Process", "Technical", "Interview"]);
-      const isTruthy = (v: string) => ["yes", "true", "1"].includes(v.toLowerCase());
+      const parsed = await parsePack(packFile);
+      const existingCodes = frameworks.map(f => f.short_code.toUpperCase());
+      const result = validatePack(parsed, packMode, existingCodes);
+      setParsedPack(parsed);
+      setValidation(result);
+      setPackStep(2);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to parse XLSX");
+    }
+  };
 
-      // If replace mode, delete existing domains (cascade will delete requirements)
-      if (importMode === "replace") {
-        const { error } = await supabase.from("framework_domains").delete().eq("framework_id", selectedFw.id);
-        if (error) throw error;
+  const executePackImport = async () => {
+    if (!parsedPack) return;
+    if (validation.errors.length > 0) { toast.error("Please fix validation errors first"); return; }
+
+    setImporting(true);
+    setPackStep(3);
+    try {
+      // 1. Resolve framework_id
+      let frameworkId: string;
+      let frameworkName: string;
+      if (packMode === "create") {
+        setImportProgress("Creating framework…");
+        const { data: newFw, error: fwErr } = await supabase
+          .from("assessment_frameworks")
+          .insert({
+            name: parsedPack.info.name!,
+            short_code: parsedPack.info.short_code!.toUpperCase(),
+            version: parsedPack.info.version || "1.0",
+            jurisdiction: parsedPack.info.jurisdiction || "Global",
+            regulatory_body: parsedPack.info.regulatory_body || null,
+            description: parsedPack.info.description || null,
+            effective_date: parsedPack.info.effective_date || null,
+            colour: parsedPack.info.colour || "#3B82F6",
+            icon_name: parsedPack.info.icon_name || "Shield",
+            is_active: true,
+            is_default: false,
+          })
+          .select("id, name")
+          .single();
+        if (fwErr) throw fwErr;
+        frameworkId = newFw.id;
+        frameworkName = newFw.name;
+      } else {
+        const tgt = frameworks.find(f => f.id === populateTargetId);
+        if (!tgt) throw new Error("Target framework not found");
+        frameworkId = tgt.id;
+        frameworkName = tgt.name;
       }
 
-      // Group rows by domain
-      const domainMap = new Map<string, { name: string; sectionRef: string; penaltyRef: string; desc: string; rows: Record<string, string>[] }>();
-      parsedRows.forEach(r => {
-        const code = col(r, "domain_code", "domaincode", "domain");
-        if (!code) return;
-        if (!domainMap.has(code)) {
-          domainMap.set(code, {
-            name: col(r, "domain_name", "domainname") || code,
-            sectionRef: col(r, "section_ref", "sectionref", "section"),
-            penaltyRef: col(r, "penalty_ref", "penaltyref", "penalty"),
-            desc: col(r, "domain_description", "domaindescription"),
+      // 2. Group checklist by domain & insert domains
+      setImportProgress("Importing domains…");
+      const domainMap = new Map<string, { name: string; section_ref?: string; penalty_ref?: string; description?: string; rows: typeof parsedPack.checklist }>();
+      parsedPack.checklist.forEach(r => {
+        if (!domainMap.has(r.domain_code)) {
+          domainMap.set(r.domain_code, {
+            name: r.domain_name,
+            section_ref: r.section_ref,
+            penalty_ref: r.penalty_ref,
+            description: r.domain_description,
             rows: [],
           });
         }
-        domainMap.get(code)!.rows.push(r);
+        domainMap.get(r.domain_code)!.rows.push(r);
       });
 
-      let totalDomains = 0, totalReqs = 0;
+      const domainIdByCode = new Map<string, string>();
       let domainOrder = 0;
+      let domainsCreated = 0;
       for (const [code, info] of domainMap) {
-        // Insert domain
-        const { data: domainData, error: domErr } = await supabase
+        // Check if domain already exists for this framework
+        const { data: existing } = await supabase
           .from("framework_domains")
+          .select("id")
+          .eq("framework_id", frameworkId)
+          .eq("code", code)
+          .maybeSingle();
+        if (existing) {
+          domainIdByCode.set(code, existing.id);
+        } else {
+          const { data: dom, error: dErr } = await supabase
+            .from("framework_domains")
+            .insert({
+              framework_id: frameworkId,
+              code,
+              name: info.name,
+              section_ref: info.section_ref || null,
+              penalty_ref: info.penalty_ref || null,
+              description: info.description || null,
+              display_order: domainOrder,
+              is_active: true,
+            })
+            .select("id")
+            .single();
+          if (dErr) throw dErr;
+          domainIdByCode.set(code, dom.id);
+          domainsCreated++;
+        }
+        domainOrder++;
+      }
+
+      // 3. Insert requirements
+      setImportProgress("Importing requirements…");
+      const reqRows = parsedPack.checklist.map((r, i) => ({
+        domain_id: domainIdByCode.get(r.domain_code)!,
+        item_code: r.item_code,
+        description: r.description,
+        guidance: r.guidance || null,
+        risk_level: r.risk_level || "standard",
+        evidence_type: r.evidence_type || "Document",
+        sdf_only: r.sdf_only ?? false,
+        display_order: i,
+        is_active: true,
+      }));
+      let reqsCreated = 0;
+      if (reqRows.length > 0) {
+        // Insert in chunks to avoid duplicate item_code conflicts; use upsert-style by ignoring 23505
+        const { error: rErr, count } = await supabase
+          .from("framework_requirements")
+          .insert(reqRows)
+          .select("*", { count: "exact", head: true });
+        if (rErr && rErr.code !== "23505") throw rErr;
+        reqsCreated = count ?? reqRows.length;
+      }
+
+      // 4. Insert artefacts
+      let artefactsCreated = 0;
+      if (parsedPack.artefacts.length > 0) {
+        setImportProgress("Importing artefacts…");
+        const artRows = parsedPack.artefacts.map((a, i) => ({
+          framework_id: frameworkId,
+          category_code: a.category_code,
+          category_name: a.category_name,
+          item_code: a.item_code,
+          artefact_name: a.artefact_name,
+          display_order: i,
+          is_active: true,
+        }));
+        const { error: aErr } = await supabase.from("framework_policy_artefacts").insert(artRows);
+        if (aErr && aErr.code !== "23505") throw aErr;
+        artefactsCreated = artRows.length;
+      }
+
+      // 5. Insert dept controls
+      let controlsCreated = 0;
+      if (parsedPack.deptControls.length > 0) {
+        setImportProgress("Importing dept controls…");
+        const ctrlRows = parsedPack.deptControls.map((c, i) => ({
+          framework_id: frameworkId,
+          control_id: c.control_id,
+          control_description: c.control_description,
+          risk_level: c.risk_level || "standard",
+          display_order: i,
+          is_active: true,
+        }));
+        const { error: cErr } = await supabase.from("framework_dept_controls").insert(ctrlRows);
+        if (cErr && cErr.code !== "23505") throw cErr;
+        controlsCreated = ctrlRows.length;
+      }
+
+      // 6. Insert special flags
+      let flagsCreated = 0;
+      if (parsedPack.flags.length > 0) {
+        setImportProgress("Importing special flags…");
+        const flagRows = parsedPack.flags.map((f, i) => ({
+          framework_id: frameworkId,
+          flag_key: f.flag_key,
+          flag_label: f.flag_label,
+          flag_hint: f.flag_hint || null,
+          triggers_domain: f.triggers_domain || null,
+          triggers_requirement: f.triggers_requirement || null,
+          display_order: i,
+          is_active: true,
+        }));
+        const { error: fErr } = await supabase.from("framework_special_flags").insert(flagRows);
+        if (fErr && fErr.code !== "23505") throw fErr;
+        flagsCreated = flagRows.length;
+      }
+
+      // 7. Default template + link (only for create-new)
+      if (packMode === "create") {
+        setImportProgress("Setting up template…");
+        const { data: tpl } = await supabase
+          .from("assessment_templates")
           .insert({
-            framework_id: selectedFw.id,
-            code,
-            name: info.name,
-            section_ref: info.sectionRef || null,
-            penalty_ref: info.penaltyRef || null,
-            description: info.desc || null,
-            display_order: domainOrder++,
+            name: `${frameworkName} — Default`,
+            description: `Default assessment template for ${frameworkName}`,
+            template_type: "single",
             is_active: true,
+            is_default: false,
           })
           .select("id")
           .single();
-        if (domErr) {
-          if (importMode === "append" && domErr.code === "23505") {
-            // Duplicate domain in append mode — fetch existing
-            const { data: existing } = await supabase
-              .from("framework_domains")
-              .select("id")
-              .eq("framework_id", selectedFw.id)
-              .eq("code", code)
-              .single();
-            if (existing) {
-              // Insert requirements under existing domain
-              const reqs = info.rows.map((r, i) => {
-                const riskRaw = col(r, "risk_level", "risklevel", "risk").toLowerCase();
-                const evRaw = col(r, "evidence_type", "evidencetype", "evidence");
-                return {
-                  domain_id: existing.id,
-                  item_code: col(r, "item_code", "itemcode", "requirement_code", "requirementcode", "code") || `${code}.${i + 1}`,
-                  description: col(r, "description", "requirement", "requirement_description"),
-                  guidance: col(r, "guidance", "notes") || null,
-                  risk_level: validRisk.has(riskRaw) ? riskRaw : "standard",
-                  evidence_type: validEvidence.has(evRaw) ? evRaw : "Document",
-                  sdf_only: isTruthy(col(r, "sdf_only", "sdfonly", "sdf")),
-                  display_order: i,
-                  is_active: true,
-                };
-              });
-              if (reqs.length > 0) {
-                const { error: reqErr } = await supabase.from("framework_requirements").insert(reqs);
-                if (reqErr && reqErr.code !== "23505") throw reqErr;
-                totalReqs += reqs.length;
-              }
-            }
-            continue;
-          }
-          throw domErr;
-        }
-        totalDomains++;
-        // Insert requirements
-        const reqs = info.rows.map((r, i) => {
-          const riskRaw = col(r, "risk_level", "risklevel", "risk").toLowerCase();
-          const evRaw = col(r, "evidence_type", "evidencetype", "evidence");
-          return {
-            domain_id: domainData.id,
-            item_code: col(r, "item_code", "itemcode", "requirement_code", "requirementcode", "code") || `${code}.${i + 1}`,
-            description: col(r, "description", "requirement", "requirement_description"),
-            guidance: col(r, "guidance", "notes") || null,
-            risk_level: validRisk.has(riskRaw) ? riskRaw : "standard",
-            evidence_type: validEvidence.has(evRaw) ? evRaw : "Document",
-            sdf_only: isTruthy(col(r, "sdf_only", "sdfonly", "sdf")),
-            display_order: i,
-            is_active: true,
-          };
-        });
-        if (reqs.length > 0) {
-          const { error: reqErr } = await supabase.from("framework_requirements").insert(reqs);
-          if (reqErr) throw reqErr;
-          totalReqs += reqs.length;
+        if (tpl) {
+          await supabase.from("assessment_template_frameworks").insert({
+            template_id: tpl.id,
+            framework_id: frameworkId,
+          });
         }
       }
 
-      toast.success(`Imported ${totalDomains} domains and ${totalReqs} requirements`);
-      setImportDialog(false);
-      fetchDomains(selectedFw.id);
+      toast.success(
+        `Imported ${frameworkName}: ${domainsCreated} domains, ${reqsCreated} requirements, ${artefactsCreated} artefacts, ${controlsCreated} controls, ${flagsCreated} flags`,
+      );
+      setPackDialog(false);
+      await fetchFrameworks();
+      // Auto-select imported framework
+      const refetched = await supabase.from("assessment_frameworks").select("*").eq("id", frameworkId).single();
+      if (refetched.data) setSelectedFw(refetched.data);
     } catch (err: any) {
       toast.error(err.message || "Import failed");
+      setPackStep(2);
     } finally {
       setImporting(false);
+      setImportProgress("");
     }
   };
 
