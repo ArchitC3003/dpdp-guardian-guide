@@ -390,13 +390,12 @@ export default function AdminFrameworkManager() {
       }));
       let reqsCreated = 0;
       if (reqRows.length > 0) {
-        // Insert in chunks to avoid duplicate item_code conflicts; use upsert-style by ignoring 23505
-        const { error: rErr, count } = await supabase
+        const { data: insertedReqs, error: rErr } = await supabase
           .from("framework_requirements")
           .insert(reqRows)
-          .select("*", { count: "exact", head: true });
+          .select("id");
         if (rErr && rErr.code !== "23505") throw rErr;
-        reqsCreated = count ?? reqRows.length;
+        reqsCreated = insertedReqs?.length ?? 0;
       }
 
       // 4. Insert artefacts
@@ -570,15 +569,9 @@ export default function AdminFrameworkManager() {
               {selectedFw ? `Domains — ${selectedFw.short_code}` : "Domains"}
             </CardTitle>
             {selectedFw && (
-              <div className="flex items-center gap-1">
-                <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                  <Upload className="h-3 w-3 mr-1" /> Import Excel
-                </Button>
-                <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleFileSelect} />
-                <Button size="sm" onClick={() => { setEditingDomain({}); setDomainDialog(true); }}>
-                  <Plus className="h-3 w-3 mr-1" /> Add
-                </Button>
-              </div>
+              <Button size="sm" onClick={() => { setEditingDomain({}); setDomainDialog(true); }}>
+                <Plus className="h-3 w-3 mr-1" /> Add
+              </Button>
             )}
           </CardHeader>
           <Separator />
