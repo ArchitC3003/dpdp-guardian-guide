@@ -505,11 +505,19 @@ export default function AdminFrameworkManager() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-160px)]">
         {/* ─── LEFT: Frameworks ──────────────────────────── */}
         <Card className="flex flex-col">
-          <CardHeader className="py-3 px-4 flex-row items-center justify-between space-y-0">
+          <CardHeader className="py-3 px-4 flex-row items-center justify-between space-y-0 gap-1">
             <CardTitle className="text-sm font-semibold">Frameworks</CardTitle>
-            <Button size="sm" onClick={() => { setEditingFw({}); setFwDialog(true); }}>
-              <Plus className="h-3 w-3 mr-1" /> Add
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button size="sm" variant="ghost" className="h-8 px-2" onClick={downloadTemplate} title="Download XLSX template">
+                <Download className="h-3 w-3" />
+              </Button>
+              <Button size="sm" variant="outline" className="h-8 px-2" onClick={openPackDialog}>
+                <Upload className="h-3 w-3 mr-1" /> Upload Pack
+              </Button>
+              <Button size="sm" className="h-8 px-2" onClick={() => { setEditingFw({}); setFwDialog(true); }}>
+                <Plus className="h-3 w-3 mr-1" /> Add
+              </Button>
+            </div>
           </CardHeader>
           <Separator />
           <ScrollArea className="flex-1">
