@@ -792,56 +792,242 @@ export default function AdminFrameworkManager() {
         </DialogContent>
       </Dialog>
 
-      {/* ─── Import Preview Dialog ──────────────────────── */}
-      <Dialog open={importDialog} onOpenChange={setImportDialog}>
-        <DialogContent className="max-w-2xl">
+      {/* ─── Pack Upload Dialog (3-step) ────────────────── */}
+      <Dialog open={packDialog} onOpenChange={(o) => !importing && setPackDialog(o)}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle>Import Excel — {selectedFw?.short_code}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <FileSpreadsheet className="h-5 w-5 text-primary" />
+              Upload Assessment Pack
+              <Badge variant="outline" className="ml-2 text-xs">Step {packStep} of 3</Badge>
+            </DialogTitle>
             <DialogDescription>
-              Found <strong>{parsedSummary.domains}</strong> domains and <strong>{parsedSummary.requirements}</strong> requirements from {parsedSummary.rows} rows.
+              {packStep === 1 && "Upload a 4-sheet XLSX (Framework Info, Checklist, Artefacts, Dept Controls)."}
+              {packStep === 2 && "Review parsed data and validation results before importing."}
+              {packStep === 3 && "Importing into the database…"}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <RadioGroup value={importMode} onValueChange={(v) => setImportMode(v as "replace" | "append")} className="flex gap-4">
-              <div className="flex items-center gap-2">
-                <RadioGroupItem value="append" id="append" />
-                <Label htmlFor="append">Append (skip duplicates)</Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <RadioGroupItem value="replace" id="replace" />
-                <Label htmlFor="replace" className="text-destructive">Replace existing</Label>
-              </div>
-            </RadioGroup>
-            {parsedRows.length > 0 && (
-              <ScrollArea className="max-h-[280px] border rounded-md">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      {Object.keys(parsedRows[0]).slice(0, 6).map(h => (
-                        <TableHead key={h} className="text-xs whitespace-nowrap">{h}</TableHead>
+
+          {/* ── Step 1: Upload ─────────────────────────── */}
+          {packStep === 1 && (
+            <div className="space-y-4 py-2 flex-1">
+              <RadioGroup value={packMode} onValueChange={(v) => setPackMode(v as "create" | "populate")} className="flex gap-6">
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="create" id="m-create" />
+                  <Label htmlFor="m-create">Create New Framework</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="populate" id="m-pop" />
+                  <Label htmlFor="m-pop">Populate Existing Framework</Label>
+                </div>
+              </RadioGroup>
+
+              {packMode === "populate" && (
+                <div>
+                  <Label className="text-xs">Target Framework</Label>
+                  <Select value={populateTargetId} onValueChange={setPopulateTargetId}>
+                    <SelectTrigger><SelectValue placeholder="Choose framework…" /></SelectTrigger>
+                    <SelectContent>
+                      {frameworks.map(f => (
+                        <SelectItem key={f.id} value={f.id}>{f.name} ({f.short_code})</SelectItem>
                       ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {parsedRows.slice(0, 5).map((row, i) => (
-                      <TableRow key={i}>
-                        {Object.keys(parsedRows[0]).slice(0, 6).map(h => (
-                          <TableCell key={h} className="text-xs py-1.5 max-w-[200px] truncate">{String(row[h] || "")}</TableCell>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div
+                className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:bg-muted/30 cursor-pointer transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
+                <p className="text-sm font-medium">{packFile ? packFile.name : "Click to select an .xlsx file"}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {packFile ? `${(packFile.size / 1024).toFixed(1)} KB` : "Or drag & drop here"}
+                </p>
+                <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handlePackFileSelect} />
+              </div>
+
+              <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/30 rounded-md p-3">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>Sheets expected: <code>Framework_Info</code>, <code>Checklist</code>, <code>Artefacts</code>, <code>Dept_Controls</code>. Use Download Template above to get started.</span>
+              </div>
+            </div>
+          )}
+
+          {/* ── Step 2: Preview ────────────────────────── */}
+          {packStep === 2 && parsedPack && (
+            <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
+              {parsedPack.info.name && (
+                <div className="flex items-center gap-3 text-sm bg-muted/30 rounded-md p-3">
+                  <span className="h-2 w-2 rounded-full" style={{ background: parsedPack.info.colour || "#3B82F6" }} />
+                  <strong>{parsedPack.info.name}</strong>
+                  {parsedPack.info.short_code && <Badge variant="outline" className="text-[10px]">{parsedPack.info.short_code}</Badge>}
+                  {parsedPack.info.jurisdiction && <span className="text-xs text-muted-foreground">· {parsedPack.info.jurisdiction}</span>}
+                  {parsedPack.info.version && <span className="text-xs text-muted-foreground">· v{parsedPack.info.version}</span>}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div className="border rounded-md p-3">
+                  <div className="text-xs text-muted-foreground">Checklist</div>
+                  <div className="text-lg font-bold">
+                    {new Set(parsedPack.checklist.map(c => c.domain_code)).size} dom · {parsedPack.checklist.length} req
+                  </div>
+                </div>
+                <div className="border rounded-md p-3">
+                  <div className="text-xs text-muted-foreground">Artefacts</div>
+                  <div className="text-lg font-bold">
+                    {new Set(parsedPack.artefacts.map(a => a.category_code)).size} cat · {parsedPack.artefacts.length} item
+                  </div>
+                </div>
+                <div className="border rounded-md p-3">
+                  <div className="text-xs text-muted-foreground">Dept Controls</div>
+                  <div className="text-lg font-bold">{parsedPack.deptControls.length} ctrl</div>
+                </div>
+                <div className="border rounded-md p-3">
+                  <div className="text-xs text-muted-foreground">Special Flags</div>
+                  <div className="text-lg font-bold">{parsedPack.flags.length} flag</div>
+                </div>
+              </div>
+
+              {(validation.errors.length > 0 || validation.warnings.length > 0) && (
+                <div className="space-y-1.5 max-h-[120px] overflow-y-auto">
+                  {validation.errors.map((e, i) => (
+                    <div key={`e-${i}`} className="flex items-start gap-2 text-xs bg-destructive/10 text-destructive rounded-md p-2">
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" /><span>{e}</span>
+                    </div>
+                  ))}
+                  {validation.warnings.map((w, i) => (
+                    <div key={`w-${i}`} className="flex items-start gap-2 text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-md p-2">
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" /><span>{w}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <Tabs defaultValue="checklist" className="flex-1 overflow-hidden flex flex-col">
+                <TabsList className="grid grid-cols-4 w-full">
+                  <TabsTrigger value="checklist">Checklist ({parsedPack.checklist.length})</TabsTrigger>
+                  <TabsTrigger value="artefacts">Artefacts ({parsedPack.artefacts.length})</TabsTrigger>
+                  <TabsTrigger value="controls">Controls ({parsedPack.deptControls.length})</TabsTrigger>
+                  <TabsTrigger value="flags">Flags ({parsedPack.flags.length})</TabsTrigger>
+                </TabsList>
+                <TabsContent value="checklist" className="flex-1 overflow-hidden mt-2">
+                  <ScrollArea className="h-[260px] border rounded-md">
+                    <Table>
+                      <TableHeader><TableRow>
+                        <TableHead className="text-xs">Domain</TableHead>
+                        <TableHead className="text-xs">Item</TableHead>
+                        <TableHead className="text-xs">Description</TableHead>
+                        <TableHead className="text-xs">Risk</TableHead>
+                      </TableRow></TableHeader>
+                      <TableBody>
+                        {parsedPack.checklist.slice(0, 20).map((r, i) => (
+                          <TableRow key={i}>
+                            <TableCell className="text-xs"><Badge variant="outline" className="text-[10px] font-mono">{r.domain_code}</Badge> {r.domain_name}</TableCell>
+                            <TableCell className="text-xs font-mono">{r.item_code}</TableCell>
+                            <TableCell className="text-xs max-w-[300px] truncate">{r.description}</TableCell>
+                            <TableCell className="text-xs"><Badge variant="outline" className={cn("text-[10px]", riskColor[r.risk_level] || riskColor.standard)}>{r.risk_level}</Badge></TableCell>
+                          </TableRow>
                         ))}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                {parsedRows.length > 5 && <p className="text-xs text-muted-foreground text-center py-2">… and {parsedRows.length - 5} more rows</p>}
-              </ScrollArea>
-            )}
-          </div>
+                      </TableBody>
+                    </Table>
+                    {parsedPack.checklist.length > 20 && <p className="text-xs text-muted-foreground text-center py-2">… and {parsedPack.checklist.length - 20} more</p>}
+                  </ScrollArea>
+                </TabsContent>
+                <TabsContent value="artefacts" className="flex-1 overflow-hidden mt-2">
+                  <ScrollArea className="h-[260px] border rounded-md">
+                    <Table>
+                      <TableHeader><TableRow>
+                        <TableHead className="text-xs">Category</TableHead>
+                        <TableHead className="text-xs">Code</TableHead>
+                        <TableHead className="text-xs">Name</TableHead>
+                      </TableRow></TableHeader>
+                      <TableBody>
+                        {parsedPack.artefacts.slice(0, 20).map((a, i) => (
+                          <TableRow key={i}>
+                            <TableCell className="text-xs">{a.category_name}</TableCell>
+                            <TableCell className="text-xs font-mono">{a.item_code}</TableCell>
+                            <TableCell className="text-xs">{a.artefact_name}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                </TabsContent>
+                <TabsContent value="controls" className="flex-1 overflow-hidden mt-2">
+                  <ScrollArea className="h-[260px] border rounded-md">
+                    <Table>
+                      <TableHeader><TableRow>
+                        <TableHead className="text-xs">ID</TableHead>
+                        <TableHead className="text-xs">Description</TableHead>
+                        <TableHead className="text-xs">Risk</TableHead>
+                      </TableRow></TableHeader>
+                      <TableBody>
+                        {parsedPack.deptControls.slice(0, 20).map((c, i) => (
+                          <TableRow key={i}>
+                            <TableCell className="text-xs font-mono">{c.control_id}</TableCell>
+                            <TableCell className="text-xs">{c.control_description}</TableCell>
+                            <TableCell className="text-xs"><Badge variant="outline" className={cn("text-[10px]", riskColor[c.risk_level] || riskColor.standard)}>{c.risk_level}</Badge></TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                </TabsContent>
+                <TabsContent value="flags" className="flex-1 overflow-hidden mt-2">
+                  <ScrollArea className="h-[260px] border rounded-md">
+                    <Table>
+                      <TableHeader><TableRow>
+                        <TableHead className="text-xs">Key</TableHead>
+                        <TableHead className="text-xs">Label</TableHead>
+                        <TableHead className="text-xs">Hint</TableHead>
+                      </TableRow></TableHeader>
+                      <TableBody>
+                        {parsedPack.flags.map((f, i) => (
+                          <TableRow key={i}>
+                            <TableCell className="text-xs font-mono">{f.flag_key}</TableCell>
+                            <TableCell className="text-xs">{f.flag_label}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">{f.flag_hint || "—"}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                </TabsContent>
+              </Tabs>
+            </div>
+          )}
+
+          {/* ── Step 3: Executing ──────────────────────── */}
+          {packStep === 3 && (
+            <div className="py-12 flex flex-col items-center justify-center gap-3">
+              <Loader2 className="h-8 w-8 text-primary animate-spin" />
+              <p className="text-sm font-medium">{importProgress || "Importing…"}</p>
+              <p className="text-xs text-muted-foreground">Please don't close this window.</p>
+            </div>
+          )}
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setImportDialog(false)}>Cancel</Button>
-            <Button onClick={executeImport} disabled={importing}>
-              {importing && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
-              {importing ? "Importing…" : "Import"}
-            </Button>
+            {packStep === 1 && (
+              <>
+                <Button variant="outline" onClick={() => setPackDialog(false)}>Cancel</Button>
+                <Button onClick={goToPreview} disabled={!packFile}>Next →</Button>
+              </>
+            )}
+            {packStep === 2 && (
+              <>
+                <Button variant="outline" onClick={() => setPackStep(1)}>← Back</Button>
+                <Button onClick={executePackImport} disabled={validation.errors.length > 0 || importing}>
+                  {validation.errors.length > 0 ? (
+                    <><AlertCircle className="h-3 w-3 mr-1" /> Fix Errors First</>
+                  ) : (
+                    <><CheckCircle2 className="h-3 w-3 mr-1" /> Import →</>
+                  )}
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
