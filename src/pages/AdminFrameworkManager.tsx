@@ -16,9 +16,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Plus, BookOpen, Shield, Edit2, Trash2, ChevronRight, Upload, Loader2 } from "lucide-react";
+import { Plus, BookOpen, Edit2, ChevronRight, Upload, Loader2, Download, FileSpreadsheet, AlertCircle, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import * as XLSX from "xlsx";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { parsePack, validatePack, downloadTemplate, type ParsedPack, type ValidationResult } from "@/utils/assessmentPackParser";
 
 /* ─── Types ────────────────────────────────────────────── */
 interface Framework {
