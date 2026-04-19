@@ -348,11 +348,11 @@ export default function Assessments() {
 
       {/* Template Picker Dialog */}
       <Dialog open={showTemplatePicker} onOpenChange={setShowTemplatePicker}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Select Assessment Template</DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto py-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1 overflow-y-auto py-2 min-h-0">
             {templates.map((t) => (
               <Card key={t.id} className={cn("border-border bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer", t.is_default && "ring-1 ring-primary/50")}>
                 <CardContent className="p-4 space-y-3">

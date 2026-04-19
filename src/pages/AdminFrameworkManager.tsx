@@ -502,7 +502,7 @@ export default function AdminFrameworkManager() {
         <h1 className="text-2xl font-bold">Framework Manager</h1>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-160px)]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-[calc(100vh-160px)]">
         {/* ─── LEFT: Frameworks ──────────────────────────── */}
         <Card className="flex flex-col">
           <CardHeader className="py-3 px-4 flex-row items-center justify-between space-y-0 gap-1">
@@ -923,7 +923,7 @@ export default function AdminFrameworkManager() {
                         <TableHead className="text-xs">Risk</TableHead>
                       </TableRow></TableHeader>
                       <TableBody>
-                        {parsedPack.checklist.slice(0, 20).map((r, i) => (
+                        {parsedPack.checklist.slice(0, 50).map((r, i) => (
                           <TableRow key={i}>
                             <TableCell className="text-xs"><Badge variant="outline" className="text-[10px] font-mono">{r.domain_code}</Badge> {r.domain_name}</TableCell>
                             <TableCell className="text-xs font-mono">{r.item_code}</TableCell>
@@ -933,7 +933,7 @@ export default function AdminFrameworkManager() {
                         ))}
                       </TableBody>
                     </Table>
-                    {parsedPack.checklist.length > 20 && <p className="text-xs text-muted-foreground text-center py-2">… and {parsedPack.checklist.length - 20} more</p>}
+                    {parsedPack.checklist.length > 50 && <p className="text-xs text-muted-foreground text-center py-2">… and {parsedPack.checklist.length - 50} more</p>}
                   </ScrollArea>
                 </TabsContent>
                 <TabsContent value="artefacts" className="flex-1 overflow-hidden mt-2">
@@ -945,7 +945,7 @@ export default function AdminFrameworkManager() {
                         <TableHead className="text-xs">Name</TableHead>
                       </TableRow></TableHeader>
                       <TableBody>
-                        {parsedPack.artefacts.slice(0, 20).map((a, i) => (
+                        {parsedPack.artefacts.slice(0, 50).map((a, i) => (
                           <TableRow key={i}>
                             <TableCell className="text-xs">{a.category_name}</TableCell>
                             <TableCell className="text-xs font-mono">{a.item_code}</TableCell>
@@ -954,6 +954,7 @@ export default function AdminFrameworkManager() {
                         ))}
                       </TableBody>
                     </Table>
+                    {parsedPack.artefacts.length > 50 && <p className="text-xs text-muted-foreground text-center py-2">… and {parsedPack.artefacts.length - 50} more</p>}
                   </ScrollArea>
                 </TabsContent>
                 <TabsContent value="controls" className="flex-1 overflow-hidden mt-2">
@@ -965,7 +966,7 @@ export default function AdminFrameworkManager() {
                         <TableHead className="text-xs">Risk</TableHead>
                       </TableRow></TableHeader>
                       <TableBody>
-                        {parsedPack.deptControls.slice(0, 20).map((c, i) => (
+                        {parsedPack.deptControls.slice(0, 50).map((c, i) => (
                           <TableRow key={i}>
                             <TableCell className="text-xs font-mono">{c.control_id}</TableCell>
                             <TableCell className="text-xs">{c.control_description}</TableCell>
@@ -974,6 +975,7 @@ export default function AdminFrameworkManager() {
                         ))}
                       </TableBody>
                     </Table>
+                    {parsedPack.deptControls.length > 50 && <p className="text-xs text-muted-foreground text-center py-2">… and {parsedPack.deptControls.length - 50} more</p>}
                   </ScrollArea>
                 </TabsContent>
                 <TabsContent value="flags" className="flex-1 overflow-hidden mt-2">
@@ -985,7 +987,7 @@ export default function AdminFrameworkManager() {
                         <TableHead className="text-xs">Hint</TableHead>
                       </TableRow></TableHeader>
                       <TableBody>
-                        {parsedPack.flags.map((f, i) => (
+                        {parsedPack.flags.slice(0, 50).map((f, i) => (
                           <TableRow key={i}>
                             <TableCell className="text-xs font-mono">{f.flag_key}</TableCell>
                             <TableCell className="text-xs">{f.flag_label}</TableCell>
@@ -994,6 +996,7 @@ export default function AdminFrameworkManager() {
                         ))}
                       </TableBody>
                     </Table>
+                    {parsedPack.flags.length > 50 && <p className="text-xs text-muted-foreground text-center py-2">… and {parsedPack.flags.length - 50} more</p>}
                   </ScrollArea>
                 </TabsContent>
               </Tabs>
