@@ -936,6 +936,7 @@ export type Database = {
       }
       framework_requirements: {
         Row: {
+          conditional_flag: string | null
           created_at: string
           description: string
           display_order: number
@@ -949,6 +950,7 @@ export type Database = {
           sdf_only: boolean
         }
         Insert: {
+          conditional_flag?: string | null
           created_at?: string
           description: string
           display_order?: number
@@ -962,6 +964,7 @@ export type Database = {
           sdf_only?: boolean
         }
         Update: {
+          conditional_flag?: string | null
           created_at?: string
           description?: string
           display_order?: number

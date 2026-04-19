@@ -386,6 +386,7 @@ export default function AdminFrameworkManager() {
         risk_level: r.risk_level || "standard",
         evidence_type: r.evidence_type || "Document",
         sdf_only: r.sdf_only ?? false,
+        conditional_flag: r.conditional_flag || null,
         display_order: i,
         is_active: true,
       }));
