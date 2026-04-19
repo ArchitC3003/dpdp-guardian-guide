@@ -533,15 +533,15 @@ export default function AdminFrameworkManager() {
                       : "hover:bg-muted/50 border border-transparent"
                   )}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm truncate">{fw.name}</span>
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
+                      <div className="flex items-start gap-2 flex-wrap">
+                        <span className="font-medium text-sm leading-snug break-words">{fw.name}</span>
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 mt-0.5">
                           {fw.short_code}
                         </Badge>
                       </div>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <Badge variant="secondary" className="text-[9px] px-1 py-0">{fw.jurisdiction}</Badge>
                         <span className="text-[10px] text-muted-foreground">v{fw.version}</span>
                       </div>
