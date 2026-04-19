@@ -1,95 +1,67 @@
 
-## Plan: Universal Assessment Pack — DPDP Seed + 4-Sheet Upload
 
-This replaces the current narrow "Import Excel" (domains only) with a complete "Assessment Pack" upload that creates an entire framework — info, requirements, policy artefacts, dept controls, and special flags — from one XLSX. Plus seeds the existing DPDP framework with all the supporting data.
+## Plan: Fix Scroll Clipping Across the App and PPT Slides
 
-### Part 1 — Database (migrations)
+### Findings — where data gets clipped
 
-The 3 supporting tables and their RLS already exist (`framework_policy_artefacts`, `framework_dept_controls`, `framework_special_flags`). Two remaining DB tasks:
+**A) Web app — dialogs and panels**
 
-1. **`policy_items.framework_id`** — add nullable FK to `assessment_frameworks(id)` (only if the column doesn't exist yet).
-2. **Seed DPDP data** (resolve framework_id dynamically by `short_code='DPDP'` or name ILIKE):
-   - 37 policy artefacts (P.01–P.11, S.01–S.12, R.01–R.09, C.01–C.05) into `framework_policy_artefacts`
-   - 14 department controls into `framework_dept_controls`
-   - 8 special status flags (sdf, consentMgr, children, crossBorder, legacy, thirdSchedule, intermediary, startup) into `framework_special_flags`
-   - All inserts wrapped with `ON CONFLICT DO NOTHING` so re-running is safe.
-
-### Part 2 — UI: Framework Manager rewrite
-
-**File: `src/pages/AdminFrameworkManager.tsx`**
-
-- **Remove** the existing "Import Excel" button + dialog from the Domains panel (line ~487 + dialog at ~710).
-- **Add** two buttons in the **Frameworks panel header**, next to "Add":
-  - `Download Template` — generates a 4-sheet blank XLSX
-  - `Upload Pack` — opens a 3-step dialog
-
-**File: `src/utils/assessmentPackParser.ts`** (new helper)
-- `parsePack(file)` → returns `{ info, flags, checklist, artefacts, deptControls }`
-- `validatePack(parsed, mode, existingShortCodes)` → returns `{ errors[], warnings[] }`
-- `buildTemplateXlsx()` → returns Blob for download
-
-### 3-Step Upload Dialog (shadcn Dialog, max-w-5xl)
-
-```text
-┌─ Step 1: Upload ────────────────────────────────────┐
-│  ○ Create New Framework  ○ Populate Existing [▼]   │
-│  ┌─ Drag & drop .xlsx here ─────────┐               │
-│  │           [📥 Upload icon]        │               │
-│  └──────────────────────────────────┘               │
-│  [Download Template]              [Cancel] [Next →] │
-└─────────────────────────────────────────────────────┘
-
-┌─ Step 2: Preview & Validate ────────────────────────┐
-│  Framework Info: ● GDPR · EU/EEA · v2016/679        │
-│  ┌─Checklist─┐ ┌─Artefacts─┐ ┌─Controls─┐ ┌─Flags─┐│
-│  │ 8 dom · 92│ │ 4 cat · 37│ │  14 ctrl │ │ 8 flg ││
-│  └───────────┘ └───────────┘ └──────────┘ └───────┘│
-│  ⚠ Validation: [❌ errors] [⚠ warnings]             │
-│  [Tabs: Checklist | Artefacts | Controls | Flags]   │
-│  preview table: first 20 rows + "X more"            │
-│              [← Back]              [Import →]       │
-└─────────────────────────────────────────────────────┘
-
-Step 3: Execute → progress toast → success toast → close
-```
-
-### Import execution order
-
-1. If "Create New": insert `assessment_frameworks` row (validate `short_code` unique).
-2. Group Sheet 2 by `domain_code` → insert unique `framework_domains` (display_order = first appearance).
-3. Insert `framework_requirements` (resolve `domain_id` from step 2).
-4. If Sheet 3 present → insert `framework_policy_artefacts`.
-5. If Sheet 4 present → insert `framework_dept_controls`.
-6. If Sheet 1 has flag rows → insert `framework_special_flags`.
-7. Create default `assessment_templates` row + link in `assessment_template_frameworks`.
-8. Toast: "Imported [name]: X domains, Y reqs, Z artefacts, W controls".
-9. Refresh list, auto-select imported framework.
-
-### Validation rules
-
-| Type | Check |
+| Location | Problem |
 |---|---|
-| ❌ Error | Sheet 2 missing |
-| ❌ Error | Missing required columns: `domain_code`, `domain_name`, `item_code`, `description`, `risk_level` |
-| ❌ Error | `risk_level` not in (`critical`, `high`, `standard`) |
-| ❌ Error | Duplicate `item_code` in Sheet 2 |
-| ❌ Error | Create-new mode: missing `name` / `short_code` |
-| ❌ Error | Create-new mode: `short_code` already in DB |
-| ⚠ Warning | Sheet 1, 3, or 4 missing |
-| ⚠ Warning | No special flags |
+| `src/components/ui/dialog.tsx` (base `DialogContent`) | No `max-h` or overflow — any tall dialog spills off-screen. Affects every `DialogContent` that doesn't set its own `max-h`. |
+| `AdminFrameworkManager.tsx` Framework Dialog (line 688), Domain Dialog (720), Requirement Dialog (746) | Long forms get cut off on smaller viewports (≤768px). |
+| `AdminFrameworkManager.tsx` Pack Dialog Step 2 (line 909) | Tabs each show `ScrollArea h-[260px]` — only first 20 rows shown for some tabs (artefacts/controls/flags don't show "+ X more"). |
+| `Assessments.tsx` Template Picker (line 351) | No `max-h` on dialog itself; inner grid has `max-h-[60vh]` but if many frameworks per template card → still clips. |
+| `AdminAssessmentTemplates.tsx` Create Template (line 360) | Frameworks list `ScrollArea h-48` — fine, but dialog itself has no `max-h`, preview block can push footer offscreen. |
+| `AccountSettings.tsx` Delete Confirm Dialog (274) | No max-h. |
+| `PrivacyPreferences.tsx` Detail dialogs (241, 289) | No max-h. |
+| `AssessmentRepoGenerator.tsx` (567) | No max-h. |
+| `KMAdminPanel.tsx` (172) | No max-h. |
 
-### Assessment integration (no changes needed)
+**B) Pages with full-height grids that lose footer/content**
+- `AdminFrameworkManager.tsx` (line 505): `h-[calc(100vh-160px)]` — assumes fixed header heights; on small viewports the inner cards' ScrollArea works but the grid itself can clip.
+- `PhaseDeptGrid.tsx` table — has horizontal `overflow-x-auto` but no vertical bound.
 
-`Assessments.tsx` and `PhaseRapidAssessment.tsx` already query `framework_domains` + `framework_requirements` dynamically by `framework_ids`. Any framework imported via Pack works in assessments automatically. `framework_policy_artefacts`, `framework_dept_controls`, `framework_special_flags` are already wired into PhaseDeptGrid and PhasePolicyMatrix where applicable.
+**C) PowerPoint export (`src/lib/exportPpt.ts`) — slide overflow**
+- **Score Overview** (line 44): hardcoded 4×2 grid of metric cards in a 7"-wide area. If a future metric is added, it overflows the slide bottom.
+- **Domain Scores table** (line 79): has `autoPage: true` ✓ already paginates.
+- **Penalty table** (line 152): no `autoPage` — long penalty maps run off the slide.
+- **Narrative slide** (line 216): fixed-height shape `h: 3.5"`, fixed text box `h: 3.1"`. Long AI narratives are silently truncated by PowerPoint.
+- **Domain Chart** (line 125): single slide; if domains > ~15, bar labels become unreadable / clip.
 
-### Files touched
+### Changes
 
+**1. Make every dialog scroll by default** — `src/components/ui/dialog.tsx`
+- Add `max-h-[90vh] overflow-y-auto` to `DialogContent`'s base classes. This is a one-line fix that benefits every dialog, including all the un-bounded ones above. Existing dialogs with explicit `max-h-[90vh]` already work.
+
+**2. Make every Sheet (slide-over) scroll** — verify `src/components/ui/sheet.tsx` `SheetContent` has `overflow-y-auto`; add if missing. Most existing usages already pass it but the base default makes it foolproof.
+
+**3. AdminFrameworkManager Pack Dialog Step 2** — add "+ X more" row to the artefacts/controls/flags tabs (currently only checklist shows it), and bump preview row count from 20 → 50 to surface more data.
+
+**4. AdminFrameworkManager main grid** — change `h-[calc(100vh-160px)]` to `min-h-[calc(100vh-160px)]` so on small viewports it grows naturally and the page itself scrolls.
+
+**5. Specific dialogs needing extra care** (in addition to the global fix):
+- `Assessments.tsx` Template Picker → add `max-h-[85vh] flex flex-col` and wrap inner grid in a flex-1 scroll container.
+- `AdminAssessmentTemplates.tsx` Create Template → same pattern so the Save button stays visible.
+
+**6. PowerPoint export fixes** — `src/lib/exportPpt.ts`
+- **Penalty slide**: add `autoPage: true, autoPageRepeatHeader: true` to the penalty table.
+- **Narrative slide**: split long narratives across multiple slides using a paginator helper (~2,000 chars per slide), with "Narrative (continued)" titles.
+- **Domain chart slide**: if `domainScores.length > 12`, split into two chart slides (first half / second half) so bar labels stay legible.
+- **Score overview**: convert the 8-card metric block from hardcoded coords into a loop with computed grid sizing so additional metrics flow safely. Keep visual identical for current 8 cards.
+- **All slides**: add a small footer `"PrivcybHub · Page X of Y · Confidential"` so users know if they're missing pages.
+
+### Files modified
 | File | Change |
 |---|---|
-| migration (new) | DPDP seed: 37 + 14 + 8 rows; add `policy_items.framework_id` if missing |
-| `src/utils/assessmentPackParser.ts` (new) | parse / validate / template builder |
-| `src/pages/AdminFrameworkManager.tsx` | remove old Import Excel UI, add Upload Pack + Download Template + 3-step dialog |
-| `package.json` | `xlsx` already installed; add `file-saver` for template download |
+| `src/components/ui/dialog.tsx` | Add `max-h-[90vh] overflow-y-auto` to base `DialogContent` |
+| `src/components/ui/sheet.tsx` | Ensure `SheetContent` defaults to `overflow-y-auto` |
+| `src/pages/AdminFrameworkManager.tsx` | Fix Pack preview tabs ("+ X more" everywhere, 50 rows), grid min-h |
+| `src/pages/Assessments.tsx` | Template Picker dialog → `max-h-[85vh] flex flex-col` |
+| `src/pages/AdminAssessmentTemplates.tsx` | Create Template dialog → flex-col scroll body |
+| `src/lib/exportPpt.ts` | Penalty `autoPage`, narrative pagination, chart split, metric loop, slide footer |
 
-### Notes on the earlier login issue
-Unrelated to this feature. The Google OAuth code is correct and works on the published URL — preview environments occasionally proxy-block OAuth. We can revisit if it still fails on the published URL after this work lands.
+### Out of scope
+- Login/OAuth issues (separate, environment-specific).
+- New features (Export Pack, replace mode, framework seeds) — already on backlog.
+
