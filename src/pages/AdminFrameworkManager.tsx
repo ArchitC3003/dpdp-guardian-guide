@@ -571,19 +571,19 @@ export default function AdminFrameworkManager() {
         </Card>
 
         {/* ─── MIDDLE: Domains ──────────────────────────── */}
-         <Card className="flex flex-col">
-          <CardHeader className="py-3 px-4 flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-semibold">
+         <Card className="flex flex-col overflow-hidden min-h-0">
+          <CardHeader className="py-3 px-3 flex-row items-center justify-between space-y-0 gap-2 shrink-0">
+            <CardTitle className="text-sm font-semibold truncate min-w-0 flex-1">
               {selectedFw ? `Domains — ${selectedFw.short_code}` : "Domains"}
             </CardTitle>
             {selectedFw && (
-              <Button size="sm" onClick={() => { setEditingDomain({}); setDomainDialog(true); }}>
-                <Plus className="h-3 w-3 mr-1" /> Add
+              <Button size="sm" className="h-8 w-8 p-0 xl:w-auto xl:px-2 shrink-0" onClick={() => { setEditingDomain({}); setDomainDialog(true); }} title="Add Domain">
+                <Plus className="h-3.5 w-3.5" /> <span className="hidden xl:inline xl:ml-1">Add</span>
               </Button>
             )}
           </CardHeader>
           <Separator />
-          <ScrollArea className="flex-1">
+          <ScrollArea className="flex-1 min-h-0">
             {!selectedFw ? (
               <p className="text-xs text-muted-foreground text-center py-8">Select a framework</p>
             ) : (
