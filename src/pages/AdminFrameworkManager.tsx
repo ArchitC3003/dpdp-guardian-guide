@@ -20,6 +20,7 @@ import { Plus, BookOpen, Edit2, ChevronRight, Upload, Loader2, Download, FileSpr
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { parsePack, validatePack, downloadTemplate, type ParsedPack, type ValidationResult } from "@/utils/assessmentPackParser";
+import { PageHeader } from "@/components/PageHeader";
 
 /* ─── Types ────────────────────────────────────────────── */
 interface Framework {
@@ -497,10 +498,12 @@ export default function AdminFrameworkManager() {
 
   return (
     <div className="p-4 md:p-6 flex flex-col gap-4 h-screen overflow-hidden">
-      <div className="flex items-center gap-2 shrink-0">
-        <BookOpen className="h-6 w-6 text-primary" />
-        <h1 className="text-2xl font-bold">Framework Manager</h1>
-      </div>
+      <PageHeader
+        icon={BookOpen}
+        title="Framework Manager"
+        description="Manage assessment frameworks, domains and requirements"
+        className="pb-3 shrink-0"
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1 min-h-0 overflow-hidden">
         {/* ─── LEFT: Frameworks ──────────────────────────── */}
