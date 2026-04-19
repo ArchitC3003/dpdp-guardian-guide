@@ -9,9 +9,10 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { FrameworkBadge } from "@/components/FrameworkBadge";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Trash2, ExternalLink, ClipboardList, BarChart3, CheckCircle2, Layers, Shield, FileText, AlertTriangle, BookMarked, ChevronRight } from "lucide-react";
+import { Plus, Trash2, ExternalLink, ClipboardList, BarChart3, CheckCircle2, Layers, Shield, FileText, AlertTriangle, BookMarked, ChevronRight, LayoutDashboard } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/PageHeader";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Assessment = Tables<"assessments">;
