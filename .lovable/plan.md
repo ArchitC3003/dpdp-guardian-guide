@@ -1,67 +1,61 @@
 
 
-## Plan: Fix Scroll Clipping Across the App and PPT Slides
+## Plan: Clean up Framework Manager Layout & Visibility
 
-### Findings — where data gets clipped
+### Root causes (confirmed from code + viewport 962px)
 
-**A) Web app — dialogs and panels**
+1. **Buttons overflow narrow columns** — Frameworks header has 3 buttons (Download icon + "Upload Pack" + "Add") in a `~320px` card. At anything below ~1100px the labels wrap or push behind the title. "Add" in Domains/Requirements headers gets hidden behind long titles like `Domains — DPDP`.
+2. **Grid breakpoint mismatch** — `lg:grid-cols-3` activates at 1024px. User's viewport is 962px → stacks to 1 column, which crams everything and looks messy. Inside the dialog area, the columns also feel cramped because each column needs more horizontal room than `lg` provides.
+3. **No internal scroll on columns** — Each `Card` uses `flex flex-col` with `ScrollArea flex-1`, but the parent grid uses `min-h-[calc(100vh-160px)]` (changed in last edit). With `min-h`, children expand rather than scroll — so long lists make the page scroll instead of scrolling inside the card. Result: header buttons disappear above the fold, no internal scroll.
+4. **Upload Pack button label hidden** — at narrow widths "Upload Pack" wraps and pushes "Add" off the visible row.
 
-| Location | Problem |
-|---|---|
-| `src/components/ui/dialog.tsx` (base `DialogContent`) | No `max-h` or overflow — any tall dialog spills off-screen. Affects every `DialogContent` that doesn't set its own `max-h`. |
-| `AdminFrameworkManager.tsx` Framework Dialog (line 688), Domain Dialog (720), Requirement Dialog (746) | Long forms get cut off on smaller viewports (≤768px). |
-| `AdminFrameworkManager.tsx` Pack Dialog Step 2 (line 909) | Tabs each show `ScrollArea h-[260px]` — only first 20 rows shown for some tabs (artefacts/controls/flags don't show "+ X more"). |
-| `Assessments.tsx` Template Picker (line 351) | No `max-h` on dialog itself; inner grid has `max-h-[60vh]` but if many frameworks per template card → still clips. |
-| `AdminAssessmentTemplates.tsx` Create Template (line 360) | Frameworks list `ScrollArea h-48` — fine, but dialog itself has no `max-h`, preview block can push footer offscreen. |
-| `AccountSettings.tsx` Delete Confirm Dialog (274) | No max-h. |
-| `PrivacyPreferences.tsx` Detail dialogs (241, 289) | No max-h. |
-| `AssessmentRepoGenerator.tsx` (567) | No max-h. |
-| `KMAdminPanel.tsx` (172) | No max-h. |
+### Fixes
 
-**B) Pages with full-height grids that lose footer/content**
-- `AdminFrameworkManager.tsx` (line 505): `h-[calc(100vh-160px)]` — assumes fixed header heights; on small viewports the inner cards' ScrollArea works but the grid itself can clip.
-- `PhaseDeptGrid.tsx` table — has horizontal `overflow-x-auto` but no vertical bound.
+**File: `src/pages/AdminFrameworkManager.tsx`**
 
-**C) PowerPoint export (`src/lib/exportPpt.ts`) — slide overflow**
-- **Score Overview** (line 44): hardcoded 4×2 grid of metric cards in a 7"-wide area. If a future metric is added, it overflows the slide bottom.
-- **Domain Scores table** (line 79): has `autoPage: true` ✓ already paginates.
-- **Penalty table** (line 152): no `autoPage` — long penalty maps run off the slide.
-- **Narrative slide** (line 216): fixed-height shape `h: 3.5"`, fixed text box `h: 3.1"`. Long AI narratives are silently truncated by PowerPoint.
-- **Domain Chart** (line 125): single slide; if domains > ~15, bar labels become unreadable / clip.
+1. **Restore fixed-height grid for proper internal scroll**
+   - Change `min-h-[calc(100vh-160px)]` → `h-[calc(100vh-140px)]` and add `overflow-hidden` to each `Card` so `ScrollArea flex-1` actually scrolls inside.
 
-### Changes
+2. **Lower the multi-column breakpoint**
+   - `lg:grid-cols-3` → `md:grid-cols-3` so 3 columns kick in at 768px (matches the 962px viewport and similar laptops).
 
-**1. Make every dialog scroll by default** — `src/components/ui/dialog.tsx`
-- Add `max-h-[90vh] overflow-y-auto` to `DialogContent`'s base classes. This is a one-line fix that benefits every dialog, including all the un-bounded ones above. Existing dialogs with explicit `max-h-[90vh]` already work.
+3. **Compact, always-visible header buttons (icon-only on small, label on wider)**
+   - Frameworks header: collapse to icon-only buttons with tooltips at narrow widths; show labels at `xl:`.
+     - Download (icon only, tooltip "Download Template")
+     - Upload (icon only at narrow, "Upload Pack" at xl+)
+     - Add (icon only at narrow, "Add" at xl+)
+   - Domains/Requirements header: same — "Add" becomes icon-only when title is long.
+   - Wrap buttons in `flex-shrink-0` and the title in `truncate min-w-0` so the title shortens before buttons disappear.
 
-**2. Make every Sheet (slide-over) scroll** — verify `src/components/ui/sheet.tsx` `SheetContent` has `overflow-y-auto`; add if missing. Most existing usages already pass it but the base default makes it foolproof.
+4. **Header layout safety**
+   - Card header: `flex items-center justify-between gap-2` with title `truncate min-w-0 flex-1` and button group `shrink-0`.
 
-**3. AdminFrameworkManager Pack Dialog Step 2** — add "+ X more" row to the artefacts/controls/flags tabs (currently only checklist shows it), and bump preview row count from 20 → 50 to surface more data.
+5. **Stack header on extreme narrow (<640px)**
+   - Use `flex-col sm:flex-row` so on phones the title sits above the buttons rather than buttons being clipped.
 
-**4. AdminFrameworkManager main grid** — change `h-[calc(100vh-160px)]` to `min-h-[calc(100vh-160px)]` so on small viewports it grows naturally and the page itself scrolls.
+6. **Page wrapper**
+   - Outer `<div className="p-4 md:p-6 space-y-4 h-[calc(100vh-0px)] flex flex-col overflow-hidden">` so the grid can use the remaining height cleanly without page scroll competing with internal scroll.
 
-**5. Specific dialogs needing extra care** (in addition to the global fix):
-- `Assessments.tsx` Template Picker → add `max-h-[85vh] flex flex-col` and wrap inner grid in a flex-1 scroll container.
-- `AdminAssessmentTemplates.tsx` Create Template → same pattern so the Save button stays visible.
+### Visual result (at 962px)
 
-**6. PowerPoint export fixes** — `src/lib/exportPpt.ts`
-- **Penalty slide**: add `autoPage: true, autoPageRepeatHeader: true` to the penalty table.
-- **Narrative slide**: split long narratives across multiple slides using a paginator helper (~2,000 chars per slide), with "Narrative (continued)" titles.
-- **Domain chart slide**: if `domainScores.length > 12`, split into two chart slides (first half / second half) so bar labels stay legible.
-- **Score overview**: convert the 8-card metric block from hardcoded coords into a loop with computed grid sizing so additional metrics flow safely. Keep visual identical for current 8 cards.
-- **All slides**: add a small footer `"PrivcybHub · Page X of Y · Confidential"` so users know if they're missing pages.
+```text
+┌────────── Framework Manager ──────────────────────────────┐
+├─Frameworks───┬─Domains — DPDP─┬─Requirements ─ A.1───────┤
+│ [↓][↑][+]   │ [+]            │ [+]                       │
+│ DPDP    ⚙  │ A.1 Notice ›   │ A.1.1 [crit][Doc] ...     │
+│ GDPR    ⚙  │ A.2 Consent ›  │ A.1.2 [high][Log] ...     │
+│ ▼ scroll ▼  │ ▼ scroll ▼    │ ▼ scroll ▼                │
+└─────────────┴────────────────┴──────────────────────────┘
+```
+
+All three columns visible side-by-side at 962px, each with its own internal scroll. Add/Upload/Download icons always visible.
 
 ### Files modified
 | File | Change |
 |---|---|
-| `src/components/ui/dialog.tsx` | Add `max-h-[90vh] overflow-y-auto` to base `DialogContent` |
-| `src/components/ui/sheet.tsx` | Ensure `SheetContent` defaults to `overflow-y-auto` |
-| `src/pages/AdminFrameworkManager.tsx` | Fix Pack preview tabs ("+ X more" everywhere, 50 rows), grid min-h |
-| `src/pages/Assessments.tsx` | Template Picker dialog → `max-h-[85vh] flex flex-col` |
-| `src/pages/AdminAssessmentTemplates.tsx` | Create Template dialog → flex-col scroll body |
-| `src/lib/exportPpt.ts` | Penalty `autoPage`, narrative pagination, chart split, metric loop, slide footer |
+| `src/pages/AdminFrameworkManager.tsx` | Grid breakpoint `md:` instead of `lg:`, fixed-height grid + Card `overflow-hidden`, icon-only buttons at narrow widths with `xl:` labels, header truncation |
 
 ### Out of scope
-- Login/OAuth issues (separate, environment-specific).
-- New features (Export Pack, replace mode, framework seeds) — already on backlog.
+- Other dashboards (will tackle next if user reports issues there)
+- Login/OAuth (environment-specific)
 
