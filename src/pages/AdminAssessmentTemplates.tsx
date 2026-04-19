@@ -357,11 +357,11 @@ export default function AdminAssessmentTemplates() {
 
       {/* Create / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{editingTemplate ? "Edit Template" : "Create Template"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <div className="space-y-4 py-2 flex-1 overflow-y-auto min-h-0 pr-1">
             <div className="space-y-1.5">
               <Label>Name</Label>
               <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="e.g. DPDP Full Assessment" />

@@ -31,6 +31,41 @@ const RED = "ef4444";
 const AMBER = "f59e0b";
 const GREEN = "22c55e";
 
+// Add a slim footer to every slide so users can detect missing pages
+function addFooter(slide: PptxGenJS.Slide) {
+  slide.addText("PrivcybHub · Confidential", {
+    x: 0.3,
+    y: 5.4,
+    w: 12.7,
+    h: 0.25,
+    fontSize: 9,
+    color: MUTED,
+    fontFace: "Arial",
+    align: "left",
+  });
+}
+
+// Split long text into chunks that fit a single slide (~2000 chars each)
+function paginateText(text: string, charsPerPage = 2000): string[] {
+  if (!text) return [""];
+  if (text.length <= charsPerPage) return [text];
+  const pages: string[] = [];
+  let remaining = text.trim();
+  while (remaining.length > 0) {
+    if (remaining.length <= charsPerPage) {
+      pages.push(remaining);
+      break;
+    }
+    // Break on nearest paragraph or sentence boundary
+    let cut = remaining.lastIndexOf("\n\n", charsPerPage);
+    if (cut < charsPerPage * 0.5) cut = remaining.lastIndexOf(". ", charsPerPage);
+    if (cut < charsPerPage * 0.5) cut = charsPerPage;
+    pages.push(remaining.slice(0, cut).trim());
+    remaining = remaining.slice(cut).trim();
+  }
+  return pages;
+}
+
 function addTitleSlide(pptx: PptxGenJS, orgName: string) {
   const slide = pptx.addSlide();
   slide.background = { color: BRAND_DARK };
@@ -39,6 +74,7 @@ function addTitleSlide(pptx: PptxGenJS, orgName: string) {
   slide.addText(orgName || "Organisation Name", { x: 0.8, y: 3.0, w: 8.4, h: 0.6, fontSize: 24, bold: true, color: WHITE, fontFace: "Arial" });
   slide.addText(`Generated: ${new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}`, { x: 0.8, y: 4.0, w: 8.4, h: 0.4, fontSize: 12, color: MUTED, fontFace: "Arial" });
   slide.addText("CONFIDENTIAL", { x: 0.8, y: 4.8, w: 8.4, h: 0.3, fontSize: 11, color: RED, bold: true, fontFace: "Arial" });
+  addFooter(slide);
 }
 
 function addScoreOverviewSlide(pptx: PptxGenJS, data: PptExportData) {
@@ -53,7 +89,7 @@ function addScoreOverviewSlide(pptx: PptxGenJS, data: PptExportData) {
   slide.addText(data.bandLabel, { x: 0.5, y: 2.1, w: 2.5, h: 0.4, fontSize: 11, bold: true, color: scoreColor, align: "center", fontFace: "Arial" });
   slide.addText("Weighted Score", { x: 0.5, y: 2.5, w: 2.5, h: 0.3, fontSize: 10, color: MUTED, align: "center", fontFace: "Arial" });
 
-  // Key metrics
+  // Key metrics — computed grid (safe for any number of metrics)
   const metrics = [
     { label: "Items Assessed", value: `${data.totalAssessed} / 92` },
     { label: "Compliant (Yes)", value: String(data.totalYes), color: GREEN },
@@ -65,15 +101,27 @@ function addScoreOverviewSlide(pptx: PptxGenJS, data: PptExportData) {
     { label: "Dept Grid Health", value: `${data.deptCompliant} / ${data.deptTotal}` },
   ];
 
+  const cols = 2;
+  const rows = Math.ceil(metrics.length / cols);
+  const gridX = 3.5;
+  const gridY = 1.1;
+  const gridW = 6.4; // remaining width within slide
+  const gridH = 3.6; // bounded so it never overflows the slide
+  const gap = 0.15;
+  const cardW = (gridW - gap * (cols - 1)) / cols;
+  const cardH = (gridH - gap * (rows - 1)) / rows;
+
   metrics.forEach((m, i) => {
-    const col = Math.floor(i / 4);
-    const row = i % 4;
-    const xBase = 3.5 + col * 3.2;
-    const yBase = 1.1 + row * 0.9;
-    slide.addShape(pptx.ShapeType.roundRect, { x: xBase, y: yBase, w: 2.8, h: 0.75, fill: { color: BRAND_CARD }, rectRadius: 0.1 });
-    slide.addText(m.label, { x: xBase + 0.15, y: yBase + 0.08, w: 2.5, h: 0.3, fontSize: 10, color: MUTED, fontFace: "Arial" });
-    slide.addText(m.value, { x: xBase + 0.15, y: yBase + 0.35, w: 2.5, h: 0.35, fontSize: 18, bold: true, color: m.color || WHITE, fontFace: "Arial" });
+    const col = Math.floor(i / rows);
+    const row = i % rows;
+    const x = gridX + col * (cardW + gap);
+    const y = gridY + row * (cardH + gap);
+    slide.addShape(pptx.ShapeType.roundRect, { x, y, w: cardW, h: cardH, fill: { color: BRAND_CARD }, rectRadius: 0.1 });
+    slide.addText(m.label, { x: x + 0.15, y: y + 0.08, w: cardW - 0.3, h: 0.3, fontSize: 10, color: MUTED, fontFace: "Arial" });
+    slide.addText(m.value, { x: x + 0.15, y: y + 0.38, w: cardW - 0.3, h: cardH - 0.45, fontSize: 18, bold: true, color: m.color || WHITE, fontFace: "Arial" });
   });
+
+  addFooter(slide);
 }
 
 function addDomainScoresSlide(pptx: PptxGenJS, domainScores: DomainScore[]) {
@@ -81,7 +129,6 @@ function addDomainScoresSlide(pptx: PptxGenJS, domainScores: DomainScore[]) {
   slide.background = { color: BRAND_DARK };
   slide.addText("Domain-wise Compliance Scores", { x: 0.5, y: 0.3, w: 9, h: 0.6, fontSize: 24, bold: true, color: WHITE, fontFace: "Arial" });
 
-  // Bar chart using table-based visual
   const rows: PptxGenJS.TableRow[] = [
     [
       { text: "Domain", options: { bold: true, fontSize: 9, color: MUTED, fill: { color: BRAND_CARD } } },
@@ -120,12 +167,13 @@ function addDomainScoresSlide(pptx: PptxGenJS, domainScores: DomainScore[]) {
     autoPage: true,
     autoPageRepeatHeader: true,
   });
+  addFooter(slide);
 }
 
-function addDomainChartSlide(pptx: PptxGenJS, domainScores: DomainScore[]) {
+function addDomainChartSlide(pptx: PptxGenJS, domainScores: DomainScore[], titleSuffix = "") {
   const slide = pptx.addSlide();
   slide.background = { color: BRAND_DARK };
-  slide.addText("Domain Scores — Visual", { x: 0.5, y: 0.3, w: 9, h: 0.6, fontSize: 24, bold: true, color: WHITE, fontFace: "Arial" });
+  slide.addText(`Domain Scores — Visual${titleSuffix}`, { x: 0.5, y: 0.3, w: 9, h: 0.6, fontSize: 24, bold: true, color: WHITE, fontFace: "Arial" });
 
   const chartData = [{
     name: "Score",
@@ -147,6 +195,19 @@ function addDomainChartSlide(pptx: PptxGenJS, domainScores: DomainScore[]) {
     chartColors: [BRAND_GREEN],
     showLegend: false,
   } as any);
+  addFooter(slide);
+}
+
+function addDomainCharts(pptx: PptxGenJS, domainScores: DomainScore[]) {
+  const MAX_PER_SLIDE = 12;
+  if (domainScores.length <= MAX_PER_SLIDE) {
+    addDomainChartSlide(pptx, domainScores);
+    return;
+  }
+  // Split into two halves so labels stay legible
+  const mid = Math.ceil(domainScores.length / 2);
+  addDomainChartSlide(pptx, domainScores.slice(0, mid), " (Part 1)");
+  addDomainChartSlide(pptx, domainScores.slice(mid), " (Part 2)");
 }
 
 function addPenaltySlide(pptx: PptxGenJS, penaltyMap: { category: string; penalty: string; domains: string }[]) {
@@ -178,7 +239,10 @@ function addPenaltySlide(pptx: PptxGenJS, penaltyMap: { category: string; penalt
     border: { type: "solid", pt: 0.5, color: "334155" },
     rowH: 0.5,
     fontFace: "Arial",
+    autoPage: true,
+    autoPageRepeatHeader: true,
   });
+  addFooter(slide);
 }
 
 function addEvidenceSlide(pptx: PptxGenJS, data: PptExportData) {
@@ -211,14 +275,20 @@ function addEvidenceSlide(pptx: PptxGenJS, data: PptExportData) {
     slide.addText(p.label, { x: 5.7, y: 1.75 + i * 0.7, w: 2.5, h: 0.45, fontSize: 11, color: MUTED, fontFace: "Arial" });
     slide.addText(String(p.value), { x: 8.5, y: 1.75 + i * 0.7, w: 0.8, h: 0.45, fontSize: 16, bold: true, color: p.color, align: "right", fontFace: "Arial" });
   });
+  addFooter(slide);
 }
 
 function addNarrativeSlide(pptx: PptxGenJS, narrative: string) {
-  const slide = pptx.addSlide();
-  slide.background = { color: BRAND_DARK };
-  slide.addText("Assessment Narrative", { x: 0.5, y: 0.3, w: 9, h: 0.6, fontSize: 24, bold: true, color: WHITE, fontFace: "Arial" });
-  slide.addShape(pptx.ShapeType.roundRect, { x: 0.5, y: 1.1, w: 9, h: 3.5, fill: { color: BRAND_CARD }, rectRadius: 0.15 });
-  slide.addText(narrative, { x: 0.8, y: 1.3, w: 8.4, h: 3.1, fontSize: 13, color: WHITE, fontFace: "Arial", lineSpacingMultiple: 1.5, valign: "top" });
+  const pages = paginateText(narrative, 2000);
+  pages.forEach((page, idx) => {
+    const slide = pptx.addSlide();
+    slide.background = { color: BRAND_DARK };
+    const title = idx === 0 ? "Assessment Narrative" : `Assessment Narrative (continued ${idx + 1}/${pages.length})`;
+    slide.addText(title, { x: 0.5, y: 0.3, w: 9, h: 0.6, fontSize: 24, bold: true, color: WHITE, fontFace: "Arial" });
+    slide.addShape(pptx.ShapeType.roundRect, { x: 0.5, y: 1.1, w: 9, h: 4.0, fill: { color: BRAND_CARD }, rectRadius: 0.15 });
+    slide.addText(page, { x: 0.8, y: 1.3, w: 8.4, h: 3.6, fontSize: 13, color: WHITE, fontFace: "Arial", lineSpacingMultiple: 1.4, valign: "top" });
+    addFooter(slide);
+  });
 }
 
 function addClosingSlide(pptx: PptxGenJS) {
@@ -227,6 +297,7 @@ function addClosingSlide(pptx: PptxGenJS) {
   slide.addText("PrivcybHub", { x: 0.5, y: 2.0, w: 9, h: 0.8, fontSize: 36, bold: true, color: BRAND_GREEN, align: "center", fontFace: "Arial" });
   slide.addText("Your Privacy & Cyber Compliance Hub", { x: 0.5, y: 2.8, w: 9, h: 0.5, fontSize: 16, color: MUTED, align: "center", fontFace: "Arial" });
   slide.addText("This report is auto-generated. For queries, contact your Data Protection Officer.", { x: 0.5, y: 4.0, w: 9, h: 0.4, fontSize: 10, color: MUTED, align: "center", fontFace: "Arial" });
+  addFooter(slide);
 }
 
 export async function exportDashboardToPPT(data: PptExportData) {
@@ -239,7 +310,7 @@ export async function exportDashboardToPPT(data: PptExportData) {
 
   addTitleSlide(pptx, data.orgName);
   addScoreOverviewSlide(pptx, data);
-  addDomainChartSlide(pptx, data.domainScores);
+  addDomainCharts(pptx, data.domainScores);
   addDomainScoresSlide(pptx, data.domainScores);
   addPenaltySlide(pptx, data.penaltyMap);
   addEvidenceSlide(pptx, data);
