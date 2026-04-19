@@ -32,6 +32,7 @@ import {
 import { toast } from "sonner";
 import { Users, UserPlus, Shield, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/PageHeader";
 
 interface UserRow {
   id: string;
@@ -168,17 +169,16 @@ export default function UserManagement() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
-            <Users className="h-7 w-7" /> User Management
-          </h1>
-          <p className="text-muted-foreground">Manage team members, roles, and permissions</p>
-        </div>
-        <Button onClick={() => setShowInvite(true)} className="gap-2">
-          <UserPlus className="h-4 w-4" /> Invite User
-        </Button>
-      </div>
+      <PageHeader
+        icon={Users}
+        title="User Management"
+        description="Manage team members, roles, and permissions"
+        actions={
+          <Button onClick={() => setShowInvite(true)} className="gap-2">
+            <UserPlus className="h-4 w-4" /> Invite User
+          </Button>
+        }
+      />
 
       {/* Role Legend */}
       <div className="flex flex-wrap gap-2">

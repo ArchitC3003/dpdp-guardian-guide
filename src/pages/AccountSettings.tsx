@@ -9,9 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Download, LogOut, Trash2, Bot, CheckCircle2, XCircle, Loader2, Save, Lock } from "lucide-react";
+import { Download, LogOut, Trash2, Bot, CheckCircle2, XCircle, Loader2, Save, Lock, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeCustomizer } from "@/components/ThemeCustomizer";
+import { PageHeader } from "@/components/PageHeader";
 
 export default function AccountSettings() {
   const { user, profile, signOut, refreshProfile } = useAuth();
@@ -101,10 +102,11 @@ export default function AccountSettings() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-primary">Account Settings</h1>
-        <p className="text-muted-foreground">Manage your account and personal data</p>
-      </div>
+      <PageHeader
+        icon={Settings2}
+        title="Account Settings"
+        description="Manage your account and personal data"
+      />
 
       {/* My Profile — editable */}
       <Card className="bg-slate-800/50 border-slate-700/50">

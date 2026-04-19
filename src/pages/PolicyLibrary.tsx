@@ -31,6 +31,7 @@ import {
 import { cn } from "@/lib/utils";
 import { exportToDOCX, exportToPDF, ExportDocument } from "@/utils/exportUtils";
 import PolicyDetailSlideOver from "@/components/policy-library/PolicyDetailSlideOver";
+import { PageHeader } from "@/components/PageHeader";
 
 interface PolicyDoc {
   id: string;
@@ -172,16 +173,16 @@ export default function PolicyLibrary() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Policy Register</h1>
-          <p className="text-muted-foreground text-sm">Organisation's official policy lifecycle register — Draft, Review, Published</p>
-        </div>
-        <Button onClick={() => navigate("/policy-sop-builder")} className="gradient-primary">
-          <Bot className="h-4 w-4 mr-2" /> Generate New Document
-        </Button>
-      </div>
+      <PageHeader
+        icon={BookMarked}
+        title="Policy Register"
+        description="Organisation's official policy lifecycle register — Draft, Review, Published"
+        actions={
+          <Button onClick={() => navigate("/policy-sop-builder")} className="gradient-primary">
+            <Bot className="h-4 w-4 mr-2" /> Generate New Document
+          </Button>
+        }
+      />
 
       {/* Expiring alert */}
       {expiringCount > 0 && (
@@ -194,16 +195,18 @@ export default function PolicyLibrary() {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {stats.map((s) => (
           <Card key={s.label} className="border-border bg-card">
-            <CardContent className="pt-5 pb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground">{s.label}</p>
-                  <p className={cn("text-2xl font-bold mt-1", s.color)}>{s.value}</p>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className={cn("flex h-9 w-9 items-center justify-center rounded-lg bg-muted", s.color)}>
+                  <s.icon className="h-4 w-4" />
                 </div>
-                <s.icon className={cn("h-7 w-7 opacity-40", s.color)} />
+                <div className="min-w-0">
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{s.label}</p>
+                  <p className={cn("text-xl font-semibold tabular-nums leading-tight mt-0.5", s.color)}>{s.value}</p>
+                </div>
               </div>
             </CardContent>
           </Card>

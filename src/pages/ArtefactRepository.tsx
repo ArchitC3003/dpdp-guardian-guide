@@ -18,6 +18,8 @@ import { KMAdminPanel } from "@/components/km/KMAdminPanel";
 import { ArtefactCard, type ArtefactFileExtended } from "@/components/artefacts/ArtefactCard";
 import { ArtefactDetailPanel } from "@/components/artefacts/ArtefactDetailPanel";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { PageHeader } from "@/components/PageHeader";
+import { Building2 } from "lucide-react";
 
 const FOLDERS = [
   { key: "Checklist", label: "Checklist", icon: "✅" },
@@ -80,18 +82,12 @@ export default function ArtefactRepository() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Artefact Repository</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Organisation-wide compliance documents — {artefactCount} artefacts
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {isAdmin && <AdminUploadPanel onUploaded={refresh} />}
-        </div>
-      </div>
+      <PageHeader
+        icon={Building2}
+        title="Organisation Documents"
+        description={`Organisation-wide compliance documents — ${artefactCount} artefacts`}
+        actions={isAdmin ? <AdminUploadPanel onUploaded={refresh} /> : undefined}
+      />
 
       {/* Privacy Banner */}
       <div className="flex items-center gap-2.5 rounded-lg border border-primary/20 bg-primary/5 px-4 py-2">
