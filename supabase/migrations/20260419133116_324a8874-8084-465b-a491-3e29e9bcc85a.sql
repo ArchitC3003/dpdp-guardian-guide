@@ -1,0 +1,1 @@
+ALTER TABLE public.framework_requirements ADD COLUMN IF NOT EXISTS conditional_flag text;
