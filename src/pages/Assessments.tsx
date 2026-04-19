@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Plus, Trash2, ExternalLink, ClipboardList, BarChart3, CheckCircle2, Shield, Search } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/PageHeader";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Assessment = Tables<"assessments">;
@@ -220,31 +221,37 @@ export default function Assessments() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Assessments</h1>
-          <p className="text-muted-foreground">
-            Create and manage compliance assessments
-            {isAdmin && <span className="ml-2 inline-flex items-center gap-1 text-xs text-primary font-semibold"><Shield className="h-3 w-3" /> Admin View</span>}
-          </p>
-        </div>
-        <Button onClick={handleNewAssessment} className="gradient-primary">
-          <Plus className="h-4 w-4 mr-2" /> New Assessment
-        </Button>
-      </div>
+      <PageHeader
+        icon={ClipboardList}
+        title="Assessments"
+        description="Create and manage compliance assessments"
+        badge={
+          isAdmin ? (
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full">
+              <Shield className="h-3 w-3" /> Admin View
+            </span>
+          ) : null
+        }
+        actions={
+          <Button onClick={handleNewAssessment} className="gradient-primary">
+            <Plus className="h-4 w-4 mr-2" /> New Assessment
+          </Button>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {stats.map((s) => (
-          <Card key={s.label} className="border-border bg-card">
+          <Card key={s.label} className="border-border bg-card hover:shadow-md transition-shadow">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">{s.label}</p>
-                  <p className="text-3xl font-bold mt-1">{s.value}</p>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-muted-foreground">{s.label}</p>
+                  <p className="text-3xl font-semibold mt-1 tracking-tight">{s.value}</p>
                 </div>
-                <s.icon className="h-8 w-8 text-primary/50" />
+                <div className="shrink-0 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <s.icon className="h-5 w-5" />
+                </div>
               </div>
             </CardContent>
           </Card>
