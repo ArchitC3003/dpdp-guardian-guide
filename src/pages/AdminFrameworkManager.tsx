@@ -496,31 +496,31 @@ export default function AdminFrameworkManager() {
   if (!isAdmin) return <Navigate to="/dashboard" replace />;
 
   return (
-    <div className="p-4 md:p-6 space-y-4">
-      <div className="flex items-center gap-2 mb-2">
+    <div className="p-4 md:p-6 flex flex-col gap-4 h-screen overflow-hidden">
+      <div className="flex items-center gap-2 shrink-0">
         <BookOpen className="h-6 w-6 text-primary" />
         <h1 className="text-2xl font-bold">Framework Manager</h1>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-[calc(100vh-160px)]">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1 min-h-0 overflow-hidden">
         {/* ─── LEFT: Frameworks ──────────────────────────── */}
-        <Card className="flex flex-col">
-          <CardHeader className="py-3 px-4 flex-row items-center justify-between space-y-0 gap-1">
-            <CardTitle className="text-sm font-semibold">Frameworks</CardTitle>
-            <div className="flex items-center gap-1">
-              <Button size="sm" variant="ghost" className="h-8 px-2" onClick={downloadTemplate} title="Download XLSX template">
-                <Download className="h-3 w-3" />
+        <Card className="flex flex-col overflow-hidden min-h-0">
+          <CardHeader className="py-3 px-3 flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0 gap-2 shrink-0">
+            <CardTitle className="text-sm font-semibold truncate min-w-0 flex-1">Frameworks</CardTitle>
+            <div className="flex items-center gap-1 shrink-0">
+              <Button size="sm" variant="ghost" className="h-8 w-8 p-0 xl:w-auto xl:px-2" onClick={downloadTemplate} title="Download XLSX template">
+                <Download className="h-3.5 w-3.5" />
               </Button>
-              <Button size="sm" variant="outline" className="h-8 px-2" onClick={openPackDialog}>
-                <Upload className="h-3 w-3 mr-1" /> Upload Pack
+              <Button size="sm" variant="outline" className="h-8 w-8 p-0 xl:w-auto xl:px-2" onClick={openPackDialog} title="Upload Pack">
+                <Upload className="h-3.5 w-3.5" /> <span className="hidden xl:inline xl:ml-1">Upload Pack</span>
               </Button>
-              <Button size="sm" className="h-8 px-2" onClick={() => { setEditingFw({}); setFwDialog(true); }}>
-                <Plus className="h-3 w-3 mr-1" /> Add
+              <Button size="sm" className="h-8 w-8 p-0 xl:w-auto xl:px-2" onClick={() => { setEditingFw({}); setFwDialog(true); }} title="Add Framework">
+                <Plus className="h-3.5 w-3.5" /> <span className="hidden xl:inline xl:ml-1">Add</span>
               </Button>
             </div>
           </CardHeader>
           <Separator />
-          <ScrollArea className="flex-1">
+          <ScrollArea className="flex-1 min-h-0">
             <div className="p-2 space-y-1">
               {frameworks.map(fw => (
                 <button
@@ -571,19 +571,19 @@ export default function AdminFrameworkManager() {
         </Card>
 
         {/* ─── MIDDLE: Domains ──────────────────────────── */}
-         <Card className="flex flex-col">
-          <CardHeader className="py-3 px-4 flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-semibold">
+         <Card className="flex flex-col overflow-hidden min-h-0">
+          <CardHeader className="py-3 px-3 flex-row items-center justify-between space-y-0 gap-2 shrink-0">
+            <CardTitle className="text-sm font-semibold truncate min-w-0 flex-1">
               {selectedFw ? `Domains — ${selectedFw.short_code}` : "Domains"}
             </CardTitle>
             {selectedFw && (
-              <Button size="sm" onClick={() => { setEditingDomain({}); setDomainDialog(true); }}>
-                <Plus className="h-3 w-3 mr-1" /> Add
+              <Button size="sm" className="h-8 w-8 p-0 xl:w-auto xl:px-2 shrink-0" onClick={() => { setEditingDomain({}); setDomainDialog(true); }} title="Add Domain">
+                <Plus className="h-3.5 w-3.5" /> <span className="hidden xl:inline xl:ml-1">Add</span>
               </Button>
             )}
           </CardHeader>
           <Separator />
-          <ScrollArea className="flex-1">
+          <ScrollArea className="flex-1 min-h-0">
             {!selectedFw ? (
               <p className="text-xs text-muted-foreground text-center py-8">Select a framework</p>
             ) : (
@@ -631,19 +631,19 @@ export default function AdminFrameworkManager() {
         </Card>
 
         {/* ─── RIGHT: Requirements ──────────────────────── */}
-        <Card className="flex flex-col">
-          <CardHeader className="py-3 px-4 flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-semibold">
+        <Card className="flex flex-col overflow-hidden min-h-0">
+          <CardHeader className="py-3 px-3 flex-row items-center justify-between space-y-0 gap-2 shrink-0">
+            <CardTitle className="text-sm font-semibold truncate min-w-0 flex-1">
               {selectedDomain ? `Requirements — ${selectedDomain.code}` : "Requirements"}
             </CardTitle>
             {selectedDomain && (
-              <Button size="sm" onClick={() => { setEditingReq({}); setReqDialog(true); }}>
-                <Plus className="h-3 w-3 mr-1" /> Add
+              <Button size="sm" className="h-8 w-8 p-0 xl:w-auto xl:px-2 shrink-0" onClick={() => { setEditingReq({}); setReqDialog(true); }} title="Add Requirement">
+                <Plus className="h-3.5 w-3.5" /> <span className="hidden xl:inline xl:ml-1">Add</span>
               </Button>
             )}
           </CardHeader>
           <Separator />
-          <ScrollArea className="flex-1">
+          <ScrollArea className="flex-1 min-h-0">
             {!selectedDomain ? (
               <p className="text-xs text-muted-foreground text-center py-8">Select a domain</p>
             ) : (
