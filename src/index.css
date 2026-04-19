@@ -12,32 +12,33 @@
 
 @layer base {
   :root {
-    --background: 0 0% 96%;
-    --foreground: 0 0% 9%;
+    /* Surfaces — refined for clear hierarchy in light mode */
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
 
-    --card: 0 0% 98%;
-    --card-foreground: 0 0% 9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
 
-    --popover: 0 0% 89%;
-    --popover-foreground: 0 0% 9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
 
     --primary: 161 93% 30%;
-    --primary-foreground: 151 80% 95%;
+    --primary-foreground: 151 80% 97%;
 
-    --secondary: 0 0% 32%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 210 16% 93%;
+    --secondary-foreground: 222 47% 15%;
 
-    --muted: 0 0% 63%;
-    --muted-foreground: 0 0% 9%;
+    --muted: 210 16% 93%;
+    --muted-foreground: 215 16% 42%;
 
     --accent: 166 76% 96%;
-    --accent-foreground: 173 80% 40%;
+    --accent-foreground: 173 80% 28%;
 
     --destructive: 0 72% 50%;
     --destructive-foreground: 0 85% 97%;
 
-    --border: 0 0% 83%;
-    --input: 0 0% 83%;
+    --border: 214 20% 88%;
+    --input: 214 20% 88%;
     --ring: 161 93% 30%;
 
     --radius: 0.75rem;
