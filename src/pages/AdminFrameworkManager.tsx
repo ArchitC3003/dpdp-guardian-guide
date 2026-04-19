@@ -520,7 +520,7 @@ export default function AdminFrameworkManager() {
             </div>
           </CardHeader>
           <Separator />
-          <ScrollArea className="flex-1">
+          <ScrollArea className="flex-1 min-h-0">
             <div className="p-2 space-y-1">
               {frameworks.map(fw => (
                 <button
