@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Plus, LayoutTemplate, Copy, Edit2, ToggleLeft, Shield, Layers, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/PageHeader";
 
 interface Framework {
   id: string;
@@ -271,20 +272,17 @@ export default function AdminAssessmentTemplates() {
   const stats = previewStats();
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <LayoutTemplate className="h-6 w-6 text-primary" />
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Assessment Templates</h1>
-            <p className="text-sm text-muted-foreground">Configure assessment frameworks & templates</p>
-          </div>
-        </div>
-        <Button onClick={openCreate} className="gap-2">
-          <Plus className="h-4 w-4" /> Create Template
-        </Button>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        icon={LayoutTemplate}
+        title="Assessment Templates"
+        description="Configure assessment frameworks & templates"
+        actions={
+          <Button onClick={openCreate} className="gap-2">
+            <Plus className="h-4 w-4" /> Create Template
+          </Button>
+        }
+      />
 
       {/* Template Grid */}
       {templates.length === 0 ? (
