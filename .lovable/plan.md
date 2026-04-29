@@ -1,74 +1,76 @@
+# Add Data Role Identification to Phase 1
 
-Goal: make the pasted XLSX template the official format and ensure the app can both generate it and import it reliably.
+## 1. Database migration
+Add four columns to `assessments`:
+- `dpdp_role` text — one of `data_fiduciary | joint_data_fiduciary | data_processor | dual_role` (nullable)
+- `is_joint_fiduciary` boolean default false
+- `is_dual_role` boolean default false
+- `role_identified_at` timestamptz (nullable)
 
-What I found
-- The current parser and template are not aligned.
-- Your pasted template uses:
-  - sheet names with spaces: `Framework Info`, `Assessment Checklist`, `Policy Artefacts`, `Department Controls`
-  - an AoA-style key/value info sheet
-  - a `SPECIAL_STATUS_FLAGS` section inside the info sheet
-  - a new `conditional_flag` column on checklist rows
-- The current parser expects a different structure:
-  - mostly JSON-style sheets
-  - flags mixed into the same row structure
-  - no support for the `SPECIAL_STATUS_FLAGS` section
-  - no `conditional_flag` field on requirements
-- Database review confirms:
-  - `framework_domains` already has `conditional_flag`
-  - `framework_requirements` does not
+A CHECK constraint will restrict `dpdp_role` to the four allowed values. Existing assessments stay nullable so they don't break.
 
-Implementation plan
-1. Update the parser to support your template format
-- Teach `parsePack` to recognize both the current names and your new sheet names.
-- Parse `Framework Info` as row-by-row data:
-  - read key/value pairs first
-  - detect `SPECIAL_STATUS_FLAGS`
-  - treat the next row as flag headers
-  - parse all following non-empty rows as special flags
-- Parse `Assessment Checklist` including `conditional_flag`.
-- Keep backward compatibility so older packs still import.
+## 2. UI changes — `src/pages/PhaseOrgProfile.tsx`
 
-2. Extend the pack types and validation
-- Add `conditional_flag?: string` to parsed checklist rows.
-- Validate that any `conditional_flag` used in the checklist matches a defined `flag_key` when flags are present.
-- Improve error messages so users know whether the issue is sheet naming, section formatting, or unknown flag references.
+Insert a new `<Card>` between "Organisation Details" and "Special Status Determination", styled identically to Special Status (same border, bg-card, 2-col md grid, same tile padding/border treatment).
 
-3. Add a database column for requirement-level gating
-- Create a migration to add nullable `conditional_flag text` to `framework_requirements`.
-- Keep it optional so existing data continues to work.
-- No RLS change needed if only the column is added.
+**Header**
+- Title: "Data Role Identification"
+- Muted subtext under title (text-sm text-muted-foreground): the explanatory copy provided.
 
-4. Wire import execution to save the new field
-- In `AdminFrameworkManager`, persist checklist `conditional_flag` into `framework_requirements`.
-- Keep existing domain-level `conditional_flag` untouched unless explicitly set elsewhere.
-- Preserve current create/populate behavior.
+**Tiles (4, single-select)**
+Use the existing tile pattern (button + visual selected state matching Special Status tiles). Selection is mutually exclusive — clicking one clears the others. Each tile shows title + descriptor + the section reference inline in the descriptor as specified.
 
-5. Replace the template download with your structure
-- Update `downloadTemplate()` to generate your 4-sheet layout exactly:
-  - `Framework Info`
-  - `Assessment Checklist`
-  - `Policy Artefacts`
-  - `Department Controls`
-- Use your section ordering and example rows so what users download is exactly what the importer expects.
+Mapping:
+| Tile | dpdp_role | is_joint_fiduciary | is_dual_role |
+|---|---|---|---|
+| 1 | data_fiduciary | false | false |
+| 2 | joint_data_fiduciary | true | false |
+| 3 | data_processor | false | false |
+| 4 | dual_role | false | true |
 
-6. Refresh UI copy in the upload flow
-- Update the upload dialog text so it references the new sheet names and special flag section format.
-- If preview tables show checklist columns, surface `conditional_flag` there too.
+**Result banner**
+Below tiles, a soft strip (rounded, bg with role-coloured tint, border) appears when a role is selected:
+- `Badge` with role label, coloured per spec:
+  - Data Fiduciary → blue
+  - Joint Data Fiduciary → teal
+  - Data Processor → amber
+  - Dual Role → purple
+- One-line statutory implication text alongside the badge.
 
-Technical details
-- Files likely to change:
-  - `src/utils/assessmentPackParser.ts`
-  - `src/pages/AdminFrameworkManager.tsx`
-  - `supabase/migrations/*` for `framework_requirements.conditional_flag`
-- Recommended data model:
-  - `framework_domains.conditional_flag` = domain-level gating
-  - `framework_requirements.conditional_flag` = requirement-level gating from your checklist
-- Compatibility approach:
-  - support both old and new packs during parsing
-  - generate only the new template going forward
+Colours implemented via inline style + soft alpha background, matching the existing `FrameworkBadge` pattern (border + tinted bg) so we don't need new design tokens.
 
-Expected result
-- The downloaded XLSX matches your pasted format.
-- Uploading that same XLSX works without validation mismatch.
-- Special status flags are parsed from the info sheet section correctly.
-- Requirement rows can carry their own `conditional_flag` and be stored properly.
+**Validation**
+- Add a `triedAdvance` state.
+- Convert the existing top-right "Next Phase" button to be `disabled={!assessment.dpdp_role}`.
+- If user clicks while disabled (we wrap navigate handler), set `triedAdvance=true`; show inline muted text under tiles: "Please identify your organisation's data role to continue."
+- Note: button `disabled` prevents click — so we'll instead always render but check role on click; if missing, show the inline message and don't navigate. This keeps the message reachable without adding new buttons.
+
+**Persistence**
+On tile click, call existing `save()` with `{ dpdp_role, is_joint_fiduciary, is_dual_role, role_identified_at: new Date().toISOString() }`.
+
+## 3. Downstream gating — `src/pages/PhaseRapidAssessment.tsx`
+
+Load `dpdp_role` from assessment alongside `special_status`. Apply gating in the existing `isDomainEnabled` / domain filter logic:
+
+- **data_fiduciary**: current behaviour (full fiduciary set; no processor-specific domains).
+- **joint_data_fiduciary**: same as fiduciary, plus a small banner above the domain content: "Document your inter-se arrangement with your co-fiduciary — this will be assessed in Phase 3".
+- **data_processor**: hide consent (B), notice (A), grievance, and data principal rights domains. Show only Processor-relevant domains (security, breach, contracts, logs). Implementation: filter `allDomains` by domain code allowlist for processor mode (`E, F, G/contracts, logs`) — exact codes resolved from the loaded framework. Where unsure, fall back to "all except A/B/grievance/rights".
+- **dual_role**: render two sections in the domain list, labelled "As Data Fiduciary" and "As Data Processor". Both tracks visible; same domains shown twice is avoided by grouping the existing domains under the two labels (fiduciary group: full set; processor group: processor-only subset).
+
+If `dpdp_role` is null (legacy assessments), behave as data_fiduciary (current default) so existing flows aren't broken.
+
+## 4. Types
+`src/integrations/supabase/types.ts` regenerates automatically after the migration — no manual edit.
+
+## 5. Memory
+Update `mem://features/assessment-workflow` with a note that Phase 1 now captures DPDP data role and gates the Rapid Assessment track accordingly.
+
+## Files touched
+- new migration: add 4 columns + check constraint on `assessments`
+- `src/pages/PhaseOrgProfile.tsx` — new section, validation, gated next
+- `src/pages/PhaseRapidAssessment.tsx` — load role, gate domains, dual-role grouping, joint-fiduciary banner
+- `mem://features/assessment-workflow` — update
+
+## Out of scope
+- No new buttons, no new shadcn components installed.
+- Phase 3 wiring of the inter-se agreement check is left as a future task (only the banner is added now).

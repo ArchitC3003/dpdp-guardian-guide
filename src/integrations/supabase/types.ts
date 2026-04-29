@@ -500,8 +500,11 @@ export type Database = {
       assessments: {
         Row: {
           created_at: string
+          dpdp_role: string | null
           framework_ids: string[] | null
           id: string
+          is_dual_role: boolean
+          is_joint_fiduciary: boolean
           notes: string | null
           org_data_subjects: string | null
           org_employees: string | null
@@ -510,6 +513,7 @@ export type Database = {
           org_locations: string | null
           org_name: string | null
           org_regulators: string | null
+          role_identified_at: string | null
           special_status: Json | null
           status: string
           template_id: string | null
@@ -519,8 +523,11 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          dpdp_role?: string | null
           framework_ids?: string[] | null
           id?: string
+          is_dual_role?: boolean
+          is_joint_fiduciary?: boolean
           notes?: string | null
           org_data_subjects?: string | null
           org_employees?: string | null
@@ -529,6 +536,7 @@ export type Database = {
           org_locations?: string | null
           org_name?: string | null
           org_regulators?: string | null
+          role_identified_at?: string | null
           special_status?: Json | null
           status?: string
           template_id?: string | null
@@ -538,8 +546,11 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          dpdp_role?: string | null
           framework_ids?: string[] | null
           id?: string
+          is_dual_role?: boolean
+          is_joint_fiduciary?: boolean
           notes?: string | null
           org_data_subjects?: string | null
           org_employees?: string | null
@@ -548,6 +559,7 @@ export type Database = {
           org_locations?: string | null
           org_name?: string | null
           org_regulators?: string | null
+          role_identified_at?: string | null
           special_status?: Json | null
           status?: string
           template_id?: string | null
