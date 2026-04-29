@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { POLICY_ITEMS } from "@/data/assessmentDomains";
-import { ArrowRight, ChevronDown } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 
 interface PolicyRow {
@@ -71,9 +71,14 @@ export default function PhasePolicyMatrix() {
           </div>
           {saving && <span className="text-xs text-muted-foreground">Saving...</span>}
         </div>
-        <Button onClick={() => navigate(`/assessment/${assessmentId}/rapid-assessment`)} className="gradient-primary">
-          Next Phase <ArrowRight className="h-4 w-4 ml-2" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => navigate(`/assessment/${assessmentId}/org-profile`)}>
+            <ArrowLeft className="h-4 w-4 mr-2" /> Previous Phase
+          </Button>
+          <Button onClick={() => navigate(`/assessment/${assessmentId}/rapid-assessment`)} className="gradient-primary">
+            Next Phase <ArrowRight className="h-4 w-4 ml-2" />
+          </Button>
+        </div>
       </div>
 
       {categories.map(([key, cat]) => (

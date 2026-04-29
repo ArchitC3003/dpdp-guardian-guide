@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { POLICY_ITEMS } from "@/data/assessmentDomains";
-import { ArrowRight, Plus, Trash2, Link } from "lucide-react";
+import { ArrowLeft, ArrowRight, Plus, Trash2, Link } from "lucide-react";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -67,9 +67,14 @@ export default function PhaseFileReferences() {
           <span className="text-xs font-mono font-bold bg-primary/20 text-primary px-2 py-1 rounded">PHASE 5</span>
           <h1 className="text-2xl font-bold">File References</h1>
         </div>
-        <Button onClick={() => navigate(`/assessment/${assessmentId}/dashboard`)} className="gradient-primary">
-          Next Phase <ArrowRight className="h-4 w-4 ml-2" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => navigate(`/assessment/${assessmentId}/dept-grid`)}>
+            <ArrowLeft className="h-4 w-4 mr-2" /> Previous Phase
+          </Button>
+          <Button onClick={() => navigate(`/assessment/${assessmentId}/dashboard`)} className="gradient-primary">
+            Next Phase <ArrowRight className="h-4 w-4 ml-2" />
+          </Button>
+        </div>
       </div>
 
       {/* Add Form */}

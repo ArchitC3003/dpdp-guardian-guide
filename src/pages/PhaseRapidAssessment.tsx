@@ -9,7 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DOMAINS, type Domain } from "@/data/assessmentDomains";
 import { RiskBadge } from "@/components/RiskBadge";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 
 interface CheckRow {
   id?: string;
@@ -257,9 +257,14 @@ export default function PhaseRapidAssessment() {
           <h1 className="text-2xl font-bold">Rapid Assessment</h1>
           {saving && <span className="text-xs text-muted-foreground">Saving...</span>}
         </div>
-        <Button onClick={() => navigate(`/assessment/${assessmentId}/dept-grid`)} className="gradient-primary">
-          Next Phase <ArrowRight className="h-4 w-4 ml-2" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => navigate(`/assessment/${assessmentId}/policy-matrix`)}>
+            <ArrowLeft className="h-4 w-4 mr-2" /> Previous Phase
+          </Button>
+          <Button onClick={() => navigate(`/assessment/${assessmentId}/dept-grid`)} className="gradient-primary">
+            Next Phase <ArrowRight className="h-4 w-4 ml-2" />
+          </Button>
+        </div>
       </div>
 
       {/* Framework Tabs */}
