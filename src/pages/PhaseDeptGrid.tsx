@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DEPARTMENTS, DEPT_CONTROLS } from "@/data/assessmentDomains";
-import { ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 
 interface GridCell {
   id?: string;
@@ -66,9 +66,14 @@ export default function PhaseDeptGrid() {
           <h1 className="text-2xl font-bold">Department Practice Grid</h1>
           {saving && <span className="text-xs text-muted-foreground">Saving...</span>}
         </div>
-        <Button onClick={() => navigate(`/assessment/${assessmentId}/file-references`)} className="gradient-primary">
-          Next Phase <ArrowRight className="h-4 w-4 ml-2" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => navigate(`/assessment/${assessmentId}/rapid-assessment`)}>
+            <ArrowLeft className="h-4 w-4 mr-2" /> Previous Phase
+          </Button>
+          <Button onClick={() => navigate(`/assessment/${assessmentId}/file-references`)} className="gradient-primary">
+            Next Phase <ArrowRight className="h-4 w-4 ml-2" />
+          </Button>
+        </div>
       </div>
 
       <Card className="border-border bg-card overflow-hidden">
