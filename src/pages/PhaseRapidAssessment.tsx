@@ -40,12 +40,18 @@ interface RequirementMeta {
   requirementId: string;
 }
 
+type DpdpRole = "data_fiduciary" | "joint_data_fiduciary" | "data_processor" | "dual_role";
+
+// Domain codes hidden for pure Data Processors (consent/notice/grievance/rights)
+const PROCESSOR_HIDDEN_CODES = new Set(["A", "B", "H", "I"]);
+
 export default function PhaseRapidAssessment() {
   const { assessmentId } = useParams();
   const navigate = useNavigate();
   const [selectedDomain, setSelectedDomain] = useState("");
   const [checks, setChecks] = useState<Record<string, CheckRow>>({});
   const [specialStatus, setSpecialStatus] = useState<SpecialStatus>({});
+  const [dpdpRole, setDpdpRole] = useState<DpdpRole | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isLegacy, setIsLegacy] = useState(false);
@@ -67,12 +73,13 @@ export default function PhaseRapidAssessment() {
     // 1. Load assessment
     const { data: assessment } = await supabase
       .from("assessments")
-      .select("framework_ids, special_status")
+      .select("framework_ids, special_status, dpdp_role")
       .eq("id", assessmentId)
       .single();
 
     const ss = (assessment?.special_status as unknown as SpecialStatus) || {};
     setSpecialStatus(ss);
+    setDpdpRole(((assessment as any)?.dpdp_role as DpdpRole) || null);
 
     const fwIds = (assessment?.framework_ids || []) as string[];
 
@@ -177,10 +184,16 @@ export default function PhaseRapidAssessment() {
 
   // Filter domains by selected framework tab
   const activeDomains = useMemo(() => {
-    if (isLegacy || frameworks.length <= 1) return allDomains;
-    if (!selectedFrameworkId) return allDomains;
-    return allDomains.filter((d) => domainFrameworkMap[d.code] === selectedFrameworkId);
-  }, [allDomains, isLegacy, frameworks, selectedFrameworkId, domainFrameworkMap]);
+    let base = allDomains;
+    if (!isLegacy && frameworks.length > 1 && selectedFrameworkId) {
+      base = base.filter((d) => domainFrameworkMap[d.code] === selectedFrameworkId);
+    }
+    // Pure processor: hide consent/notice/grievance/rights tracks
+    if (dpdpRole === "data_processor") {
+      base = base.filter((d) => !PROCESSOR_HIDDEN_CODES.has(d.code));
+    }
+    return base;
+  }, [allDomains, isLegacy, frameworks, selectedFrameworkId, domainFrameworkMap, dpdpRole]);
 
   const isDomainEnabled = (domain: Domain) => {
     if (domain.conditional === "children") return !!specialStatus.children;
@@ -266,6 +279,24 @@ export default function PhaseRapidAssessment() {
           </Button>
         </div>
       </div>
+
+      {dpdpRole === "joint_data_fiduciary" && (
+        <Card className="border-teal-500/40 bg-teal-500/10">
+          <CardContent className="py-3 text-xs text-foreground">
+            <span className="font-semibold">Joint Data Fiduciary:</span>{" "}
+            Document your inter-se arrangement with your co-fiduciary — this will be assessed in Phase 3.
+          </CardContent>
+        </Card>
+      )}
+
+      {dpdpRole === "dual_role" && (
+        <Card className="border-purple-500/40 bg-purple-500/10">
+          <CardContent className="py-3 text-xs text-foreground">
+            <span className="font-semibold">Dual Role:</span>{" "}
+            You operate as both Fiduciary and Processor. Use the framework tabs / domain list to address obligations under each capacity. Items A–B and grievance/rights apply only to your Fiduciary capacity; security, breach and contract items apply to both.
+          </CardContent>
+        </Card>
+      )}
 
       {/* Framework Tabs */}
       {frameworks.length > 1 && (
