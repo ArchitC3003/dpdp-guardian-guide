@@ -30,6 +30,7 @@ import AdminAiConfig from "./pages/AdminAiConfig";
 import AdminFrameworkManager from "./pages/AdminFrameworkManager";
 import AdminAssessmentTemplates from "./pages/AdminAssessmentTemplates";
 import PrivacyPreferences from "./pages/PrivacyPreferences";
+import Unsubscribe from "./pages/Unsubscribe";
 import ConsentLedger from "./pages/admin/ConsentLedger";
 import NoticeManager from "./pages/admin/NoticeManager";
 import RightsDesk from "./pages/admin/RightsDesk";
@@ -75,6 +76,7 @@ const App = () => (
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy-preferences" element={<PrivacyPreferences />} />
+            <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route element={<ProtectedRoutes />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/assessments" element={<Assessments />} />
