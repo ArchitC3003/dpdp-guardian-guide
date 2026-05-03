@@ -2,438 +2,380 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useIsAdmin } from "@/hooks/useIsAdmin";
-import { Button } from "@/components/ui/button";
+import { usePermissions } from "@/hooks/usePermissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { StatusBadge } from "@/components/StatusBadge";
-import { FrameworkBadge } from "@/components/FrameworkBadge";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Trash2, ExternalLink, ClipboardList, BarChart3, CheckCircle2, Layers, Shield, FileText, AlertTriangle, BookMarked, ChevronRight, LayoutDashboard } from "lucide-react";
-import { toast } from "sonner";
+import {
+  ClipboardList, Compass, Play, Plug, GraduationCap, Sparkles,
+  BookOpen, Users, Bot, ScrollText, FileText, Scale, AlertTriangle,
+  FileSearch, ArrowRight, ChevronRight, Layers, Shield, BookMarked,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { PageHeader } from "@/components/PageHeader";
-import type { Tables } from "@/integrations/supabase/types";
+import {
+  RadialBarChart, RadialBar, PolarAngleAxis, ResponsiveContainer,
+} from "recharts";
 
-type Assessment = Tables<"assessments">;
-
-interface FrameworkInfo {
-  id: string;
-  short_code: string;
-  colour: string;
-  name: string;
-}
-
-interface TemplateCard {
-  id: string;
-  name: string;
-  description: string | null;
-  template_type: string;
-  is_default: boolean;
-  frameworks: { id: string; short_code: string; jurisdiction: string; name: string }[];
-  requirement_count: number;
-}
-
-interface PolicyDocRow {
-  id: string;
+type Tile = {
+  key: string;
   title: string;
-  status: string;
-  review_date: string | null;
-  updated_at: string;
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  Draft: "border-amber-500/40 text-amber-400 bg-amber-500/10",
-  "Under Review": "border-orange-500/40 text-orange-400 bg-orange-500/10",
-  Approved: "border-emerald-500/40 text-emerald-400 bg-emerald-500/10",
-  Published: "border-primary/40 text-primary bg-primary/10",
-  Retired: "border-muted-foreground/40 text-muted-foreground bg-muted/20",
+  description: string;
+  icon: any;
+  url?: string;
+  cta: string;
+  comingSoon?: boolean;
+  variant?: "default" | "dark";
 };
 
+const moduleTiles: Tile[] = [
+  {
+    key: "assess",
+    title: "Assess",
+    description: "Conduct gap assessments, monitor compliance readiness, and manage audit workflows against DPDP 2023 and global frameworks.",
+    icon: ClipboardList,
+    url: "/assessments",
+    cta: "Go to Assessments",
+  },
+  {
+    key: "build",
+    title: "Build (Policies)",
+    description: "Generate and manage organisational policies, SOPs, and legal frameworks using our AI-powered policy generator.",
+    icon: Compass,
+    url: "/policy-sop-builder",
+    cta: "Open Policy Builder",
+  },
+  {
+    key: "execute",
+    title: "Execute",
+    description: "Track real-time compliance tasks, schedule internal audits, and manage ongoing privacy operations.",
+    icon: Play,
+    cta: "Coming Soon",
+    comingSoon: true,
+  },
+  {
+    key: "integrate",
+    title: "Integrate",
+    description: "Connect your existing tech stack to automate data discovery and monitor sync status across cloud providers.",
+    icon: Plug,
+    cta: "Coming Soon",
+    comingSoon: true,
+  },
+  {
+    key: "learn",
+    title: "Learn",
+    description: "Access training modules for employees and stay updated with the latest regulatory changes in data privacy.",
+    icon: GraduationCap,
+    cta: "Coming Soon",
+    comingSoon: true,
+  },
+  {
+    key: "ai",
+    title: "AI Copilot",
+    description: "Draft complex Privacy Impact Assessments (PIA), DPIA notes and policy clauses using our compliant LLM.",
+    icon: Sparkles,
+    url: "/policy-sop-builder",
+    cta: "Try Beta Features",
+    variant: "dark",
+  },
+];
+
+const adminTiles: Tile[] = [
+  { key: "frameworks", title: "Framework Manager", description: "Manage assessment frameworks and requirements.", icon: BookOpen, url: "/admin/frameworks", cta: "Open" },
+  { key: "users", title: "User Management", description: "Invite team members and assign roles.", icon: Users, url: "/settings/users", cta: "Open" },
+  { key: "ai-config", title: "AI Configuration", description: "Manage prompts, models, and few-shot examples.", icon: Bot, url: "/admin/ai-config", cta: "Open" },
+  { key: "templates", title: "Assessment Templates", description: "Curate framework bundles for new assessments.", icon: BookMarked, url: "/admin/assessment-templates", cta: "Open" },
+];
+
+const privacyOpsTiles: Tile[] = [
+  { key: "consent", title: "Consent Ledger", description: "Consent receipts and records.", icon: ScrollText, url: "/consent/ledger", cta: "Open" },
+  { key: "notices", title: "Notice Manager", description: "Create and publish privacy notices.", icon: FileText, url: "/consent/notices", cta: "Open" },
+  { key: "rights", title: "Rights Desk", description: "Data principal rights requests.", icon: Scale, url: "/consent/rights-desk", cta: "Open" },
+  { key: "grievances", title: "Grievances", description: "Complaints and grievance redressal.", icon: AlertTriangle, url: "/consent/grievances", cta: "Open" },
+  { key: "audit", title: "Audit Log", description: "Tamper-evident event log.", icon: FileSearch, url: "/consent/audit-log", cta: "Open" },
+];
+
+interface ActivityItem {
+  id: string;
+  kind: "assessment" | "policy";
+  title: string;
+  status: string;
+  updated_at: string;
+  url: string;
+}
+
 export default function Dashboard() {
-  const { user } = useAuth();
-  const { isAdmin } = useIsAdmin();
+  const { user, profile } = useAuth();
+  const { userRoleLabel, userRoleColor, canManageUsers } = usePermissions();
   const navigate = useNavigate();
-  const [assessments, setAssessments] = useState<Assessment[]>([]);
+
+  const [activity, setActivity] = useState<ActivityItem[]>([]);
+  const [readiness, setReadiness] = useState<number>(0);
+  const [assessmentTotal, setAssessmentTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [policyDocs, setPolicyDocs] = useState<PolicyDocRow[]>([]);
-  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
-  const [templates, setTemplates] = useState<TemplateCard[]>([]);
-  const [creatingFromTemplate, setCreatingFromTemplate] = useState(false);
-  const [frameworkMap, setFrameworkMap] = useState<Record<string, FrameworkInfo>>({});
 
   useEffect(() => {
     if (!user) return;
-    loadAssessments();
-    loadPolicyDocs();
-    loadFrameworks();
-  }, [user, isAdmin]);
+    void load();
+  }, [user]);
 
-  const loadFrameworks = async () => {
-    const { data } = await supabase
-      .from("assessment_frameworks")
-      .select("id, short_code, colour, name")
-      .eq("is_active", true);
-    if (data) {
-      const map: Record<string, FrameworkInfo> = {};
-      data.forEach((f) => { map[f.id] = f; });
-      setFrameworkMap(map);
+  const load = async () => {
+    setLoading(true);
+    const [{ data: assessments }, { data: policies }] = await Promise.all([
+      supabase
+        .from("assessments")
+        .select("id, org_name, status, updated_at")
+        .order("updated_at", { ascending: false })
+        .limit(5),
+      supabase
+        .from("policy_documents")
+        .select("id, title, status, updated_at")
+        .order("updated_at", { ascending: false })
+        .limit(5),
+    ]);
+
+    const items: ActivityItem[] = [];
+    (assessments ?? []).slice(0, 3).forEach((a) =>
+      items.push({
+        id: a.id,
+        kind: "assessment",
+        title: a.org_name || "Untitled Assessment",
+        status: a.status,
+        updated_at: a.updated_at,
+        url: `/assessment/${a.id}/dashboard`,
+      }),
+    );
+    (policies ?? []).slice(0, 2).forEach((p: any) =>
+      items.push({
+        id: p.id,
+        kind: "policy",
+        title: p.title,
+        status: p.status,
+        updated_at: p.updated_at,
+        url: `/policy-library`,
+      }),
+    );
+    items.sort((a, b) => +new Date(b.updated_at) - +new Date(a.updated_at));
+    setActivity(items.slice(0, 5));
+
+    // Readiness: % of assessments completed vs total (weighted: In Progress = 50)
+    const all = assessments ?? [];
+    setAssessmentTotal(all.length);
+    if (all.length === 0) {
+      setReadiness(0);
+    } else {
+      const score = all.reduce((sum, a) => {
+        if (a.status === "Completed") return sum + 100;
+        if (a.status === "In Progress") return sum + 50;
+        return sum;
+      }, 0) / all.length;
+      setReadiness(Math.round(score));
     }
-  };
-
-  const loadAssessments = async () => {
-    const { data } = await supabase
-      .from("assessments")
-      .select("*")
-      .order("updated_at", { ascending: false });
-    setAssessments(data || []);
     setLoading(false);
   };
 
-  const loadPolicyDocs = async () => {
-    const { data } = await supabase
-      .from("policy_documents")
-      .select("id, title, status, review_date, updated_at")
-      .order("updated_at", { ascending: false })
-      .limit(5);
-    setPolicyDocs((data as PolicyDocRow[]) ?? []);
+  const renderTile = (t: Tile) => {
+    const Icon = t.icon;
+    const isDark = t.variant === "dark";
+    return (
+      <Card
+        key={t.key}
+        className={cn(
+          "border-border transition-all flex flex-col",
+          isDark ? "bg-slate-950 border-slate-800" : "bg-card hover:border-primary/40",
+          t.comingSoon && "opacity-70",
+        )}
+      >
+        <CardContent className="p-5 flex flex-col gap-4 flex-1">
+          <div className="flex items-center gap-3">
+            <div
+              className={cn(
+                "h-11 w-11 rounded-xl flex items-center justify-center shrink-0",
+                isDark
+                  ? "bg-primary/15 text-primary"
+                  : "bg-primary/10 text-primary",
+              )}
+            >
+              <Icon className="h-5 w-5" />
+            </div>
+            <div className="flex items-center gap-2">
+              <h3 className={cn("font-semibold text-base", isDark && "text-slate-100")}>
+                {t.title}
+              </h3>
+              {t.comingSoon && (
+                <Badge variant="outline" className="text-[9px] border-amber-500/40 text-amber-400">
+                  Soon
+                </Badge>
+              )}
+            </div>
+          </div>
+          <p
+            className={cn(
+              "text-sm leading-relaxed flex-1",
+              isDark ? "text-slate-400" : "text-muted-foreground",
+            )}
+          >
+            {t.description}
+          </p>
+          <Button
+            disabled={t.comingSoon}
+            onClick={() => t.url && navigate(t.url)}
+            className={cn(
+              "w-full justify-center",
+              isDark && !t.comingSoon && "bg-transparent border border-primary/40 text-primary hover:bg-primary/10",
+            )}
+            variant={isDark ? "outline" : "default"}
+          >
+            {t.cta}
+            {!t.comingSoon && <ArrowRight className="h-4 w-4 ml-1" />}
+          </Button>
+        </CardContent>
+      </Card>
+    );
   };
-
-  const loadTemplates = async (): Promise<TemplateCard[]> => {
-    const { data: tpls } = await supabase
-      .from("assessment_templates")
-      .select("id, name, description, template_type, is_default")
-      .eq("is_active", true)
-      .order("is_default", { ascending: false });
-    if (!tpls || tpls.length === 0) return [];
-
-    const { data: links } = await supabase
-      .from("assessment_template_frameworks")
-      .select("template_id, framework_id");
-
-    const { data: frameworks } = await supabase
-      .from("assessment_frameworks")
-      .select("id, short_code, jurisdiction, name")
-      .eq("is_active", true);
-
-    const { data: domains } = await supabase
-      .from("framework_domains")
-      .select("id, framework_id")
-      .eq("is_active", true);
-
-    const { data: reqs } = await supabase
-      .from("framework_requirements")
-      .select("id, domain_id")
-      .eq("is_active", true);
-
-    const domainsByFw: Record<string, string[]> = {};
-    (domains ?? []).forEach((d) => {
-      if (!domainsByFw[d.framework_id]) domainsByFw[d.framework_id] = [];
-      domainsByFw[d.framework_id].push(d.id);
-    });
-
-    const reqsByDomain: Record<string, number> = {};
-    (reqs ?? []).forEach((r) => {
-      reqsByDomain[r.domain_id] = (reqsByDomain[r.domain_id] || 0) + 1;
-    });
-
-    const cards: TemplateCard[] = tpls.map((t) => {
-      const fwIds = (links ?? []).filter((l) => l.template_id === t.id).map((l) => l.framework_id);
-      const fws = (frameworks ?? []).filter((f) => fwIds.includes(f.id));
-      let reqCount = 0;
-      fwIds.forEach((fid) => {
-        (domainsByFw[fid] ?? []).forEach((did) => {
-          reqCount += reqsByDomain[did] || 0;
-        });
-      });
-      return { ...t, frameworks: fws, requirement_count: reqCount };
-    });
-    return cards;
-  };
-
-  const handleNewAssessment = async () => {
-    if (!user) return;
-    const cards = await loadTemplates();
-    if (cards.length === 0) {
-      await createAssessmentLegacy();
-    } else {
-      setTemplates(cards);
-      setShowTemplatePicker(true);
-    }
-  };
-
-  const createAssessmentLegacy = async () => {
-    if (!user) return;
-    const { data, error } = await supabase
-      .from("assessments")
-      .insert({ user_id: user.id })
-      .select()
-      .single();
-    if (error) {
-      toast.error("Failed to create assessment");
-      return;
-    }
-    toast.success("Assessment created");
-    navigate(`/assessment/${data.id}/org-profile`);
-  };
-
-  const createFromTemplate = async (template: TemplateCard) => {
-    if (!user || creatingFromTemplate) return;
-    setCreatingFromTemplate(true);
-    const frameworkIds = template.frameworks.map((f) => f.id);
-    const { data, error } = await supabase
-      .from("assessments")
-      .insert({
-        user_id: user.id,
-        template_id: template.id,
-        framework_ids: frameworkIds,
-      })
-      .select()
-      .single();
-    setCreatingFromTemplate(false);
-    if (error) {
-      toast.error("Failed to create assessment");
-      return;
-    }
-    setShowTemplatePicker(false);
-    toast.success("Assessment created");
-    navigate(`/assessment/${data.id}/org-profile`);
-  };
-
-  const deleteAssessment = async (id: string) => {
-    const { error } = await supabase.from("assessments").delete().eq("id", id);
-    if (error) {
-      toast.error("Failed to delete");
-      return;
-    }
-    toast.success("Assessment deleted");
-    loadAssessments();
-  };
-
-  const getAssessmentFrameworks = (a: Assessment): FrameworkInfo[] => {
-    const ids = (a.framework_ids as string[] | null) ?? [];
-    return ids.map((id) => frameworkMap[id]).filter(Boolean);
-  };
-
-  // Framework distribution across all assessments
-  const frameworkDistribution = (() => {
-    const counts: Record<string, { info: FrameworkInfo; count: number }> = {};
-    assessments.forEach((a) => {
-      const fws = getAssessmentFrameworks(a);
-      fws.forEach((fw) => {
-        if (!counts[fw.id]) counts[fw.id] = { info: fw, count: 0 };
-        counts[fw.id].count++;
-      });
-    });
-    return Object.values(counts);
-  })();
-
-  const inProgress = assessments.filter((a) => a.status === "In Progress").length;
-  const completed = assessments.filter((a) => a.status === "Completed").length;
-
-  const stats = [
-    { label: "Total Assessments", value: assessments.length, icon: ClipboardList },
-    { label: "In Progress", value: inProgress, icon: BarChart3 },
-    { label: "Completed", value: completed, icon: CheckCircle2 },
-    { label: "Frameworks", value: frameworkDistribution.length || 1, icon: Layers },
-  ];
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Welcome header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Compliance overview & quick actions
-            {isAdmin && <span className="ml-2 inline-flex items-center gap-1 text-xs text-primary font-semibold"><Shield className="h-3 w-3" /> Admin View</span>}
+          <h1 className="text-2xl font-bold">
+            Welcome{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Your PrivcybHub regulatory workspace
+            {profile?.organisation && (
+              <> · <span className="text-foreground/80">{profile.organisation}</span></>
+            )}
           </p>
         </div>
+        <Badge variant="outline" className={cn("text-xs px-2.5 py-1 self-start", userRoleColor)}>
+          <Shield className="h-3 w-3 mr-1" />
+          {userRoleLabel}
+        </Badge>
       </div>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((s) => (
-          <Card key={s.label} className="border-border bg-card">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">{s.label}</p>
-                  <p className="text-3xl font-bold mt-1">{s.value}</p>
-                </div>
-                <s.icon className="h-8 w-8 text-primary/50" />
+      {/* Module tiles */}
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            Modules
+          </h2>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {moduleTiles.map(renderTile)}
+        </div>
+      </section>
+
+      {/* Privacy Operations (GRC Manager / Admin) */}
+      {canManageUsers && (
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Privacy Operations
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {privacyOpsTiles.map(renderTile)}
+          </div>
+        </section>
+      )}
+
+      {/* Admin tools */}
+      {canManageUsers && (
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+              <Shield className="h-3.5 w-3.5 text-primary" /> Admin Tools
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {adminTiles.map(renderTile)}
+          </div>
+        </section>
+      )}
+
+      {/* Bottom: Recent Activity + Readiness */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="border-border bg-card lg:col-span-2">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-base">Recent Activity</CardTitle>
+            <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate("/assessments")}>
+              View All <ChevronRight className="h-3 w-3 ml-1" />
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-12 bg-muted/50 rounded-lg animate-pulse" />
+                ))}
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            ) : activity.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">
+                No recent activity yet. Start an assessment or generate a policy.
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                {activity.map((a) => (
+                  <button
+                    key={`${a.kind}-${a.id}`}
+                    onClick={() => navigate(a.url)}
+                    className="w-full flex items-center justify-between p-3 rounded-lg bg-secondary/40 hover:bg-secondary transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      {a.kind === "assessment" ? (
+                        <ClipboardList className="h-4 w-4 text-primary shrink-0" />
+                      ) : (
+                        <FileText className="h-4 w-4 text-primary shrink-0" />
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{a.title}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {a.kind === "assessment" ? "Assessment" : "Policy"} · {new Date(a.updated_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="text-[9px] shrink-0">{a.status}</Badge>
+                  </button>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-      {/* Framework Distribution */}
-      {frameworkDistribution.length > 1 && (
         <Card className="border-border bg-card">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Layers className="h-5 w-5 text-primary" /> Framework Distribution
+            <CardTitle className="text-base flex items-center gap-2">
+              <Layers className="h-4 w-4 text-primary" /> Overall Readiness
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap gap-3">
-              {frameworkDistribution.map(({ info, count }) => (
-                <div key={info.id} className="flex items-center gap-2 rounded-lg bg-secondary/50 px-3 py-2">
-                  <FrameworkBadge shortCode={info.short_code} colour={info.colour} />
-                  <span className="text-sm text-muted-foreground">{info.name}</span>
-                  <span className="text-xs font-bold">{count}</span>
-                </div>
-              ))}
+            <div className="relative h-44 flex items-center justify-center">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadialBarChart
+                  innerRadius="75%"
+                  outerRadius="100%"
+                  data={[{ name: "readiness", value: readiness, fill: "hsl(var(--primary))" }]}
+                  startAngle={90}
+                  endAngle={-270}
+                >
+                  <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
+                  <RadialBar background={{ fill: "hsl(var(--muted))" }} dataKey="value" cornerRadius={8} />
+                </RadialBarChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-3xl font-bold text-foreground">{readiness}%</span>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">
+                  Readiness
+                </span>
+              </div>
             </div>
+            <p className="text-xs text-muted-foreground text-center mt-2">
+              Across {assessmentTotal} assessment{assessmentTotal === 1 ? "" : "s"}
+            </p>
           </CardContent>
         </Card>
-      )}
-
-      {/* Recent Assessments */}
-      <Card className="border-border bg-card">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-lg">Recent Assessments</CardTitle>
-          <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate("/assessments")}>
-            View All <ChevronRight className="h-3 w-3 ml-1" />
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-16 bg-muted/50 rounded-lg animate-pulse" />
-              ))}
-            </div>
-          ) : assessments.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <ClipboardList className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>No assessments yet. Create your first one from the Assessments page.</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {assessments.slice(0, 3).map((a) => {
-                const fws = getAssessmentFrameworks(a);
-                return (
-                  <div key={a.id} className="flex items-center justify-between p-4 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors">
-                    <div className="flex items-center gap-4 min-w-0">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-medium truncate">{a.org_name || "Untitled Assessment"}</p>
-                          {fws.map((fw) => (
-                            <FrameworkBadge key={fw.id} shortCode={fw.short_code} colour={fw.colour} />
-                          ))}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          v{a.version} · Updated {new Date(a.updated_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <StatusBadge status={a.status} />
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Button size="sm" variant="outline" onClick={() => navigate(`/assessment/${a.id}/org-profile`)}>
-                        <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open
-                      </Button>
-                      <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive" onClick={() => deleteAssessment(a.id)}>
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Policy Register Widget */}
-      <Card className="border-border bg-card">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <BookMarked className="h-5 w-5 text-primary" /> Policy Register Status
-          </CardTitle>
-          <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate("/policy-library")}>
-            View All <ChevronRight className="h-3 w-3 ml-1" />
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {(() => {
-            const expiring = policyDocs.filter((d) => {
-              if (!d.review_date) return false;
-              const diff = new Date(d.review_date).getTime() - Date.now();
-              return diff > 0 && diff <= 30 * 86400000;
-            });
-            return (
-              <>
-                {expiring.length > 0 && (
-                  <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 mb-3 flex items-center gap-2">
-                    <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                    <p className="text-[11px] text-amber-300">{expiring.length} polic{expiring.length === 1 ? "y" : "ies"} due for review</p>
-                  </div>
-                )}
-                {policyDocs.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-6">No policies generated yet</p>
-                ) : (
-                  <div className="space-y-1.5">
-                    {policyDocs.map((d) => (
-                      <div key={d.id} className="flex items-center justify-between p-2.5 rounded-lg bg-secondary/50">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
-                          <span className="text-sm font-medium truncate">{d.title}</span>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <Badge variant="outline" className={cn("text-[8px]", STATUS_COLORS[d.status] ?? "")}>{d.status}</Badge>
-                          {d.review_date && (
-                            <span className="text-[10px] text-muted-foreground">
-                              {new Date(d.review_date).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
-            );
-          })()}
-        </CardContent>
-      </Card>
-
-      {/* Template Picker Dialog */}
-      <Dialog open={showTemplatePicker} onOpenChange={setShowTemplatePicker}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Select Assessment Template</DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto py-2">
-            {templates.map((t) => (
-              <Card key={t.id} className={cn("border-border bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer", t.is_default && "ring-1 ring-primary/50")}>
-                <CardContent className="p-4 space-y-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold text-sm">{t.name}</p>
-                      {t.is_default && <Badge variant="outline" className="text-[9px] border-primary/40 text-primary">Default</Badge>}
-                    </div>
-                    {t.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{t.description}</p>}
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {t.frameworks.map((fw) => (
-                      <Badge key={fw.id} variant="outline" className="text-[9px]">
-                        {fw.short_code} · {fw.jurisdiction}
-                      </Badge>
-                    ))}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">{t.requirement_count} requirements</span>
-                    <Button size="sm" onClick={() => createFromTemplate(t)} disabled={creatingFromTemplate}>
-                      {creatingFromTemplate ? "Creating…" : "Select"}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
+      </div>
     </div>
   );
 }
