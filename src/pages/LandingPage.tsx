@@ -1,238 +1,795 @@
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import React, { useEffect, useRef, useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import {
-  Cog, Shield, FileText, Bot, ClipboardList, Building2,
-  ChevronRight, CheckCircle2, ArrowRight, BarChart3, Lock,
-  Scale, Globe, Users, BookMarked, FolderOpen, Zap
+  Info,
+  ClipboardCheck,
+  PenLine,
+  Zap,
+  LayoutGrid,
+  BookOpen,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
-const FEATURES = [
+const C = {
+  accent: "#059669",
+  accentDark: "#047857",
+  accentLight: "#d1fae5",
+  accentLighter: "#ecfdf5",
+  bg: "#ffffff",
+  surface: "#f7faf9",
+  dark: "#0b1210",
+  text: "#111827",
+  muted: "#6b7280",
+  border: "#e5e7eb",
+  borderLight: "#f3f4f6",
+};
+
+const FONT_DISPLAY = "'Cormorant Garamond', serif";
+const FONT_BODY = "'Syne', sans-serif";
+
+const STAGES = [
+  { num: "01", name: "Know", desc: "Understand your obligations under the DPDP Act 2023", Icon: Info },
+  { num: "02", name: "Assess", desc: "88-requirement gap assessment with automated domain scoring", Icon: ClipboardCheck },
+  { num: "03", name: "Build", desc: "AI generates audit-ready policies calibrated to your exact profile", Icon: PenLine },
+  { num: "04", name: "Execute", desc: "Deploy controls, assign owners, run evidence workflows", Icon: Zap },
+  { num: "05", name: "Manage", desc: "Live dashboards, policy lifecycle, board-level reporting", Icon: LayoutGrid },
+  { num: "06", name: "Learn", desc: "Regulatory updates, enforcement intelligence, maturity evolution", Icon: BookOpen },
+];
+
+const CAPS = [
   {
-    icon: ClipboardList,
-    title: "DPDP Gap Assessments",
-    desc: "88 statutory requirements mapped across 15 compliance domains. Six-phase structured assessment workflow with automated scoring.",
+    Icon: ClipboardCheck,
+    title: "Assessment Engine",
+    body: "Work through 88 DPDP requirements across 15 domains with structured scoring, evidence capture, and owner assignment. Six-phase methodology — zero ambiguity, full defensibility.",
+    tag: "ASSESS → EXECUTE",
   },
   {
-    icon: Bot,
-    title: "AI Policy & SOP Builder",
-    desc: "Generate audit-ready policies calibrated to your org size, sector, SDF classification, and processing activities. 13 regulatory frameworks.",
+    Icon: PenLine,
+    title: "AI Policy Builder",
+    body: "Audit-ready policies, SOPs, DPIAs, and notices — calibrated to your sector, SDF classification, and processing activities. No templates. No placeholders. No rework.",
+    tag: "BUILD → MANAGE",
   },
   {
-    icon: FolderOpen,
-    title: "Assessment Repository",
-    desc: "Pre-built templates for every DPDP requirement — consent notices, DPIA templates, breach registers, DPO appointment letters.",
-  },
-  {
-    icon: BookMarked,
-    title: "Policy Lifecycle Register",
-    desc: "Track policy versions, approvals, review dates, and audit trails. Full document lifecycle management.",
-  },
-  {
-    icon: BarChart3,
-    title: "Executive Dashboards",
-    desc: "Real-time compliance scoring, domain-wise heatmaps, risk distribution charts, and exportable board-level reports.",
-  },
-  {
-    icon: Shield,
-    title: "Multi-Framework Mapping",
-    desc: "DPDP Act 2023, NIST CSF 2.0, ISO 27001, GDPR, CERT-In Directions, RBI, SEBI CSCRF, IRDAI — all in one platform.",
+    Icon: LayoutGrid,
+    title: "Compliance Dashboard",
+    body: "Real-time posture scoring, domain-wise heatmaps, risk distribution analysis, and exportable board reports. Your compliance story, told clearly to every stakeholder.",
+    tag: "MANAGE → LEARN",
   },
 ];
 
-const FRAMEWORKS = [
-  "DPDP Act 2023 + Rules 2025",
-  "NIST CSF 2.0",
-  "ISO 27001:2022",
-  "ISO 27701:2019",
-  "GDPR",
-  "CERT-In Directions 2022",
-  "RBI Cybersecurity Framework",
-  "SEBI CSCRF 2024",
-  "IRDAI Guidelines 2023",
-  "IT Act 2000",
-];
-
-const STEPS = [
-  { num: "01", title: "Set Up Organisation Profile", desc: "Define your sector, size, SDF classification, processing activities, and applicable jurisdictions." },
-  { num: "02", title: "Run Gap Assessment", desc: "Work through 88 DPDP requirements across 15 domains. Score, evidence, and assign owners." },
-  { num: "03", title: "Generate Policies & SOPs", desc: "AI builds audit-ready documents calibrated to your exact compliance profile — no placeholders." },
-  { num: "04", title: "Track & Report", desc: "Monitor compliance posture, manage policy lifecycles, and export board-level reports." },
+const STATS = [
+  { num: "88", label: "Statutory Requirements", desc: "Mapped across 15 compliance domains", accent: true },
+  { num: "13", label: "Regulatory Frameworks", desc: "DPDP, GDPR, CERT-In, SEBI and more" },
+  { num: "6", label: "Programme Stages", desc: "Know through Learn — full lifecycle" },
+  { num: "AI", label: "Policy Generation", desc: "Audit-ready documents, no placeholders" },
 ];
 
 export default function LandingPage() {
+  const navigate = useNavigate();
+  const { session } = useAuth();
+  const [navScrolled, setNavScrolled] = useState(false);
+  const [activeStage, setActiveStage] = useState(0);
+  const [hoverNode, setHoverNode] = useState<number | null>(null);
+  const [hoverCap, setHoverCap] = useState<number | null>(null);
+  const [hoverStat, setHoverStat] = useState<number | null>(null);
+  const [revealed, setRevealed] = useState<Set<number>>(new Set());
+  const [primaryHover, setPrimaryHover] = useState<string | null>(null);
+  const [outlineHover, setOutlineHover] = useState(false);
+  const [signInHover, setSignInHover] = useState(false);
+  const [navStartHover, setNavStartHover] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const capRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  useEffect(() => {
+    const onScroll = () => setNavScrolled(window.scrollY > 6);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    const apply = () => setIsMobile(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+
+  useEffect(() => {
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            const i = Number((e.target as HTMLElement).dataset.i);
+            setRevealed((prev) => {
+              const next = new Set(prev);
+              next.add(i);
+              return next;
+            });
+          }
+        });
+      },
+      { threshold: 0.12 }
+    );
+    capRefs.current.forEach((el) => el && obs.observe(el));
+    return () => obs.disconnect();
+  }, []);
+
+  const goAuth = () => navigate(session ? "/dashboard" : "/auth");
+
+  const heroPad = isMobile ? "120px 28px 60px" : "148px 60px 100px";
+  const navPad = isMobile ? "16px 24px" : "18px 60px";
+  const journeyPad = isMobile ? "60px 24px 70px" : "90px 60px 100px";
+  const capsPad = isMobile ? "72px 24px" : "96px 60px";
+  const ctaPad = isMobile ? "70px 24px 80px" : "80px 60px 96px";
+  const footerPad = isMobile ? "24px" : "30px 60px";
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* ── NAVBAR ── */}
-      <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto flex items-center justify-between h-16 px-6">
-          <Link to="/" className="flex items-center gap-2">
-            <Cog className="h-7 w-7 text-primary" />
-            <span className="font-bold text-lg text-gradient">PrivcybHub</span>
-            <span className="text-[10px] font-mono bg-primary/20 text-primary px-1.5 py-0.5 rounded">v3.0</span>
-          </Link>
-          <div className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
-            <a href="#features" className="hover:text-foreground transition-colors">Features</a>
-            <a href="#frameworks" className="hover:text-foreground transition-colors">Frameworks</a>
-            <a href="#how-it-works" className="hover:text-foreground transition-colors">How It Works</a>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/auth">Sign In</Link>
-            </Button>
-            <Button size="sm" asChild>
-              <Link to="/auth">Get Started <ArrowRight className="h-4 w-4 ml-1" /></Link>
-            </Button>
-          </div>
+    <div style={{ background: C.bg, color: C.text, fontFamily: FONT_BODY, minHeight: "100vh" }}>
+      {/* NAV */}
+      <nav
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 200,
+          background: "rgba(255,255,255,0.92)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          borderBottom: `1px solid ${C.borderLight}`,
+          padding: navPad,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          boxShadow: navScrolled ? "0 2px 18px rgba(0,0,0,0.05)" : "none",
+          transition: "box-shadow .25s ease",
+        }}
+      >
+        <Link to="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", color: C.text }}>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M12 2 L21 7 V17 L12 22 L3 17 V7 Z"
+              fill={C.accent}
+              fillOpacity={0.12}
+              stroke={C.accent}
+              strokeWidth={1.5}
+              strokeLinejoin="round"
+            />
+          </svg>
+          <span style={{ fontFamily: FONT_BODY, fontWeight: 700, fontSize: 15, letterSpacing: "-0.01em" }}>
+            PrivcybHub
+          </span>
+          <span
+            style={{
+              fontFamily: FONT_BODY,
+              fontSize: 10,
+              fontWeight: 700,
+              color: C.accent,
+              background: C.accentLight,
+              borderRadius: 99,
+              padding: "2px 8px",
+            }}
+          >
+            v3.0
+          </span>
+        </Link>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            onClick={() => navigate("/auth")}
+            onMouseEnter={() => setSignInHover(true)}
+            onMouseLeave={() => setSignInHover(false)}
+            style={{
+              fontFamily: FONT_BODY,
+              fontSize: 13,
+              fontWeight: 500,
+              color: C.muted,
+              background: signInHover ? C.borderLight : "transparent",
+              border: "none",
+              borderRadius: 7,
+              padding: "9px 14px",
+              cursor: "pointer",
+              transition: "background .2s ease",
+            }}
+          >
+            Sign In
+          </button>
+          <button
+            onClick={goAuth}
+            onMouseEnter={() => setNavStartHover(true)}
+            onMouseLeave={() => setNavStartHover(false)}
+            style={{
+              fontFamily: FONT_BODY,
+              fontSize: 13,
+              fontWeight: 600,
+              color: "#fff",
+              background: navStartHover ? C.accentDark : C.accent,
+              border: "none",
+              borderRadius: 7,
+              padding: "9px 18px",
+              cursor: "pointer",
+              transition: "background .2s ease",
+            }}
+          >
+            Start Assessment →
+          </button>
         </div>
       </nav>
 
-      {/* ── HERO ── */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/10 pointer-events-none" />
-        <div className="max-w-7xl mx-auto px-6 pt-20 pb-24 md:pt-28 md:pb-32 relative">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-medium text-primary mb-6">
-              <Shield className="h-3.5 w-3.5" />
-              India's DPDP Act 2023 Compliance Platform
-            </div>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight">
-              Privacy & Cyber Compliance,{" "}
-              <span className="text-gradient">Simplified.</span>
-            </h1>
-            <p className="mt-6 text-lg md:text-xl text-muted-foreground leading-relaxed max-w-2xl">
-              PrivcybHub is an end-to-end GRC platform for Indian organisations navigating DPDP Act 2023, CERT-In, RBI, SEBI, and global privacy frameworks. Assess gaps, generate audit-ready policies, and track compliance — all in one place.
-            </p>
-            <div className="flex flex-wrap gap-4 mt-8">
-              <Button size="lg" asChild>
-                <Link to="/auth">
-                  Start Free Assessment <ChevronRight className="h-4 w-4 ml-1" />
-                </Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild>
-                <a href="#features">
-                  Explore Features
-                </a>
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-x-6 gap-y-2 mt-8 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-primary" /> 88 DPDP Requirements</span>
-              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-primary" /> 13 Frameworks</span>
-              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-primary" /> AI-Powered Documents</span>
-            </div>
+      {/* HERO */}
+      <section
+        style={{
+          maxWidth: 1240,
+          margin: "0 auto",
+          padding: heroPad,
+          display: "grid",
+          gridTemplateColumns: isMobile ? "1fr" : "1.1fr 0.9fr",
+          gap: isMobile ? 0 : 60,
+          alignItems: "center",
+        }}
+      >
+        <div>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 12, marginBottom: 26 }}>
+            <span style={{ display: "inline-block", width: 28, height: 1.5, background: C.accent }} />
+            <span
+              style={{
+                fontFamily: FONT_BODY,
+                fontSize: 11,
+                fontWeight: 700,
+                color: C.accent,
+                textTransform: "uppercase",
+                letterSpacing: "0.18em",
+              }}
+            >
+              DPDP Act 2023 Compliance
+            </span>
+          </div>
+          <h1
+            style={{
+              fontFamily: FONT_DISPLAY,
+              fontWeight: 500,
+              fontSize: "clamp(50px, 5.5vw, 76px)",
+              lineHeight: 1.04,
+              letterSpacing: "-0.03em",
+              color: C.text,
+              margin: "0 0 26px 0",
+            }}
+          >
+            Compliance isn't a project. It's a{" "}
+            <em style={{ fontStyle: "italic", color: C.accent }}>discipline.</em>
+          </h1>
+          <p
+            style={{
+              fontFamily: FONT_BODY,
+              fontSize: 16,
+              fontWeight: 400,
+              color: C.muted,
+              lineHeight: 1.75,
+              maxWidth: 460,
+              margin: "0 0 42px 0",
+            }}
+          >
+            PrivcybHub gives Indian organisations the system, structure, and intelligence to own their DPDP programme — from{" "}
+            <strong style={{ color: C.text, fontWeight: 600 }}>first assessment</strong> to{" "}
+            <strong style={{ color: C.text, fontWeight: 600 }}>continuous readiness</strong>.
+          </p>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <button
+              onClick={goAuth}
+              onMouseEnter={() => setPrimaryHover("hero")}
+              onMouseLeave={() => setPrimaryHover(null)}
+              style={{
+                fontFamily: FONT_BODY,
+                fontSize: 14,
+                fontWeight: 600,
+                color: "#fff",
+                background: primaryHover === "hero" ? C.accentDark : C.accent,
+                border: "none",
+                borderRadius: 8,
+                padding: "13px 26px",
+                cursor: "pointer",
+                transform: primaryHover === "hero" ? "translateY(-2px)" : "translateY(0)",
+                boxShadow: primaryHover === "hero" ? "0 10px 28px rgba(5,150,105,.24)" : "none",
+                transition: "all .25s ease",
+              }}
+            >
+              Start Free Assessment →
+            </button>
+            <button
+              onClick={() => {
+                document.getElementById("journey")?.scrollIntoView({ behavior: "smooth" });
+              }}
+              onMouseEnter={() => setOutlineHover(true)}
+              onMouseLeave={() => setOutlineHover(false)}
+              style={{
+                fontFamily: FONT_BODY,
+                fontSize: 14,
+                fontWeight: 500,
+                color: C.text,
+                background: outlineHover ? C.surface : "transparent",
+                border: `1.5px solid ${outlineHover ? C.text : C.border}`,
+                borderRadius: 8,
+                padding: "13px 26px",
+                cursor: "pointer",
+                transition: "all .2s ease",
+              }}
+            >
+              See How It Works
+            </button>
           </div>
         </div>
-      </section>
 
-      {/* ── TRUST BAR ── */}
-      <section className="border-y border-border bg-card/50">
-        <div className="max-w-7xl mx-auto px-6 py-6 flex flex-wrap items-center justify-center gap-x-10 gap-y-3 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1.5"><Scale className="h-4 w-4" /> DPDP Act 2023 Aligned</span>
-          <span className="flex items-center gap-1.5"><Shield className="h-4 w-4" /> CERT-In Compliant</span>
-          <span className="flex items-center gap-1.5"><Lock className="h-4 w-4" /> End-to-End Encrypted</span>
-          <span className="flex items-center gap-1.5"><Globe className="h-4 w-4" /> Multi-Jurisdiction Support</span>
-          <span className="flex items-center gap-1.5"><Users className="h-4 w-4" /> Role-Based Access Control</span>
-        </div>
-      </section>
-
-      {/* ── FEATURES ── */}
-      <section id="features" className="max-w-7xl mx-auto px-6 py-20 md:py-28">
-        <div className="text-center mb-14">
-          <h2 className="text-3xl md:text-4xl font-bold">Everything You Need for Compliance</h2>
-          <p className="mt-3 text-muted-foreground max-w-xl mx-auto">
-            From gap assessments to AI-generated policies — a complete toolkit for privacy and cybersecurity compliance.
-          </p>
-        </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {FEATURES.map((f) => (
-            <Card key={f.title} className="group hover:border-primary/40 transition-colors">
-              <CardContent className="p-6">
-                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                  <f.icon className="h-5 w-5 text-primary" />
+        {!isMobile && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            {STATS.map((s, i) => {
+              const isAccent = !!s.accent;
+              const hover = hoverStat === i;
+              return (
+                <div
+                  key={i}
+                  onMouseEnter={() => setHoverStat(i)}
+                  onMouseLeave={() => setHoverStat(null)}
+                  style={{
+                    background: isAccent ? C.accent : C.bg,
+                    border: `1.5px solid ${isAccent ? C.accent : hover ? "rgba(5,150,105,0.35)" : C.border}`,
+                    borderRadius: 14,
+                    padding: "24px 22px",
+                    transform: hover ? "translateY(-3px)" : "translateY(0)",
+                    boxShadow: hover && !isAccent ? "0 14px 30px rgba(0,0,0,.06)" : "none",
+                    transition: "all .25s ease",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: FONT_DISPLAY,
+                      fontWeight: 500,
+                      fontSize: 44,
+                      lineHeight: 1,
+                      color: isAccent ? "#fff" : C.text,
+                      marginBottom: 14,
+                    }}
+                  >
+                    {s.num}
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: FONT_BODY,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: isAccent ? "#fff" : C.text,
+                      marginBottom: 6,
+                      letterSpacing: "0.01em",
+                    }}
+                  >
+                    {s.label}
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: FONT_BODY,
+                      fontSize: 11.5,
+                      color: isAccent ? "rgba(255,255,255,0.7)" : C.muted,
+                      lineHeight: 1.55,
+                    }}
+                  >
+                    {s.desc}
+                  </div>
                 </div>
-                <h3 className="text-lg font-semibold mb-2">{f.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
-      {/* ── FRAMEWORKS ── */}
-      <section id="frameworks" className="border-y border-border bg-card/30">
-        <div className="max-w-7xl mx-auto px-6 py-20 md:py-28">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold">13 Regulatory Frameworks, One Platform</h2>
-            <p className="mt-3 text-muted-foreground max-w-xl mx-auto">
-              Map your controls to Indian and global privacy and cybersecurity standards simultaneously.
-            </p>
+      {/* JOURNEY */}
+      <section
+        id="journey"
+        style={{
+          background: C.dark,
+          padding: journeyPad,
+          position: "relative",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 1,
+            background: "linear-gradient(90deg, transparent, rgba(5,150,105,.3), transparent)",
+          }}
+        />
+        <div style={{ maxWidth: 900, margin: "0 auto 70px", textAlign: "center" }}>
+          <div
+            style={{
+              fontFamily: FONT_BODY,
+              fontSize: 10.5,
+              fontWeight: 700,
+              color: C.accent,
+              textTransform: "uppercase",
+              letterSpacing: "0.22em",
+              marginBottom: 18,
+            }}
+          >
+            The Compliance Journey
           </div>
-          <div className="flex flex-wrap justify-center gap-3 max-w-3xl mx-auto">
-            {FRAMEWORKS.map((fw) => (
-              <span
-                key={fw}
-                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium hover:border-primary/40 transition-colors"
-              >
-                <Shield className="h-3.5 w-3.5 text-primary" />
-                {fw}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── HOW IT WORKS ── */}
-      <section id="how-it-works" className="max-w-7xl mx-auto px-6 py-20 md:py-28">
-        <div className="text-center mb-14">
-          <h2 className="text-3xl md:text-4xl font-bold">How It Works</h2>
-          <p className="mt-3 text-muted-foreground max-w-xl mx-auto">
-            Four steps from zero to compliance-ready.
+          <h2
+            style={{
+              fontFamily: FONT_DISPLAY,
+              fontWeight: 500,
+              fontSize: "clamp(34px, 3.8vw, 52px)",
+              color: "#fff",
+              lineHeight: 1.1,
+              letterSpacing: "-0.02em",
+              margin: "0 0 20px 0",
+            }}
+          >
+            Six stages. One <em style={{ fontStyle: "italic", color: C.accent }}>complete system.</em>
+          </h2>
+          <p
+            style={{
+              fontFamily: FONT_BODY,
+              fontSize: 15,
+              color: "rgba(255,255,255,0.45)",
+              maxWidth: 500,
+              margin: "0 auto",
+              lineHeight: 1.75,
+            }}
+          >
+            Most organisations jump straight to documentation. PrivcybHub structures your entire DPDP programme — from regulatory clarity to operational maturity.
           </p>
         </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {STEPS.map((s, i) => (
-            <div key={s.num} className="relative">
-              <span className="text-5xl font-bold text-primary/15 absolute -top-2 -left-1 select-none">{s.num}</span>
-              <div className="pt-10">
-                <h3 className="text-lg font-semibold mb-2">{s.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
+
+        <div
+          style={{
+            position: "relative",
+            maxWidth: 1100,
+            margin: "0 auto",
+            display: "flex",
+            flexDirection: isMobile ? "column" : "row",
+            gap: isMobile ? 18 : 0,
+          }}
+        >
+          {!isMobile && (
+            <div
+              style={{
+                position: "absolute",
+                top: 27,
+                left: "calc(8.33% + 28px)",
+                right: "calc(8.33% + 28px)",
+                height: 1,
+                background:
+                  "linear-gradient(90deg, rgba(5,150,105,.15), rgba(5,150,105,.4) 50%, rgba(5,150,105,.15))",
+                zIndex: 0,
+              }}
+            />
+          )}
+          {STAGES.map((s, i) => {
+            const active = activeStage === i || hoverNode === i;
+            const Icon = s.Icon;
+            return (
+              <div
+                key={s.num}
+                onMouseEnter={() => {
+                  setHoverNode(i);
+                  setActiveStage(i);
+                }}
+                onMouseLeave={() => setHoverNode(null)}
+                style={{
+                  flex: isMobile ? "initial" : 1,
+                  display: "flex",
+                  flexDirection: isMobile ? "row" : "column",
+                  alignItems: isMobile ? "flex-start" : "center",
+                  gap: isMobile ? 16 : 0,
+                  padding: isMobile ? 0 : "0 6px",
+                  cursor: "pointer",
+                  zIndex: 1,
+                }}
+              >
+                <div
+                  style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 14,
+                    border: `1.5px solid ${active ? C.accent : "rgba(255,255,255,0.1)"}`,
+                    background: active ? C.accent : "rgba(255,255,255,0.04)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: active ? "0 0 0 8px rgba(5,150,105,.12)" : "none",
+                    transition: "all .3s ease",
+                    flexShrink: 0,
+                  }}
+                >
+                  <Icon size={21} color={active ? "#fff" : "rgba(255,255,255,0.5)"} />
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: isMobile ? "flex-start" : "center",
+                    textAlign: isMobile ? "left" : "center",
+                    marginTop: isMobile ? 0 : 14,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: FONT_BODY,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: active ? C.accent : "rgba(5,150,105,0.6)",
+                      letterSpacing: "0.22em",
+                      marginBottom: 6,
+                      transition: "color .25s ease",
+                    }}
+                  >
+                    {s.num}
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: FONT_BODY,
+                      fontSize: 14,
+                      fontWeight: 700,
+                      color: "rgba(255,255,255,0.9)",
+                      marginBottom: 6,
+                    }}
+                  >
+                    {s.name}
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: FONT_BODY,
+                      fontSize: 11.5,
+                      color: active ? "rgba(255,255,255,0.65)" : "rgba(255,255,255,0.38)",
+                      lineHeight: 1.65,
+                      maxWidth: isMobile ? "100%" : 132,
+                      textAlign: isMobile ? "left" : "center",
+                      transition: "color .25s ease",
+                    }}
+                  >
+                    {s.desc}
+                  </div>
+                </div>
               </div>
-            </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* CAPABILITIES */}
+      <section style={{ maxWidth: 1240, margin: "0 auto", padding: capsPad }}>
+        <div style={{ textAlign: "center", maxWidth: 760, margin: "0 auto 56px" }}>
+          <div
+            style={{
+              fontFamily: FONT_BODY,
+              fontSize: 10.5,
+              fontWeight: 700,
+              color: C.accent,
+              textTransform: "uppercase",
+              letterSpacing: "0.22em",
+              marginBottom: 18,
+            }}
+          >
+            What PrivcybHub Does
+          </div>
+          <h2
+            style={{
+              fontFamily: FONT_DISPLAY,
+              fontWeight: 500,
+              fontSize: "clamp(34px, 3.8vw, 52px)",
+              color: C.text,
+              lineHeight: 1.1,
+              letterSpacing: "-0.02em",
+              margin: "0 0 18px 0",
+            }}
+          >
+            Built for practitioners. Not <em style={{ fontStyle: "italic", color: C.accent }}>administrators.</em>
+          </h2>
+          <p
+            style={{
+              fontFamily: FONT_BODY,
+              fontSize: 15,
+              color: C.muted,
+              maxWidth: 520,
+              margin: "0 auto",
+              lineHeight: 1.75,
+            }}
+          >
+            Every feature moves you from uncertainty to documented, defensible compliance posture.
+          </p>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)",
+            gap: 22,
+          }}
+        >
+          {CAPS.map((c, i) => {
+            const Icon = c.Icon;
+            const hover = hoverCap === i;
+            const isRevealed = revealed.has(i);
+            return (
+              <div
+                key={i}
+                ref={(el) => (capRefs.current[i] = el)}
+                data-i={i}
+                onMouseEnter={() => setHoverCap(i)}
+                onMouseLeave={() => setHoverCap(null)}
+                style={{
+                  position: "relative",
+                  border: `1.5px solid ${hover ? "rgba(5,150,105,0.25)" : C.border}`,
+                  borderRadius: 16,
+                  padding: "34px 30px",
+                  background: C.bg,
+                  overflow: "hidden",
+                  transform: isRevealed ? (hover ? "translateY(-5px)" : "translateY(0)") : "translateY(20px)",
+                  opacity: isRevealed ? 1 : 0,
+                  boxShadow: hover ? "0 20px 48px rgba(0,0,0,.07)" : "none",
+                  transition: `opacity .65s ease ${i * 100}ms, transform .65s ease ${i * 100}ms, border-color .25s ease, box-shadow .25s ease`,
+                }}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 2,
+                    background: C.accent,
+                    transform: hover ? "scaleX(1)" : "scaleX(0)",
+                    transformOrigin: "left",
+                    transition: "transform .35s ease",
+                  }}
+                />
+                <div
+                  style={{
+                    width: 42,
+                    height: 42,
+                    background: C.accentLighter,
+                    borderRadius: 10,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: 22,
+                  }}
+                >
+                  <Icon size={18} color={C.accent} />
+                </div>
+                <h3
+                  style={{
+                    fontFamily: FONT_DISPLAY,
+                    fontWeight: 500,
+                    fontSize: 26,
+                    color: C.text,
+                    letterSpacing: "-0.01em",
+                    margin: "0 0 12px 0",
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {c.title}
+                </h3>
+                <p
+                  style={{
+                    fontFamily: FONT_BODY,
+                    fontSize: 13.5,
+                    color: C.muted,
+                    lineHeight: 1.78,
+                    margin: 0,
+                  }}
+                >
+                  {c.body}
+                </p>
+                <div
+                  style={{
+                    fontFamily: FONT_BODY,
+                    fontSize: 10.5,
+                    fontWeight: 700,
+                    color: C.accent,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.12em",
+                    marginTop: 22,
+                  }}
+                >
+                  {c.tag}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section
+        style={{
+          background: C.surface,
+          borderTop: `1px solid ${C.border}`,
+          padding: ctaPad,
+          textAlign: "center",
+        }}
+      >
+        <h2
+          style={{
+            fontFamily: FONT_DISPLAY,
+            fontWeight: 500,
+            fontSize: "clamp(38px, 4vw, 58px)",
+            color: C.text,
+            lineHeight: 1.1,
+            letterSpacing: "-0.02em",
+            maxWidth: 640,
+            margin: "0 auto 16px",
+          }}
+        >
+          Your DPDP programme begins with one{" "}
+          <em style={{ fontStyle: "italic", color: C.accent }}>honest assessment.</em>
+        </h2>
+        <p
+          style={{
+            fontFamily: FONT_BODY,
+            fontSize: 15,
+            color: C.muted,
+            lineHeight: 1.7,
+            margin: "0 auto 38px",
+            maxWidth: 560,
+          }}
+        >
+          Set up your organisation profile. Run your first gap assessment. Know exactly where you stand.
+        </p>
+        <button
+          onClick={goAuth}
+          onMouseEnter={() => setPrimaryHover("cta")}
+          onMouseLeave={() => setPrimaryHover(null)}
+          style={{
+            fontFamily: FONT_BODY,
+            fontSize: 14,
+            fontWeight: 600,
+            color: "#fff",
+            background: primaryHover === "cta" ? C.accentDark : C.accent,
+            border: "none",
+            borderRadius: 8,
+            padding: "13px 26px",
+            cursor: "pointer",
+            transform: primaryHover === "cta" ? "translateY(-2px)" : "translateY(0)",
+            boxShadow: primaryHover === "cta" ? "0 10px 28px rgba(5,150,105,.24)" : "none",
+            transition: "all .25s ease",
+          }}
+        >
+          Get Started — It's Free →
+        </button>
+      </section>
+
+      {/* FOOTER */}
+      <footer
+        style={{
+          padding: footerPad,
+          borderTop: `1px solid ${C.borderLight}`,
+          display: "flex",
+          flexDirection: isMobile ? "column" : "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: isMobile ? 12 : 0,
+        }}
+      >
+        <div style={{ fontFamily: FONT_BODY, fontSize: 12.5, color: C.muted }}>
+          © 2026 PrivcybHub. All rights reserved.
+        </div>
+        <div style={{ display: "flex", gap: 22 }}>
+          {[
+            { label: "Privacy Policy", to: "/privacy" },
+            { label: "Terms of Service", to: "/terms" },
+            { label: "Contact", to: "/privacy" },
+          ].map((l) => (
+            <Link
+              key={l.label}
+              to={l.to}
+              style={{ fontFamily: FONT_BODY, fontSize: 12.5, color: C.muted, textDecoration: "none" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = C.text)}
+              onMouseLeave={(e) => (e.currentTarget.style.color = C.muted)}
+            >
+              {l.label}
+            </Link>
           ))}
-        </div>
-      </section>
-
-      {/* ── CTA ── */}
-      <section className="border-t border-border">
-        <div className="max-w-7xl mx-auto px-6 py-20 md:py-28 text-center">
-          <div className="max-w-2xl mx-auto">
-            <Zap className="h-10 w-10 text-primary mx-auto mb-4" />
-            <h2 className="text-3xl md:text-4xl font-bold">Ready to Get Compliant?</h2>
-            <p className="mt-4 text-muted-foreground text-lg">
-              Start your DPDP Act compliance journey today. Set up your organisation profile and run your first gap assessment in minutes.
-            </p>
-            <Button size="lg" className="mt-8" asChild>
-              <Link to="/auth">
-                Get Started — It's Free <ArrowRight className="h-4 w-4 ml-1" />
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* ── FOOTER ── */}
-      <footer className="border-t border-border bg-card/50">
-        <div className="max-w-7xl mx-auto px-6 py-10 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Cog className="h-5 w-5 text-primary" />
-            <span className="font-semibold text-gradient">PrivcybHub</span>
-          </div>
-          <div className="flex items-center gap-6 text-sm text-muted-foreground">
-            <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
-            <Link to="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link>
-          </div>
-          <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} PrivcybHub. All rights reserved.</p>
         </div>
       </footer>
     </div>
