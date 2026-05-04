@@ -10,9 +10,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { SPECIAL_STATUS_OPTIONS } from "@/data/assessmentDomains";
 import { toast } from "sonner";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Download } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import type { Json } from "@/integrations/supabase/types";
+import { exportQuestionnaireToExcel } from "@/utils/exportAssessmentQuestionnaire";
 
 type Assessment = Tables<"assessments">;
 
@@ -148,6 +149,15 @@ export default function PhaseOrgProfile() {
     navigate(`/assessment/${assessmentId}/policy-matrix`);
   };
 
+  const handleDownloadQuestionnaire = () => {
+    try {
+      exportQuestionnaireToExcel(assessment);
+      toast.success("Questionnaire downloaded");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to generate questionnaire");
+    }
+  };
+
   if (!assessment) return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading...</div>;
 
   const specialStatus = (assessment.special_status as unknown as SpecialStatus) || {};
@@ -162,9 +172,19 @@ export default function PhaseOrgProfile() {
           <h1 className="text-2xl font-bold">Organisation Profile</h1>
           {saving && <span className="text-xs text-muted-foreground">Saving...</span>}
         </div>
-        <Button onClick={handleNext} className="gradient-primary">
-          Next Phase <ArrowRight className="h-4 w-4 ml-2" />
-        </Button>
+        <div className="flex flex-col items-end gap-1">
+          <div className="flex gap-2 flex-wrap justify-end">
+            <Button variant="outline" onClick={handleDownloadQuestionnaire}>
+              <Download className="h-4 w-4 mr-2" /> Download Questionnaire
+            </Button>
+            <Button onClick={handleNext} className="gradient-primary">
+              Next Phase <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          </div>
+          <p className="text-[11px] text-muted-foreground max-w-sm text-right">
+            Offline working copy — covers all control questions, 37 policy artefacts and the 9-department × 14-control grid.
+          </p>
+        </div>
       </div>
 
       {/* Org Details */}
