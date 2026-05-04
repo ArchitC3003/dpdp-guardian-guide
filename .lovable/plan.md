@@ -1,71 +1,90 @@
 ## Goal
 
-Replace the current `/dashboard` (which duplicates the Assessments page) with a clean, role-aware **launcher dashboard** — a grid of hyperlinked module tiles (Assess, Build, Execute, Integrate, Learn, AI Copilot, plus Admin tiles) that mirrors the reference mockup, branded for PrivcybHub (dark slate + emerald).
+On the **Phase 1 (Organisation Profile)** page, add a **"Download Questionnaire (Excel)"** button that lets the user download the **complete assessment workbook** — including the full **Department Practice Grid** alongside the domain questions, policy stack and legend. Wording, IDs, risk levels and grouping must match the live in-app assessment **verbatim**.
 
-## What changes
+## Where it goes
 
-Single-file rewrite of `src/pages/Dashboard.tsx`. No routing, sidebar, or DB changes.
+`src/pages/PhaseOrgProfile.tsx` — outline button in the header next to **Next Phase**:
 
-### Layout
-
-```text
-┌──────────────────────────────────────────────────────┐
-│ Welcome, {name}  ·  {Role badge}  ·  {Org}           │
-├──────────────────────────────────────────────────────┤
-│  [Assess]      [Build]        [Execute*]             │
-│  [Integrate*]  [Learn*]       [AI Copilot] (dark)    │
-├──────────────────────────────────────────────────────┤
-│  Admin Tools (Super Admin / GRC Manager only)        │
-│  [Frameworks] [Users] [AI Config] [Privacy Ops…]     │
-├──────────────────────────────────────────────────────┤
-│  Recent Activity (last 5)   │  Overall Readiness %   │
-└──────────────────────────────────────────────────────┘
 ```
-\* Execute / Integrate / Learn render as **"Coming Soon"** tiles (disabled CTA, muted styling) since routes don't exist yet.
+[ PHASE 1 ]  Organisation Profile        [ ⬇ Download Questionnaire ]  [ Next Phase → ]
+```
 
-### Tile spec
+Available from the moment a new assessment is created, even before a DPDP role is picked. A small helper line under the button: _"Offline working copy — covers all 92 control questions, 37 policy artefacts and the 9-department × 14-control grid."_
 
-Each tile = `Card` with: pastel/emerald icon chip, title, 2–3 line description, primary CTA button → `navigate(url)`. Matches the reference image's structure but uses PrivcybHub dark theme (slate bg, emerald `#059669` accents, DM Sans). AI Copilot tile uses inverted dark surface to stand out.
+## Source of truth (no duplication)
 
-### Role-based visibility
+Pull straight from `src/data/assessmentDomains.ts`:
+- `DOMAINS[]` → 14 domains × items (Phase 4 Rapid Assessment).
+- `POLICY_ITEMS` → categories `P / S / R / C` (Phase 3 Policy Matrix).
+- `DEPARTMENTS[]` (9) and `DEPT_CONTROLS[]` (14) → Phase 5 Department Practice Grid.
+- `SPECIAL_STATUS_OPTIONS` → for the cover sheet summary.
 
-Uses existing `usePermissions()` hook:
+Conditional logic mirrored from `PhaseRapidAssessment` / `PhaseDashboard`:
+- `domain.conditional === "children"` → only included when `special_status.children` is on.
+- `domain.conditional === "consentMgr"` → only included when `special_status.consentMgr` is on.
+- Items in `domain.sdfOnly[]` → marked `Applicability = "SDF only"`.
 
-| Tile | Visible to |
-|---|---|
-| Assess, Build, Execute, Integrate, Learn, AI Copilot | All roles |
-| Admin Tools section (Frameworks, Users, AI Config, Assessment Templates) | `canManageUsers` (Super Admin only) |
-| Privacy Operations tiles (Consent Ledger, Notice Manager, Rights Desk, Grievances) | `canManageUsers` (Super Admin + GRC Manager — matches sidebar logic) |
-| Recent Activity, Readiness % | All roles |
+## Excel structure
 
-### Tile → route map
+Library: **SheetJS (`xlsx`) + `file-saver`** — both already in the project (used by `assessmentPackParser`, `exportUtils`). No new dependencies.
 
-- Assess → `/assessments`
-- Build → `/policy-sop-builder`
-- Execute → *(disabled — coming soon)*
-- Integrate → *(disabled — coming soon)*
-- Learn → *(disabled — coming soon)*
-- AI Copilot → opens existing PrivacyAssistant (already global) or links to `/policy-sop-builder` chat
-- Frameworks → `/admin/frameworks`
-- Users → `/settings/users`
-- AI Config → `/admin/ai-config`
-- Assessment Templates → `/admin/assessment-templates`
-- Consent Ledger → `/consent/ledger` (etc.)
+**Sheet 1 — Cover**
+Key/value rows: Organisation, Industry, Entity Type, Employees, Data Subjects, Locations, Sectoral Regulators, DPDP Role (Joint/Dual flag), Special Statuses (comma list of enabled flags), Generated On (IST), Framework = "DPDP Act 2023", Counts (Domain items / Policy artefacts / Dept-Control cells), Source = "PrivcybHub Rapid Assessment v3.0".
 
-### Bottom widgets (kept, slimmed down)
+**Sheet 2 — Assessment Questionnaire** (Phase 4 — verbatim)
+Columns:
 
-- **Recent Activity**: last 3 assessment updates + last 2 policy doc updates (merged, sorted by `updated_at`). Click → navigate to that item.
-- **Overall Readiness**: average `compliance_score` across user's assessments rendered as a circular progress (Recharts `RadialBar` already in stack) with the % in the center — mirrors the mockup's 85% donut.
+| Item ID | Domain Code | Domain Name | Section Reference | Penalty | Risk Level | Evidence Type | Requirement / Question | Applicability | Status | Evidence Status | Priority | Owner | Target Date | Notes |
 
-## Out of scope
+- First 8 columns pre-filled from `DOMAINS`.
+- `Applicability` = `"Applicable"` / `"SDF only"` / `"Conditional – children"` / `"Conditional – consentMgr"`.
+- Status / Evidence / Priority / Owner / Date / Notes left blank for offline filling.
+- Header row: bold white on teal `#0D9488`. Risk cells colour-tinted (critical=red, high=amber, standard=slate). Wrap-text on Requirement column (≈80 chars). Freeze top row.
 
-- Building Execute / Integrate / Learn pages (tiles are placeholders only).
-- New DB tables, migrations, or RLS changes.
-- Sidebar restructuring.
+**Sheet 3 — Policy & SOP Stack** (Phase 3 — verbatim)
+Columns: `Item ID | Category Code | Category Label | Artefact Name | Status | Owner | Last Reviewed | Next Review | Document Link | Notes`. All 37 artefacts (P/S/R/C) listed; Status etc. blank.
 
-## Technical notes
+**Sheet 4 — Department Practice Grid** (Phase 5 — verbatim — **the addition this turn requested**)
+Built as a long-form matrix so it is both human-readable and re-importable:
 
-- File touched: **`src/pages/Dashboard.tsx`** (full rewrite, ~250 lines).
-- Reuses: `usePermissions`, `useAuth`, `Card`, `Button`, `Badge`, lucide icons (`ClipboardList`, `Compass`, `Play`, `Plug`, `GraduationCap`, `Sparkles`, `Shield`, `Users`, `Bot`, `BookOpen`, `ScrollText`).
-- Readiness donut: Recharts `RadialBarChart` (already a project dep per memory).
-- Removed from current Dashboard: stat cards, framework distribution chart, template picker dialog, assessment list with delete buttons (all of these live on `/assessments` already).
+| Department | Control # | Control Description | Risk Level | Status | Evidence Notes | Owner | Target Date |
+
+- One row per **(department × control) = 9 × 14 = 126 rows**.
+- Departments and control wording pulled directly from `DEPARTMENTS` and `DEPT_CONTROLS`.
+- Status options documented on Legend sheet (`Yes / Partial / No / N/A`).
+- Department names bold, merged visually via grouping (sorted by department then control #). Risk-level cells colour-tinted as on Sheet 2.
+- Freeze top row + first two columns.
+
+**Sheet 5 — Legend & Instructions**
+- Status options: `Yes` (100%) / `Partial` (50%) / `No` (0%) / `N/A` (excluded).
+- Evidence Status: `Verified–Seen`, `Stated–Not Verified`, `Not Available`.
+- Priority: `P1–Immediate`, `P2–Short-term`, `P3–Planned`.
+- Risk multipliers (critical=3, high=2, standard=1) and scoring formula.
+- Penalty exposure summary (₹50 Cr / ₹200 Cr / ₹250 Cr).
+- Note: _"Offline working copy. Re-import is not supported in this release — fill answers back into the live app to score."_
+
+## File naming
+
+`PrivcybHub_DPDP_Questionnaire_<orgNameSlug>_<YYYYMMDD>.xlsx`
+(slug derived from `org_name`, falls back to `Untitled`).
+
+## Implementation steps
+
+1. **New util** — `src/utils/exportAssessmentQuestionnaire.ts`
+   Exports `exportQuestionnaireToExcel(assessment)`. Imports `DOMAINS`, `POLICY_ITEMS`, `DEPARTMENTS`, `DEPT_CONTROLS`, `SPECIAL_STATUS_OPTIONS` from `@/data/assessmentDomains`. Builds the five sheets with `XLSX.utils.aoa_to_sheet`, applies styles via the SheetJS `s` property (fills, bold, wrap, freeze panes via `!freeze`), then `XLSX.writeFile` (or `writeFileXLSX`) and `saveAs` from `file-saver`.
+2. **Wire-up** in `src/pages/PhaseOrgProfile.tsx`
+   - Import the util and `Download` icon from `lucide-react`.
+   - Add an outline `<Button>` in the existing header `flex` row, before the **Next Phase** button.
+   - On click, call the util with the loaded `assessment`; show success/failure via `sonner` toast.
+3. No DB migrations, no edge functions, no schema changes.
+4. Purely additive — existing assessment flow untouched.
+
+## Acceptance
+
+- Button visible on Phase 1 right after a new assessment is created.
+- Downloaded `.xlsx` opens cleanly in Excel and Google Sheets.
+- Sheet 2 contains every domain item from `DOMAINS` (filtered by Phase 1 special-status flags) with identical wording/risk/evidence labels.
+- **Sheet 4 contains all 9 departments × 14 controls = 126 rows**, with control text matching the in-app Department Practice Grid exactly.
+- Sheet 3 lists all 37 policy artefacts. Cover and Legend sheets are populated as described.
+- File name and Cover sheet reflect whatever org details have been entered so far (partial allowed).
