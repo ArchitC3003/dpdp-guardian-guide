@@ -21,7 +21,7 @@ import {
   Cog, LayoutDashboard, ClipboardList, FolderOpen, Building2,
   FileText, Search, Grid3X3, Paperclip, BarChart3, LogOut,
   Settings2, Bot, Users, BookMarked, Shield, ScrollText,
-  Scale, AlertTriangle, FileSearch, BookOpen,
+  Scale, AlertTriangle, FileSearch, BookOpen, Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -30,6 +30,7 @@ type NavItem = { title: string; subtitle: string; url: string; icon: any };
 
 const overviewNav: NavItem[] = [
   { title: "Dashboard", subtitle: "Compliance overview & risk summary", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Execute", subtitle: "Bespoke DPDP programmes by industry", url: "/execute", icon: Sparkles },
 ];
 
 const assessNav: NavItem[] = [
