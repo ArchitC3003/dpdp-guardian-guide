@@ -863,6 +863,57 @@ export type Database = {
         }
         Relationships: []
       }
+      execute_workspaces: {
+        Row: {
+          created_at: string
+          crosswalk_summary: Json
+          employee_band: string
+          footprint: string[]
+          group_structure: string | null
+          id: string
+          org_name: string
+          primary_role: string
+          principals_band: string
+          selected_sector_ids: string[]
+          trade_name: string | null
+          triggered_flags: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          crosswalk_summary?: Json
+          employee_band: string
+          footprint?: string[]
+          group_structure?: string | null
+          id?: string
+          org_name: string
+          primary_role: string
+          principals_band: string
+          selected_sector_ids?: string[]
+          trade_name?: string | null
+          triggered_flags?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          crosswalk_summary?: Json
+          employee_band?: string
+          footprint?: string[]
+          group_structure?: string | null
+          id?: string
+          org_name?: string
+          primary_role?: string
+          principals_band?: string
+          selected_sector_ids?: string[]
+          trade_name?: string | null
+          triggered_flags?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       file_references: {
         Row: {
           assessment_id: string
