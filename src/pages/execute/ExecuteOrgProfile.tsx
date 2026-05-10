@@ -62,7 +62,7 @@ export default function ExecuteOrgProfile() {
     const crosswalk = computeCrosswalk(sectorIds, form.footprint);
     const { data, error } = await supabase
       .from("execute_workspaces")
-      .insert({
+      .insert([{
         user_id: user.id,
         org_name: form.org_name,
         trade_name: form.trade_name || null,
@@ -74,7 +74,7 @@ export default function ExecuteOrgProfile() {
         selected_sector_ids: sectorIds,
         triggered_flags: flags as unknown as Record<string, unknown>,
         crosswalk_summary: crosswalk as unknown as Record<string, unknown>,
-      })
+      }])
       .select("id")
       .single();
     setSaving(false);
