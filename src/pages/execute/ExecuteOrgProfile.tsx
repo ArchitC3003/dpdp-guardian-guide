@@ -72,8 +72,8 @@ export default function ExecuteOrgProfile() {
         principals_band: form.principals_band,
         primary_role: form.primary_role,
         selected_sector_ids: sectorIds,
-        triggered_flags: flags as unknown as Record<string, unknown>,
-        crosswalk_summary: crosswalk as unknown as Record<string, unknown>,
+        triggered_flags: flags as never,
+        crosswalk_summary: crosswalk as never,
       }])
       .select("id")
       .single();
