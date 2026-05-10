@@ -29,6 +29,10 @@ import PolicyLibrary from "./pages/PolicyLibrary";
 import AdminAiConfig from "./pages/AdminAiConfig";
 import AdminFrameworkManager from "./pages/AdminFrameworkManager";
 import AdminAssessmentTemplates from "./pages/AdminAssessmentTemplates";
+import ExecuteLanding from "./pages/execute/ExecuteLanding";
+import ExecuteSunburst from "./pages/execute/ExecuteSunburst";
+import ExecuteOrgProfile from "./pages/execute/ExecuteOrgProfile";
+import ExecuteWorkspace from "./pages/execute/ExecuteWorkspace";
 import PrivacyPreferences from "./pages/PrivacyPreferences";
 import Unsubscribe from "./pages/Unsubscribe";
 import ConsentLedger from "./pages/admin/ConsentLedger";
@@ -108,6 +112,10 @@ const App = () => (
               <Route path="/assessment/:assessmentId/dept-grid" element={<PhaseDeptGrid />} />
               <Route path="/assessment/:assessmentId/file-references" element={<PhaseFileReferences />} />
               <Route path="/assessment/:assessmentId/dashboard" element={<PhaseDashboard />} />
+              <Route path="/execute" element={<ExecuteLanding />} />
+              <Route path="/execute/select" element={<ExecuteSunburst />} />
+              <Route path="/execute/profile" element={<ExecuteOrgProfile />} />
+              <Route path="/execute/workspace/:workspaceId" element={<ExecuteWorkspace />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
