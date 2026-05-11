@@ -22,6 +22,8 @@ import PhaseOrgProfile from "./pages/PhaseOrgProfile";
 import PhasePolicyMatrix from "./pages/PhasePolicyMatrix";
 import PhaseRapidAssessment from "./pages/PhaseRapidAssessment";
 import PhaseDeptGrid from "./pages/PhaseDeptGrid";
+import PhaseDeptQuestionnaire from "./pages/PhaseDeptQuestionnaire";
+import PhaseDeptQuestionnaireDetail from "./pages/PhaseDeptQuestionnaireDetail";
 import PhaseFileReferences from "./pages/PhaseFileReferences";
 import PhaseDashboard from "./pages/PhaseDashboard";
 import PolicySopBuilder from "./pages/PolicySopBuilder";
@@ -110,6 +112,8 @@ const App = () => (
               <Route path="/assessment/:assessmentId/policy-matrix" element={<PhasePolicyMatrix />} />
               <Route path="/assessment/:assessmentId/rapid-assessment" element={<PhaseRapidAssessment />} />
               <Route path="/assessment/:assessmentId/dept-grid" element={<PhaseDeptGrid />} />
+              <Route path="/assessment/:assessmentId/dept-questionnaire" element={<PhaseDeptQuestionnaire />} />
+              <Route path="/assessment/:assessmentId/dept-questionnaire/:deptAssessmentId" element={<PhaseDeptQuestionnaireDetail />} />
               <Route path="/assessment/:assessmentId/file-references" element={<PhaseFileReferences />} />
               <Route path="/assessment/:assessmentId/dashboard" element={<PhaseDashboard />} />
               <Route path="/execute" element={<ExecuteLanding />} />
