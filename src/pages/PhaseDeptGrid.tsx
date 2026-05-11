@@ -198,6 +198,9 @@ export default function PhaseDeptGrid() {
           {saving && <span className="text-xs text-muted-foreground">Saving...</span>}
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => navigate(`/assessment/${assessmentId}/dept-questionnaire`)}>
+            Department Interviews
+          </Button>
           <Button variant="outline" onClick={() => navigate(`/assessment/${assessmentId}/rapid-assessment`)}>
             <ArrowLeft className="h-4 w-4 mr-2" /> Previous Phase
           </Button>
