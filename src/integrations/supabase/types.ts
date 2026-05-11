@@ -363,6 +363,69 @@ export type Database = {
         }
         Relationships: []
       }
+      assessment_departments: {
+        Row: {
+          assessment_id: string
+          completion_pct: number
+          created_at: string
+          dept_code: string
+          dept_name: string
+          high_risk_count: number
+          id: string
+          interview_date: string | null
+          interviewer_name: string | null
+          rep_email: string | null
+          rep_name: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assessment_id: string
+          completion_pct?: number
+          created_at?: string
+          dept_code: string
+          dept_name: string
+          high_risk_count?: number
+          id?: string
+          interview_date?: string | null
+          interviewer_name?: string | null
+          rep_email?: string | null
+          rep_name?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assessment_id?: string
+          completion_pct?: number
+          created_at?: string
+          dept_code?: string
+          dept_name?: string
+          high_risk_count?: number
+          id?: string
+          interview_date?: string | null
+          interviewer_name?: string | null
+          rep_email?: string | null
+          rep_name?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_departments_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "assessments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessment_departments_dept_code_fkey"
+            columns: ["dept_code"]
+            isOneToOne: false
+            referencedRelation: "dept_templates"
+            referencedColumns: ["dept_code"]
+          },
+        ]
+      }
       assessment_frameworks: {
         Row: {
           colour: string
@@ -744,6 +807,69 @@ export type Database = {
           },
         ]
       }
+      dept_app_inventory: {
+        Row: {
+          app_vendor_name: string
+          assessment_id: string
+          created_at: string
+          data_processed_description: string | null
+          dept_assessment_id: string
+          dept_code: string | null
+          dpa_status: string | null
+          function_supported: string | null
+          id: string
+          notes: string | null
+          personal_data_categories: string[] | null
+          security_assessment_status: string | null
+          type: string | null
+        }
+        Insert: {
+          app_vendor_name: string
+          assessment_id: string
+          created_at?: string
+          data_processed_description?: string | null
+          dept_assessment_id: string
+          dept_code?: string | null
+          dpa_status?: string | null
+          function_supported?: string | null
+          id?: string
+          notes?: string | null
+          personal_data_categories?: string[] | null
+          security_assessment_status?: string | null
+          type?: string | null
+        }
+        Update: {
+          app_vendor_name?: string
+          assessment_id?: string
+          created_at?: string
+          data_processed_description?: string | null
+          dept_assessment_id?: string
+          dept_code?: string | null
+          dpa_status?: string | null
+          function_supported?: string | null
+          id?: string
+          notes?: string | null
+          personal_data_categories?: string[] | null
+          security_assessment_status?: string | null
+          type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dept_app_inventory_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "assessments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dept_app_inventory_dept_assessment_id_fkey"
+            columns: ["dept_assessment_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dept_grid: {
         Row: {
           assessment_id: string
@@ -775,6 +901,149 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      dept_question_extras: {
+        Row: {
+          category: string
+          dept_code: string
+          display_order: number
+          dpdp_section_ref: string | null
+          id: string
+          processor_text: string | null
+          question_id: string
+          question_text: string
+        }
+        Insert: {
+          category: string
+          dept_code: string
+          display_order: number
+          dpdp_section_ref?: string | null
+          id?: string
+          processor_text?: string | null
+          question_id: string
+          question_text: string
+        }
+        Update: {
+          category?: string
+          dept_code?: string
+          display_order?: number
+          dpdp_section_ref?: string | null
+          id?: string
+          processor_text?: string | null
+          question_id?: string
+          question_text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dept_question_extras_dept_code_fkey"
+            columns: ["dept_code"]
+            isOneToOne: false
+            referencedRelation: "dept_templates"
+            referencedColumns: ["dept_code"]
+          },
+        ]
+      }
+      dept_question_responses: {
+        Row: {
+          ai_risk_flag: string | null
+          ai_suggested_response: string | null
+          assessment_id: string
+          assessor_notes: string | null
+          created_at: string
+          dept_assessment_id: string
+          evidence_tools: string | null
+          id: string
+          question_id: string
+          response_text: string | null
+          risk_level: string | null
+          role_context: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          ai_risk_flag?: string | null
+          ai_suggested_response?: string | null
+          assessment_id: string
+          assessor_notes?: string | null
+          created_at?: string
+          dept_assessment_id: string
+          evidence_tools?: string | null
+          id?: string
+          question_id: string
+          response_text?: string | null
+          risk_level?: string | null
+          role_context?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ai_risk_flag?: string | null
+          ai_suggested_response?: string | null
+          assessment_id?: string
+          assessor_notes?: string | null
+          created_at?: string
+          dept_assessment_id?: string
+          evidence_tools?: string | null
+          id?: string
+          question_id?: string
+          response_text?: string | null
+          risk_level?: string | null
+          role_context?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dept_question_responses_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "assessments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dept_question_responses_dept_assessment_id_fkey"
+            columns: ["dept_assessment_id"]
+            isOneToOne: false
+            referencedRelation: "assessment_departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dept_templates: {
+        Row: {
+          ai_generated: boolean
+          created_at: string
+          created_by: string | null
+          dept_code: string
+          dept_name: string
+          doc_ref: string | null
+          id: string
+          is_active: boolean
+          is_system: boolean
+        }
+        Insert: {
+          ai_generated?: boolean
+          created_at?: string
+          created_by?: string | null
+          dept_code: string
+          dept_name: string
+          doc_ref?: string | null
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+        }
+        Update: {
+          ai_generated?: boolean
+          created_at?: string
+          created_by?: string | null
+          dept_code?: string
+          dept_name?: string
+          doc_ref?: string | null
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+        }
+        Relationships: []
       }
       email_send_log: {
         Row: {
@@ -1946,6 +2215,51 @@ export type Database = {
           id?: string
           metadata?: Json | null
           reason?: string
+        }
+        Relationships: []
+      }
+      universal_question_templates: {
+        Row: {
+          applicable_to_roles: string[] | null
+          category: string
+          created_at: string
+          dept_specific_only: string | null
+          display_order: number
+          dpdp_section_ref: string | null
+          dual_note: string | null
+          id: string
+          joint_text: string | null
+          processor_text: string | null
+          question_id: string
+          question_text: string
+        }
+        Insert: {
+          applicable_to_roles?: string[] | null
+          category: string
+          created_at?: string
+          dept_specific_only?: string | null
+          display_order: number
+          dpdp_section_ref?: string | null
+          dual_note?: string | null
+          id?: string
+          joint_text?: string | null
+          processor_text?: string | null
+          question_id: string
+          question_text: string
+        }
+        Update: {
+          applicable_to_roles?: string[] | null
+          category?: string
+          created_at?: string
+          dept_specific_only?: string | null
+          display_order?: number
+          dpdp_section_ref?: string | null
+          dual_note?: string | null
+          id?: string
+          joint_text?: string | null
+          processor_text?: string | null
+          question_id?: string
+          question_text?: string
         }
         Relationships: []
       }

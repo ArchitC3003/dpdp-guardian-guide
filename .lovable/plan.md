@@ -1,191 +1,89 @@
-## Goal
+# Department Question Library — Schema + Seed
 
-Build the **Execute** module — a flower-style D3 sunburst that lets a user pick one or more industries from PrivCybHub's 88-sub-sector × 16-cluster taxonomy, capture an Organisation Profile, and land in a **Workspace Dashboard** that becomes the home for the bespoke DPDP programme. The Workspace will (in v1) link to existing **Assessment** and **Build** flows, prefilling them with the industry/regulatory context picked here.
+## Overview
 
-The uploaded `PrivCybHub_Sectoral_Classification_Handbook_v1.0.docx` (schema `privcybhub.sectoral.v1`, ID format `PCH-{Cluster:02d}.{SectorGroup:02d}.{SubSector:02d}`) is the source of truth. The 88-record JSON in the prompt is embedded verbatim, plus the per-record **Regulatory Crosswalk** from §3a (Sectoral_Regulator_IN, GDPR, CCPA/CPRA, HIPAA).
+Add a relational department-interview question library to support per-department assessments under `assessments`. Six new tables, RLS, and seed data for 7 departments + 17 universal questions + 6 Product Engineering extras.
 
-## Scope
+## Migration 1 — Tables
 
-**In scope (this turn)**
-- New routes: `/execute`, `/execute/select`, `/execute/profile`, `/execute/workspace/:id`
-- Sidebar entry **Execute** (top of an "Execute" group, above Assess)
-- D3 v7 sunburst (flower / petal aesthetic), multi-select, hover side panel, disambiguation drawer
-- Org Profile form (playful, minimal)
-- Workspace Dashboard with Industry Profile, Triggered Flags, Regulatory Crosswalk, and 3 function tiles
-- Two of the tiles **wired**: **Assessment** (creates a new assessment seeded with sector context) and **Build** (opens Policy Builder with workspace context). **Repository** stays locked.
-- Supabase `execute_workspaces` table with RLS
+All tables in `public`. Standard `id uuid PK default gen_random_uuid()`, timestamps as specified.
 
-**Out of scope**
-- Editing Build/Assessment to consume new context fields beyond what they already accept (we pass via query string + a small `useExecuteContext` hook; deeper personalisation is v1.1)
-- v1.1 sector-specific DPDP provision text (handbook §1 explicitly defers this)
-- Any change to existing routes, tables, or scoring logic
+1. **`universal_question_templates`** — system question library (17 rows).
+   - `question_id` UNIQUE, `category`, `display_order`, `question_text` (with `{{dept_name}}`), `processor_text`, `joint_text`, `dual_note`, `applicable_to_roles text[]`, `dept_specific_only`, `dpdp_section_ref`.
 
-## User journey
+2. **`dept_templates`** — catalogue of departments (7 system rows + user-added).
+   - `dept_code` UNIQUE, `dept_name`, `doc_ref`, `is_system`, `is_active`, `created_by`, `ai_generated`.
 
-```text
-Sidebar ▸ Execute
-   │
-   ▼
-/execute            Landing — single CTA "Begin"
-   │
-   ▼
-/execute/select     D3 sunburst (Cluster › Sector_Group › Sub_Sector › Micro_Activity)
-                    multi-select · hover side-panel · disambiguation drawer
-                    ↓ Continue with N selection(s)
-   │
-   ▼
-/execute/profile    Org Profile form (3 grouped steps, fade-in)
-                    ↓ Create Workspace  → INSERT execute_workspaces
-   │
-   ▼
-/execute/workspace/:id
-   ┌──────────────────────────────────────────────────────────┐
-   │ Org name · created at IST                                │
-   │ ┌─────────────────┐ ┌─────────────────┐ ┌──────────────┐ │
-   │ │ Industry        │ │ Triggered Flags │ │ Regulatory   │ │
-   │ │ Profile (chips) │ │ SDF/Children/…  │ │ Crosswalk    │ │
-   │ └─────────────────┘ └─────────────────┘ └──────────────┘ │
-   │ ┌──────────┐ ┌──────────┐ ┌──────────┐                   │
-   │ │ Assess   │ │ Build    │ │ Repo 🔒  │                   │
-   │ └──────────┘ └──────────┘ └──────────┘                   │
-   └──────────────────────────────────────────────────────────┘
-```
+3. **`dept_question_extras`** — extra questions per department (FK `dept_code` → `dept_templates.dept_code`).
+   - UNIQUE (`dept_code`, `question_id`).
 
-## Files to add
+4. **`assessment_departments`** — a department instance attached to one assessment.
+   - FK `assessment_id` → `assessments(id) ON DELETE CASCADE`, FK `dept_code` → `dept_templates(dept_code)`.
+   - rep/interview metadata, status, completion %, high-risk count.
 
-```text
-src/pages/execute/
-  ExecuteLanding.tsx
-  ExecuteSunburst.tsx
-  ExecuteOrgProfile.tsx
-  ExecuteWorkspace.tsx
+5. **`dept_question_responses`** — one row per question answered in a dept assessment.
+   - FK `assessment_id`, FK `dept_assessment_id` → `assessment_departments(id) ON DELETE CASCADE`.
+   - response/status/risk/evidence/notes/role_context + AI suggestion fields.
 
-src/components/execute/
-  SunburstChart.tsx          // D3 v7, flower aesthetic
-  SelectionTray.tsx          // chip tray of current picks
-  IndustrySidePanel.tsx      // hover detail (ID, path, exposure, regulator, GDPR/CCPA/HIPAA)
-  DisambiguationDrawer.tsx
-  TriggeredFlagsCard.tsx
-  IndustryProfileCard.tsx
-  RegulatoryCrosswalkCard.tsx
-  LockedFunctionTile.tsx
-  ActiveFunctionTile.tsx
+6. **`dept_app_inventory`** — apps/vendors captured per dept assessment.
+   - FK `assessment_id`, FK `dept_assessment_id`, `dept_code`.
+   - vendor, type, function, data description, `personal_data_categories text[]`, DPA + security status.
 
-src/data/
-  privcybhubIndustries.ts    // 88-record dataset (verbatim) + tree builder + crosswalk fields
+Add an `update_updated_at_column` trigger on `assessment_departments` and `dept_question_responses`.
 
-src/types/execute.ts         // ExecuteIndustry, ExecuteWorkspace, OrgProfile
-src/hooks/useExecuteWorkspace.ts
-```
+## Migration 2 — RLS
 
-Routes added inside `<ProtectedRoutes />` in `src/App.tsx`. Sidebar gets a new section **Execute** with one item (icon: `Compass`) placed above **Assess**.
+Enable RLS on all six tables.
 
-## Data model
+**System catalogue tables** (`universal_question_templates`, `dept_templates`, `dept_question_extras`):
+- SELECT: any authenticated user.
+- INSERT/UPDATE/DELETE: admins only (`has_role(auth.uid(),'admin')`), plus owners of non-system rows in `dept_templates` (`created_by = auth.uid() AND is_system = false`).
 
-**New dependency:** `d3` v7 + `@types/d3`.
+**Assessment-scoped tables** (`assessment_departments`, `dept_question_responses`, `dept_app_inventory`):
+- ALL ops gated by ownership of the parent `assessments` row:
+  ```sql
+  EXISTS (SELECT 1 FROM assessments a
+          WHERE a.id = <table>.assessment_id
+            AND a.user_id = auth.uid())
+  ```
+- Admin override via `has_role(auth.uid(),'admin')`.
+- Read access for active `shared_reports` (matches existing pattern on `dept_grid`, `assessment_checks`).
 
-**Static dataset** in `src/data/privcybhubIndustries.ts` — the 88 records from the prompt, **plus** four crosswalk fields per record from handbook §3a:
+> Note: `assessments` is keyed by `user_id`, not org. The request says "belongs to their organisation" — I'll mirror the existing per-user pattern used everywhere else in this app (assessments has no org column). Flag if you actually want a multi-tenant org model.
 
-```ts
-type ExecuteIndustry = {
-  PrivCybHub_Sector_ID: string;        // PCH-NN.NN.NN
-  Cluster_ID: number;                  // 1..16
-  Cluster: string;
-  Sector_Group: string;
-  Sub_Sector: string;
-  Micro_Activity: string;
-  DPDP_Exposure: "Low" | "Medium" | "High";
-  Analysis_Granularity: "Cluster" | "Sector_Group" | "Sub_Sector" | "Micro_Activity";
-  Sectoral_Regulator: string;
-  GDPR_Applicability: "Universal" | "Heightened" | "Sector-Triggered";
-  CCPA_Applicability: "Applies" | "Out of Scope";
-  HIPAA_Applicability: "Covered" | "Adjacent" | "Out of Scope";
-};
-```
+## Seed data (run via `supabase--insert` after migration approval)
 
-(Crosswalk values are taken straight from the handbook's §3a tables; defaults used where the handbook abbreviates a row: GDPR=Universal, CCPA=Applies, HIPAA=Out of Scope. Healthcare cluster overridden to HIPAA=Adjacent per handbook.)
+### `dept_templates` — 7 rows
+purchase_procurement, legal_secretarial, finance, sales, hr, administration, product_engineering — all `is_system=true`, `doc_ref` as supplied.
 
-**New Supabase table** (migration):
+### `universal_question_templates` — 17 rows
+Order/categories as specified. `question_text` uses `{{dept_name}}`. Role variants:
 
-| column | type | notes |
-|---|---|---|
-| id | uuid pk default gen_random_uuid() | |
-| user_id | uuid not null | RLS = `user_id = auth.uid()` |
-| org_name | text not null | |
-| trade_name | text | |
-| group_structure | text | |
-| footprint | text[] not null | |
-| employee_band | text not null | |
-| principals_band | text not null | |
-| primary_role | text not null | Fiduciary/Processor/Both |
-| selected_sector_ids | text[] not null | PCH-... ids |
-| triggered_flags | jsonb not null default '{}' | snapshot at creation |
-| crosswalk_summary | jsonb not null default '{}' | snapshot {gdpr, ccpa, hipaa, regulators[]} |
-| created_at | timestamptz default now() | |
+| ID | Category | Has processor_text | Has joint_text |
+|---|---|---|---|
+| DP-01, DP-02 | Data Principals & Personal Data | — | — |
+| CC-01…CC-04 | Collection & Consent | ✓ | ✓ |
+| SR-01…SR-03 | Storage & Retention | — | — |
+| IS-01, IS-02 | Internal Sharing | — | — |
+| ES-01…ES-03 | External Sharing | ✓ | ✓ |
+| DR-01…DR-03 | Data Principal Rights | ✓ | ✓ |
 
-RLS: enabled, full CRUD restricted to `user_id = auth.uid()`. No roles needed.
+`applicable_to_roles` defaults to `{fiduciary,processor,joint}`. `dpdp_section_ref` populated per question (e.g. CC-01 → "S.6", DR-01 → "S.11", SR-01 → "S.8(7)").
 
-## Sunburst (D3 v7) — flower / petal aesthetic
+### `dept_question_extras` — 6 rows for `product_engineering`
+PD-01/PD-02/PD-03 (Privacy by Design), SD-01/SD-02/SD-03 (Secure by Design), display_order 18–23.
 
-- `d3.hierarchy` + `d3.partition()` over Cluster → Sector_Group → Sub_Sector → Micro_Activity, leaves `value: 1` (equal-weight petals).
-- Inner ring petals (Clusters) are wide and bold; each successive ring narrows and lightens — gives a tapering "petal" silhouette. Slight `cornerRadius` and `padAngle` so petals look like flower petals, not pie slices.
-- 16-hue cluster palette added as HSL tokens `--exec-cluster-1..16` in `index.css` and `tailwind.config.ts`. Opacity ramps inner→outer (1.0 → 0.55).
-- **Hover:** highlight petal + ancestors, dim siblings; right-side `IndustrySidePanel` shows: PCH ID, breadcrumb, DPDP Exposure chip (Low/Med/High), Analysis Granularity, Sectoral Regulator, GDPR/CCPA/HIPAA badges.
-- **Click rules** (driven by petal's `Analysis_Granularity`):
-  - Click depth ≥ required granularity → all leaf descendants of that node added to selection.
-  - Click depth < required granularity → `DisambiguationDrawer` opens with descendants as checkboxes; user picks ≥ 1.
-- **Multi-select:** plain click replaces; **Cmd/Ctrl-click** adds. `SelectionTray` chips with `×`.
-- Floating bottom-right CTA `Continue with N selection(s)` (disabled at 0).
+## Question wording
 
-## Org Profile (Screen 3)
+Since you didn't paste verbatim text for the 17 universal + 6 PE/SD questions, I will draft DPDP-aligned wording for each (covering the obligation in plain English, with `{{dept_name}}` substitution and role-specific reframing in `processor_text`/`joint_text`). If you have canonical wording from the PrivCybHub handbook you'd rather use, paste it and I'll seed that instead.
 
-Single page, 3 fade-in groups: **Identity** (legal name*, trade name, group structure radio), **Footprint** (multi-chip: India only / EU / US-California / US-other / UK / UAE / Singapore / Other), **Scale** (employee band, principals band, primary role). "Selected industries" rendered read-only at top. Validation: legal name + footprint ≥ 1 + all radios required. CTA `Create Workspace` → insert + route to `/execute/workspace/:id`.
+## Out of scope (this turn)
 
-## Computed snapshots (stored at creation)
+- UI to render/answer the questions
+- Wiring into existing Phase pages or the new Execute workspace
+- AI suggestion generation logic
 
-`triggered_flags`:
+## Open questions
 
-```ts
-SDF Likelihood    = any selected exposure==="High" ? "High" : "Standard"
-Children Data     = clusters includes 13 ? "Core" : "Incidental"
-Health Data       = clusters includes 12 ? "Core" : "None"
-Financial Data    = clusters includes 6  ? "RBI-regulated" : "None"
-Cross-Border      = footprint has any non-"India only" ? "Active" : "Domestic"
-Sectoral Overlay  = unique Sectoral_Regulator strings (top 3 + "+N more")
-```
-
-`crosswalk_summary` (driven by handbook §3a):
-
-```ts
-GDPR  = "Universal" if any selection Heightened/Universal else "Limited"
-CCPA  = footprint includes US-California && any selection==="Applies" ? "Triggered" : "Watch"
-HIPAA = clusters includes 12 ? "In-scope (Adjacent)" : "Out of Scope"
-Regulators = unique list across selections
-```
-
-## Workspace Dashboard wiring
-
-- **Industry Profile card** — chips of `PrivCybHub_Sector_ID — Sub_Sector` (click = open side panel detail).
-- **Triggered Flags card** — read-only chips with tooltips citing the trigger.
-- **Regulatory Crosswalk card** — three rows (GDPR / CCPA / HIPAA) with status chip + 1-line rationale.
-- **Function tiles:**
-  - **Assessment** → `/assessments?fromWorkspace=:id` — Assessments page reads the workspace, prefills industry on the new-assessment dialog (small additive read in `Assessments.tsx`; no behavioural change otherwise).
-  - **Build** → `/policy-sop-builder?fromWorkspace=:id` — Policy Builder reads the workspace's industry chips into its existing Org-Context surface (additive; falls back silently if absent).
-  - **Repository** → locked badge "Coming next" (toast on click).
-
-## Visual design
-
-Defers to existing dark slate + emerald/teal tokens (DM Sans / JetBrains Mono per project memory). Sunburst gets its own 16-hue cluster palette as new HSL tokens. Exposure chips reuse `RiskBadge` semantics. No new global CSS.
-
-## Acceptance
-
-- Sidebar **Execute** opens `/execute` with a single CTA.
-- Sunburst renders all 88 records as a flower with 4 petal rings; hover panel shows full crosswalk; multi-select via Cmd/Ctrl works; disambiguation drawer fires when granularity demands.
-- Org Profile validates and writes a row to `execute_workspaces`.
-- Workspace Dashboard reloads from the row, shows Industry Profile, Triggered Flags, Regulatory Crosswalk and three tiles.
-- Clicking **Assessment** lands on `/assessments` with the workspace's industry visible in the new-assessment context; clicking **Build** lands on Policy Builder with industry prefilled. Repository stays locked.
-- No regression on `/dashboard`, `/assessments/*`, `/policy-*`, `/consent/*`.
-
-## Open question (one)
-
-Two of the three tiles can be **active** today (Assessment and Build, by passing `?fromWorkspace=:id`) or all three can ship as **locked** in this turn and be wired in the very next iteration. The plan above assumes **active** — confirm or say "ship locked" and I'll keep this turn purely additive with no edits to `Assessments.tsx` / `PolicySopBuilder.tsx`.
+1. **Org-scoped vs user-scoped RLS** — confirm per-user is fine (matches existing app), or should I add an `organisation_id` model first?
+2. **Question wording** — draft from DPDP text, or wait for your canonical copy?
