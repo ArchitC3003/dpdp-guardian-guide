@@ -1,6 +1,16 @@
+import { Helmet } from "react-helmet-async";
+
 export default function Privacy() {
   return (
     <div className="min-h-screen bg-background text-foreground p-6 md:p-12">
+      <Helmet>
+        <title>Privacy Policy — PrivcybHub</title>
+        <meta name="description" content="How PrivcybHub collects, uses, and protects personal data under the DPDP Act 2023 and applicable global privacy laws." />
+        <link rel="canonical" href="https://privcybhub.com/privacy" />
+        <meta property="og:title" content="Privacy Policy — PrivcybHub" />
+        <meta property="og:description" content="How PrivcybHub collects, uses, and protects personal data under the DPDP Act 2023." />
+        <meta property="og:url" content="https://privcybhub.com/privacy" />
+      </Helmet>
       <div className="max-w-3xl mx-auto space-y-8">
         <div>
           <h1 className="text-3xl font-bold text-primary">Privacy Policy</h1>

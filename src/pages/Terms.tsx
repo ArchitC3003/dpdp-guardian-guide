@@ -1,6 +1,16 @@
+import { Helmet } from "react-helmet-async";
+
 export default function Terms() {
   return (
     <div className="min-h-screen bg-background text-foreground p-6 md:p-12">
+      <Helmet>
+        <title>Terms of Service — PrivcybHub</title>
+        <meta name="description" content="Terms governing use of the PrivcybHub privacy and cyber compliance platform." />
+        <link rel="canonical" href="https://privcybhub.com/terms" />
+        <meta property="og:title" content="Terms of Service — PrivcybHub" />
+        <meta property="og:description" content="Terms governing use of the PrivcybHub privacy and cyber compliance platform." />
+        <meta property="og:url" content="https://privcybhub.com/terms" />
+      </Helmet>
       <div className="max-w-3xl mx-auto space-y-8">
         <div>
           <h1 className="text-3xl font-bold text-primary">Terms of Service</h1>

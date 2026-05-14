@@ -1,0 +1,11 @@
+# PrivcybHub
+
+> AI-powered privacy and cyber compliance platform for the DPDP Act 2023, GDPR, and global data protection regulations. Provides gap assessments, policy generation, consent management, and compliance reporting for organisations operating in India.
+
+## Pages
+
+- [Home](/): Product overview and features for DPDP and global privacy compliance.
+- [Sign in](/auth): Account sign-in and registration.
+- [Privacy Policy](/privacy): How PrivcybHub collects, uses, and protects personal data.
+- [Terms of Service](/terms): Terms governing use of the PrivcybHub platform.
+- [Privacy Preferences](/privacy-preferences): Manage cookie and communication consent.
