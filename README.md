@@ -1,5 +1,13 @@
 # Welcome to your Lovable project
 
+## Security
+
+Run `npm run audit` before publishing — it fails the build on any high/critical advisory.
+
+**Dependency pins (do not change without security review):**
+- `xlsx` is sourced from the official SheetJS CDN (`https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz`). The npm package `xlsx@0.18.5` is abandoned and re-introduces GHSA-4r6h-8v6p-xvw6 (prototype pollution) and GHSA-5pgg-2g8v-p4x9 (ReDoS). Do not run `bun add xlsx` against the npm registry.
+- `overrides` / `resolutions` in `package.json` pin patched versions of `@remix-run/router`, `react-router(-dom)`, `rollup`, `lodash`, `flatted`, `glob`, `minimatch`, `picomatch`. These close 9 high-severity transitive advisories. Removing them re-opens the findings.
+
 ## Project info
 
 **URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
