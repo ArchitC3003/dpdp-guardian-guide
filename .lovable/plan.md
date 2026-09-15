@@ -1,49 +1,62 @@
-# Dependency Vulnerability Remediation Plan
+# PrivcybHub AI Knowledge File Plan
 
-## 1. Current state (just audited)
+## Goal
 
-I ran both `bun`'s dependency scanner and `npm audit --json` against the project's installed tree.
+Create one downloadable Markdown file that gives an external AI an accurate, end-to-end understanding of PrivcybHub’s website, application functions, technical capabilities, and present implementation status.
 
-**Result: 0 remaining high or critical vulnerabilities.**
+The document will contain facts only. It will not include chatbot tone, prompting, or response-behaviour instructions.
 
-- `xlsx` was already remediated in the previous turn — npm `xlsx@0.18.5` was removed and replaced with the patched SheetJS CDN tarball `xlsx@0.20.3` (fixes GHSA-4r6h-8v6p-xvw6 prototype pollution and GHSA-5pgg-2g8v-p4x9 ReDoS).
-- `npm audit` reports `total: 0` vulnerabilities across all 746 installed packages.
-- `bun.lock` was rewritten by Bun at install time and already reflects the patched `xlsx` resolution from `https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz`.
+## What the file will cover
 
-So there is nothing left to *patch*. The remaining work is to (a) produce the formal report you asked for and (b) put preventative controls in place so this doesn't regress.
+1. **Product identity and scope**
+   - PrivcybHub purpose, target users, supported compliance areas, public URLs, and terminology.
 
-## 2. What I will do
+2. **Access and roles**
+   - Public versus signed-in areas.
+   - Super Admin, GRC Manager, Reviewer, and Auditor permissions in a clear matrix.
+   - Organisation isolation and session controls.
 
-### Step 1 — Generate the dependency & patch report
-Write a single markdown report to `/mnt/documents/dependency-security-report.md` containing:
-- Audit summary (date, package count, vulns before vs. after).
-- The `xlsx` advisory table with the exact remediation taken (CDN tarball pin).
-- Full `npm audit` output (post-fix, showing 0 findings).
-- `bun.lock` diff confirmation that the new resolution is locked.
-- List of all production deps with current version and latest version, flagging any majors behind (informational only — not a vuln).
+3. **Complete function and navigation inventory**
+   - Public website, authentication, onboarding, dashboard, settings, and user management.
+   - Assess module and its six-phase assessment workflow.
+   - Department Practice Grid and departmental questionnaires.
+   - Build module: policy generation, policy register, templates, clauses, versions, exports, and document repository.
+   - Execute module: industry sunburst, organisation profile, triggered flags, regulatory crosswalk, and programme workspace.
+   - Privacy Operations: consent, notices, rights requests, grievances, and audit history.
+   - Framework, assessment-template, AI, and knowledge-management administration.
+   - Public privacy, terms, preference, and unsubscribe functions.
 
-Deliver it via `<presentation-artifact>` so you can download it.
+4. **Technical overview**
+   - Frontend, Lovable Cloud backend, authentication, database, storage, server functions, email, AI, exports, charts, and security controls.
+   - Main data areas and how important workflows connect, without exposing secrets, keys, private identifiers, or sensitive configuration.
 
-### Step 2 — Implement preventative controls
+5. **Current status register**
+   - Label every major capability as **Implemented**, **Implemented with limitations**, **Coming soon**, **Locked**, **Fallback/demo behaviour**, or **Not exposed in navigation**.
+   - Record confirmed gaps and inconsistencies, such as functions whose UI status differs across pages.
+   - Separate verified working code paths from product intent or future-facing labels.
 
-1. **CI audit guard** — add `scripts/security-audit.mjs` that runs `npm audit --audit-level=high --json` and exits non-zero if any high/critical appears. Wire it into `package.json` as `"audit": "node scripts/security-audit.mjs"`.
-2. **Pin the SheetJS source of truth** — `xlsx` currently resolves to a CDN URL. Add a short note in `README.md` under a "Security" heading explaining: do not run `bun add xlsx` from npm — the npm package is abandoned at 0.18.5 and re-introduces both advisories. Always use the SheetJS CDN tarball.
-3. **Security memory update** — call `security--update_memory` so the scanner records:
-   - `xlsx` is intentionally sourced from `cdn.sheetjs.com` (do not flag the URL dependency as suspicious).
-   - Any future PR that downgrades `xlsx` back to the npm registry must be rejected.
-4. **Mark the supply_chain finding fixed** (already done in the previous turn — will verify it's still cleared after the scan).
+6. **Reference sections for AI retrieval**
+   - Route directory.
+   - Feature-to-role matrix.
+   - Workflow summaries.
+   - Supported frameworks, document types, sectors, exports, and integrations.
+   - Glossary and source-file references for traceability.
 
-### Step 3 — Re-run scanner & confirm
-Run `code--dependency_scan` once more after the report is written; attach the clean result to the report.
+## Accuracy method
 
-## 3. What I will NOT do
-- No source code refactors — `src/utils/assessmentPackParser.ts` and other `import * as XLSX from "xlsx"` call sites work unchanged against 0.20.3 (API is backwards compatible).
-- No major-version upgrades of unrelated deps (React, Vite, Radix, etc.) — those aren't vulnerable and a blanket upgrade carries regression risk you didn't ask for. They'll be listed in the report as "informational, upgrade at your discretion".
-- No changes to `src/integrations/supabase/client.ts`, `types.ts`, `.env`, or `supabase/config.toml` (protected files).
+- Audit routes, navigation, role checks, page behaviour, server functions, schema migrations, and active product data represented in the project.
+- Cross-check visible “coming soon”, locked, placeholder, mock, and fallback states rather than describing them as complete.
+- Use a generated-on date and a clear freshness note so the receiving AI understands this is a point-in-time snapshot.
+- Avoid unsupported marketing claims and mark anything that cannot be verified from the current project.
 
-## 4. Deliverables when implementation runs
-- `/mnt/documents/dependency-security-report.md` (downloadable artifact)
-- `scripts/security-audit.mjs` (new)
-- `package.json` (added `audit` script only)
-- `README.md` (added Security section)
-- Updated security memory
+## Deliverable
+
+- Create `/mnt/documents/privcybhub-website-knowledge.md` as a downloadable artifact.
+- Structure it for both human reading and AI ingestion using stable headings, concise tables, explicit status labels, and self-contained descriptions.
+- Inspect the finished Markdown for completeness, broken structure, accidental secrets, conflicting status statements, and unreadable sections before delivery.
+
+## Scope boundaries
+
+- No website, database, authentication, or application behaviour will be changed.
+- No credentials, backend project identifiers, user data, or private environment values will be included.
+- This is a current-state knowledge snapshot, not a promise that every planned feature is operational.
