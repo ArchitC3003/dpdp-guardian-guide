@@ -31,8 +31,8 @@ export const repositoryPhases: RepositoryPhase[] = [
     items: [
       {
         id: "p1-1",
-        requirement: "Statement on Applicability (Role as Data Fiduciary, Significant Data Fiduciary, Joint/Independent Data Fiduciary, Data Processor)",
-        dpdpRef: "Rule 3(1)",
+        requirement: "Statement on Applicability (Role as Data Fiduciary, Significant Data Fiduciary, Joint Data Fiduciary, Data Processor)",
+        dpdpRef: "Sec 2(i), 2(k), 2(z)",
         templateTitle: "Statement on Applicability Template",
         templateContent: `════════════════════════════════════════════════════════════════════
 STATEMENT ON APPLICABILITY
@@ -49,11 +49,11 @@ Approval Status: PENDING APPROVAL
 1. EXECUTIVE SUMMARY / PURPOSE
 ────────────────────────────────────────────────────────────────────
 
-This Statement on Applicability ("SoA") establishes the classification of [Organisation Name] under the Digital Personal Data Protection Act, 2023 ("DPDP Act") and the Digital Personal Data Protection Rules, 2025 ("DPDP Rules"). Pursuant to Rule 3(1) of the DPDP Rules, every entity engaged in the processing of digital personal data must determine and document its role classification.
+This Statement on Applicability ("SoA") establishes the classification of [Organisation Name] under the Digital Personal Data Protection Act, 2023 ("DPDP Act") and the Digital Personal Data Protection Rules, 2025 ("DPDP Rules"). The classification follows the definitions in Sec 2(i) (Data Fiduciary), Sec 2(k) (Data Processor) and Sec 2(z) (Significant Data Fiduciary). SDF status arises only on notification by the Central Government under Sec 10(1).
 
-Legal Obligation: Rule 3(1) mandates that every person processing digital personal data shall determine whether it is acting as a Data Fiduciary, Significant Data Fiduciary, Joint Data Fiduciary, Independent Data Fiduciary, or Data Processor, and maintain a documented record of such determination.
+Basis: No provision of the Act or Rules mandates a standalone role-determination document. It is maintained as an accountability measure under Sec 8(1) and 8(4).
 
-Penalty Exposure: Failure to comply with obligations applicable to the determined role may attract penalties under Section 33 of the DPDP Act, up to ₹250 Crore per instance.
+Penalty Exposure: Failure to comply with obligations applicable to the determined role may attract penalties under Sec 33 read with the Schedule to the DPDP Act, with caps from ₹50 crore to ₹250 crore depending on the provision breached.
 
 ────────────────────────────────────────────────────────────────────
 2. SCOPE AND APPLICABILITY
@@ -73,7 +73,7 @@ This SoA applies to:
 
 "Significant Data Fiduciary" — As defined in Section 10(1) of the DPDP Act: a Data Fiduciary or class of Data Fiduciaries notified by the Central Government based on assessment of relevant factors.
 
-"Data Processor" — As defined in Section 2(h) of the DPDP Act: any person who processes personal data on behalf of a Data Fiduciary.
+"Data Processor" — As defined in Section 2(k) of the DPDP Act: any person who processes personal data on behalf of a Data Fiduciary.
 
 "Joint Data Fiduciary" — Two or more Data Fiduciaries who jointly determine the purposes and means of processing personal data under Section 10 of the DPDP Act.
 
@@ -87,8 +87,7 @@ This SoA applies to:
    ☐ Data Fiduciary (Section 2(i))
    ☐ Significant Data Fiduciary (Section 10(1))
    ☐ Joint Data Fiduciary (Section 10)
-   ☐ Independent Data Fiduciary
-   ☐ Data Processor (Section 2(h))
+      ☐ Data Processor (Section 2(k))
 
 4.2 Basis for Classification:
 [Provide detailed rationale for the selected role based on DPDP Act definitions, including the nature, volume, and sensitivity of personal data processed, the relationship with Data Principals, and whether the organisation independently determines the purpose and means of processing.]
@@ -137,7 +136,7 @@ Cross-border transfer of personal data: ☐ Yes  ☐ No
 If Yes:
 | Destination Country | Data Categories | Legal Mechanism | Restricted (Sec 16(1))? |
 |--------------------|-----------------|-----------------|-----------------------|
-| [Country] | [Categories] | [SCC/Adequacy/Other] | [Yes/No] |
+| [Country] | [Categories] | [Contractual safeguard / Other] | [Yes/No] |
 
 ────────────────────────────────────────────────────────────────────
 8. DATA PROCESSOR ENGAGEMENT
@@ -153,7 +152,7 @@ If Yes:
 
 | Clause | DPDP Act Obligation | Compliance Status | Evidence Reference |
 |--------|--------------------|-----------------|--------------------|
-| 4.1 | Rule 3(1) — Role determination | [Compliant/Gap] | This document |
+| 4.1 | Sec 2(i), 2(k), 2(z) — Role determination | [Compliant/Gap] | This document |
 | 5.0 | Sec 10(1) — SDF criteria | [Compliant/Gap] | Section 5 above |
 | 6.0 | Sec 8(8) — Record keeping | [Compliant/Gap] | [Reference] |
 | 7.0 | Sec 16 — Cross-border transfers | [Compliant/Gap] | [Reference] |
@@ -192,7 +191,7 @@ NOTE: This document contains confidential information. Unauthorised disclosure m
       {
         id: "p1-2",
         requirement: "Prepare Organisation Chart with data roles annotated",
-        dpdpRef: "Rule 3(2)",
+        dpdpRef: "Sec 8(1), 8(4)",
         templateTitle: "Organisation Chart Template",
         templateContent: `════════════════════════════════════════════════════════════════════
 ORGANISATION CHART — DATA GOVERNANCE ROLES
@@ -209,9 +208,9 @@ Approval Status: PENDING APPROVAL
 1. EXECUTIVE SUMMARY / PURPOSE
 ────────────────────────────────────────────────────────────────────
 
-This document establishes the organisational structure for data governance at [Organisation Name], annotating all roles with data protection responsibilities pursuant to Rule 3(2) of the DPDP Rules, 2025 and Section 8(6) of the DPDP Act, 2023.
+This document establishes the organisational structure for data governance at [Organisation Name], annotating all roles with data protection responsibilities pursuant to Sections 8(1) and 8(4) of the DPDP Act, 2023.
 
-Legal Obligation: Rule 3(2) requires the Data Fiduciary to maintain a documented organisation structure identifying individuals responsible for data protection functions.
+Basis: Sec 8(1) makes the Data Fiduciary responsible for compliance and Sec 8(4) requires appropriate technical and organisational measures. A documented structure evidences both; neither provision prescribes it in terms.
 
 ────────────────────────────────────────────────────────────────────
 2. SCOPE AND APPLICABILITY
@@ -272,7 +271,7 @@ Board of Directors / Governing Body
 
 | Role | Name | Department | Data Responsibilities | DPDP Act Reference |
 |------|------|-----------|----------------------|-------------------|
-| Data Protection Officer | [DPO Name] | DPO Office | Overall compliance, DPBI liaison, DSR oversight | Sec 8(6), Rule 13 |
+| Data Protection Officer | [DPO Name] | DPO Office | Overall compliance, DPBI liaison, DSR oversight | Sec 10(2)(a), Sec 8(9), Rule 9 |
 | Data Steward — HR | [Name] | HR | Employee data governance | Sec 8(4) |
 | Data Steward — Marketing | [Name] | Marketing | Customer consent management | Sec 6 |
 | Data Steward — IT | [Name] | IT | Technical security measures | Sec 8(4) |
@@ -318,10 +317,11 @@ AMENDMENT HISTORY
         status: "not-started",
         notes: ""
       },
+// TODO(LEGAL-REVIEW-E2): CCTV basis — employees likely Sec 7(i); visitors need a position
       {
         id: "p1-3",
         requirement: "Create entity-level Data Flow Diagram",
-        dpdpRef: "Rule 3(3)",
+        dpdpRef: "Sec 8(1), 8(4)",
         templateTitle: "Data Flow Diagram Template",
         templateContent: `════════════════════════════════════════════════════════════════════
 DATA FLOW DIAGRAM — ENTITY LEVEL
@@ -338,7 +338,7 @@ Approval Status: PENDING APPROVAL
 1. EXECUTIVE SUMMARY / PURPOSE
 ────────────────────────────────────────────────────────────────────
 
-This document maps all personal data flows within and external to [Organisation Name] pursuant to Rule 3(3) of the DPDP Rules, 2025. Understanding data flows is essential for compliance with purpose limitation (Sec 5), data minimisation (Sec 8(7)), security safeguards (Sec 8(4)), and cross-border transfer restrictions (Sec 16).
+This document maps all personal data flows within and external to [Organisation Name] as an accountability measure under Sec 8(1) and 8(4) of the DPDP Act, 2023. Understanding data flows is essential for compliance with purpose limitation and data minimisation (Sec 6(1)), erasure (Sec 8(7)), security safeguards (Sec 8(5)), and cross-border transfer restrictions (Sec 16).
 
 ────────────────────────────────────────────────────────────────────
 2. SCOPE AND APPLICABILITY
@@ -364,10 +364,10 @@ This document maps all personal data flows within and external to [Organisation 
 |---|--------|---------|--------------------------|-------------|----------------|-----------------|
 | 1 | Website / Web App | Digital Forms, Cookies | Name, Email, Phone, IP Address, Device Info, Usage Data | Sec 6 (Consent) | POL-001 | Yes |
 | 2 | Mobile Application | App Registration, In-app | Name, Email, Location, Device ID, App Usage | Sec 6 (Consent) | POL-001 | Yes |
-| 3 | Employee HR Systems | HRMS, Payroll | Full Name, DOB, Address, Bank Details, Gov't IDs, Tax IDs | Sec 7(a) (Employment) | POL-002 | No |
+| 3 | Employee HR Systems | HRMS, Payroll | Full Name, DOB, Address, Bank Details, Gov't IDs, Tax IDs | Sec 7(i) (Employment) | POL-002 | No |
 | 4 | Job Applications | Careers Portal, Email | CV Data, Education, Work History, References | Sec 7(a) | POL-002 | No |
 | 5 | Third-Party Partners | API, Secure File Transfer | Shared datasets per agreement | Sec 6/7 | Per DPA | Per agreement |
-| 6 | Physical Premises | CCTV, Access Control | Video Footage, Access Logs, Biometric (if applicable) | Sec 7(b) (Legitimate Use) | POL-003 | No |
+| 6 | Physical Premises | CCTV, Access Control | Video Footage, Access Logs, Biometric (if applicable) | Basis to be confirmed by DPO | POL-003 | No |
 | 7 | Customer Support | Call Centre, Chat, Email | Name, Contact Info, Support Tickets, Call Recordings | Sec 6 | POL-001 | Yes |
 
 ────────────────────────────────────────────────────────────────────
@@ -399,7 +399,7 @@ This document maps all personal data flows within and external to [Organisation 
 6.3 Cross-Border Transfers:
 | # | Destination Country | Recipient Entity | Data Categories | Legal Mechanism | Restricted (Sec 16(1))? |
 |---|--------------------|-----------------|-----------------|-----------------|-----------------------|
-| 1 | [Country] | [Entity] | [Categories] | [SCC/Adequacy] | [Yes/No] |
+| 1 | [Country] | [Entity] | [Categories] | [Contractual safeguard] | [Yes/No] |
 
 ────────────────────────────────────────────────────────────────────
 7. DATA LIFECYCLE SUMMARY
@@ -420,7 +420,7 @@ Each stage must specify:
 
 | Clause | DPDP Act Obligation | Compliance Status | Evidence |
 |--------|--------------------|-----------------|---------| 
-| 4.0 | Rule 3(3) — Data flow documentation | [Status] | This document |
+| 4.0 | Sec 8(1), 8(4) — Data flow documentation | [Status] | This document |
 | 5.0 | Sec 5 — Purpose limitation per flow | [Status] | Privacy notices |
 | 6.0 | Sec 8(4) — Security at each stage | [Status] | Security policy |
 | 7.0 | Sec 16 — Cross-border safeguards | [Status] | Transfer assessments |
@@ -457,7 +457,7 @@ AMENDMENT HISTORY
       {
         id: "p1-4",
         requirement: "Appoint DPO / Privacy Officer and issue formal appointment letter",
-        dpdpRef: "Sec 8(6), Rule 13",
+        dpdpRef: "Sec 10(2)(a), 8(9), Rule 9",
         templateTitle: "DPO Appointment Letter",
         templateContent: `════════════════════════════════════════════════════════════════════
 DATA PROTECTION OFFICER — FORMAL APPOINTMENT LETTER
@@ -482,7 +482,7 @@ To:
 
 Dear [DPO Name],
 
-Subject: Formal Appointment as Data Protection Officer pursuant to Section 8(6) of the Digital Personal Data Protection Act, 2023 and Rule 13 of the DPDP Rules, 2025
+Subject: Formal Appointment as Data Protection Officer pursuant to Sections 10(2)(a) and 8(9) of the Digital Personal Data Protection Act, 2023 and Rule 9 of the DPDP Rules, 2025
 
 ────────────────────────────────────────────────────────────────────
 1. APPOINTMENT
@@ -508,9 +508,9 @@ This appointment is made in compliance with the mandatory requirement under Sect
    (d) Reporting to the Board of Directors on data protection compliance status on a quarterly basis;
    (e) Overseeing the implementation of Privacy by Design principles (ISO 31700);
    (f) Managing the Data Protection Impact Assessment (DPIA) process;
-   (g) Overseeing breach detection, notification, and response in accordance with Section 8(6) and Rule 9;
-   (h) Ensuring timely notification to the DPBI within 72 hours of a qualifying data breach (Rule 9(2));
-   (i) Maintaining the Register of Processing Activities (RoPA) per Section 8(8) and Rule 6;
+   (g) Overseeing breach detection, notification, and response in accordance with Section 8(6) and Rule 7;
+   (h) Ensuring intimation of every personal data breach to the Board without delay, with a detailed report within 72 hours of becoming aware (Rule 7(2)), and to each affected Data Principal without delay (Rule 7(1));
+   (i) Maintaining the Register of Processing Activities (RoPA) as an accountability measure supporting Sections 8(1), 8(4) and 11(1)(a);
    (j) Managing Data Principal rights requests and ensuring response within statutory timelines;
    (k) Overseeing third-party data processor compliance and DPA management;
    (l) Coordinating employee training and awareness programmes on data protection.
@@ -528,7 +528,7 @@ This appointment is made in compliance with the mandatory requirement under Sect
 4. QUALIFICATIONS & COMPETENCE
 ────────────────────────────────────────────────────────────────────
 
-This appointment is based on your professional qualifications and expert knowledge of data protection law and practices, as required under Rule 13 of the DPDP Rules. You are expected to maintain your expertise through continuous professional development.
+This appointment is based on your professional qualifications and expert knowledge of data protection law and practices, (the Act prescribes no qualification criteria; Section 10(2)(a) requires the DPO to be based in India and responsible to the Board of Directors). You are expected to maintain your expertise through continuous professional development.
 
 ────────────────────────────────────────────────────────────────────
 5. TERM & REVIEW
@@ -595,7 +595,7 @@ Cross-references: Board Resolution on Data Governance (GOV-005), Organisation Ch
       {
         id: "p1-5",
         requirement: "Pass Board Resolution on Data Governance",
-        dpdpRef: "Sec 8(4), Rule 12",
+        dpdpRef: "Sec 8(1), 8(4)",
         templateTitle: "Board Resolution on Data Governance",
         templateContent: `════════════════════════════════════════════════════════════════════
 BOARD RESOLUTION ON DATA GOVERNANCE
@@ -630,9 +630,9 @@ WHEREAS [Organisation Name] processes digital personal data of Data Principals a
 
 WHEREAS Section 8(4) of the Act requires the Data Fiduciary to implement appropriate technical and organisational measures to ensure compliance;
 
-WHEREAS Rule 12 requires the Board to provide adequate oversight of data protection matters;
+WHEREAS Section 8(1) of the Act makes [Organisation Name] responsible for complying with the Act and the Rules irrespective of any agreement to the contrary;
 
-WHEREAS the Board recognises the reputational, financial, and legal risks associated with non-compliance, including penalties up to ₹250 Crore per instance under Section 33;
+WHEREAS the Board recognises the reputational, financial, and legal risks associated with non-compliance, including monetary penalties under Section 33 read with the Schedule of up to ₹250 crore;
 
 ────────────────────────────────────────────────────────────────────
 RESOLUTIONS
@@ -644,7 +644,7 @@ Resolution 1 — Data Governance Framework:
 [Organisation Name] shall establish and maintain a comprehensive Data Governance Framework in compliance with the DPDP Act, 2023 and the DPDP Rules, 2025, encompassing all obligations relating to purpose limitation, data minimisation, accuracy, storage limitation, security safeguards, and accountability.
 
 Resolution 2 — DPO Appointment:
-The Board designates [DPO Name], [Designation], as the Data Protection Officer of [Organisation Name] pursuant to Section 8(6) of the Act and Rule 13 of the Rules, with effect from [Effective Date].
+The Board designates [DPO Name], [Designation], as the Data Protection Officer of [Organisation Name] pursuant to Section 10(2)(a) of the Act, with effect from [Effective Date].
 
 Resolution 3 — Accountability & Reporting:
 The DPO shall provide quarterly compliance reports to the Board / Audit & Risk Committee, including risk assessments, breach summaries, DSR statistics, and remediation status.
@@ -665,7 +665,7 @@ All data processing activities shall be conducted in accordance with the princip
 (f) Appropriate security safeguards (Sec 8(4))
 
 Resolution 7 — Breach Preparedness:
-The organisation shall maintain a tested Incident Response Plan with capability to notify the DPBI within 72 hours and affected Data Principals without undue delay, as required under Section 8(6) and Rule 9.
+The organisation shall maintain a tested Incident Response Plan with capability to intimate the Board without delay with a detailed report within 72 hours of becoming aware, and each affected Data Principal without delay, as required under Section 8(6) and Rule 7.
 
 Resolution 8 — Training & Awareness:
 All employees, contractors, and relevant third parties shall undergo data protection awareness training annually.
@@ -707,7 +707,7 @@ Cross-references: DPO Appointment Letter (GOV-004), Statement on Applicability (
       {
         id: "p1-6",
         requirement: "Maintain Register of Third-Party Data Processors & Sub-processors",
-        dpdpRef: "Sec 8(2), Rule 14",
+        dpdpRef: "Sec 8(2), Rule 6(1)(f)",
         templateTitle: "Processor Register",
         templateContent: `════════════════════════════════════════════════════════════════════
 REGISTER OF DATA PROCESSORS AND SUB-PROCESSORS
@@ -724,11 +724,11 @@ Approval Status: PENDING APPROVAL
 1. EXECUTIVE SUMMARY / PURPOSE
 ────────────────────────────────────────────────────────────────────
 
-This Register documents all Data Processors and Sub-processors engaged by [Organisation Name] for the processing of personal data, pursuant to Section 8(2) of the DPDP Act, 2023 and Rule 14 of the DPDP Rules, 2025.
+This Register documents all Data Processors and Sub-processors engaged by [Organisation Name] for the processing of personal data, pursuant to Section 8(2) of the DPDP Act, 2023 and Rule 6(1)(f) of the DPDP Rules, 2025.
 
 Legal Obligation: Section 8(2) requires the Data Fiduciary to engage Data Processors only under a valid contract (DPA) and to maintain oversight of processing activities. The Data Fiduciary remains liable for any processing undertaken by its Processors.
 
-Penalty Exposure: Non-compliance with processor obligations under Sec 8(2) may attract penalties under Sec 33(c) up to ₹250 Crore.
+Penalty Exposure: Non-compliance with processor obligations under Sec 8(2) may attract penalties under Sec 33 read with the Schedule: up to ₹50 crore (item 7), or up to ₹250 crore where it results in failure of security safeguards under Sec 8(5) (item 1).
 
 ────────────────────────────────────────────────────────────────────
 2. SCOPE
@@ -804,7 +804,7 @@ Cross-references: DPA Template (POL-007), Vendor Due Diligence (POL-027), Third-
       {
         id: "p1-7",
         requirement: "Execute Joint Controller Agreement (if applicable)",
-        dpdpRef: "Sec 10, Rule 15",
+        dpdpRef: "Sec 2(i), 8(1)",
         templateTitle: "Joint Controller Agreement Template",
         templateContent: `════════════════════════════════════════════════════════════════════
 JOINT CONTROLLER AGREEMENT
@@ -834,7 +834,7 @@ BETWEEN:
 WHEREAS:
 
 (A) The Parties jointly determine the purposes and means of processing certain categories of personal data in connection with [describe joint processing activity];
-(B) Section 10 of the Digital Personal Data Protection Act, 2023 ("DPDP Act") and Rule 15 of the DPDP Rules, 2025 require Joint Data Fiduciaries to determine their respective responsibilities by means of a transparent arrangement;
+(B) The Digital Personal Data Protection Act, 2023 ("DPDP Act") does not prescribe a joint-fiduciary arrangement. Section 2(i) recognises that a Data Fiduciary may determine the purpose and means of processing in conjunction with other persons, and Section 8(1) makes each Data Fiduciary responsible for compliance. This Arrangement allocates responsibilities between the Parties as a matter of good practice (and under GDPR Article 26 where applicable).
 (C) The Parties wish to set out their respective responsibilities for compliance with the DPDP Act in a binding agreement.
 
 ────────────────────────────────────────────────────────────────────
@@ -851,8 +851,8 @@ WHEREAS:
 1.8 "Data Breach" means a personal data breach as contemplated under Section 8(6) of the DPDP Act.
 1.9 "Consent" means consent as defined in Section 6 of the DPDP Act.
 1.10 "Legitimate Use" means processing permitted under Section 7 of the DPDP Act.
-1.11 "DPIA" means Data Protection Impact Assessment under Section 8(9) and Rule 10.
-1.12 "DPO" means Data Protection Officer appointed under Section 8(6) and Rule 13.
+1.11 "DPIA" means Data Protection Impact Assessment under Section 10(2)(c)(i) and Rule 13(1) (mandatory every twelve months for Significant Data Fiduciaries).
+1.12 "DPO" means Data Protection Officer appointed under Section 10(2)(a).
 1.13 "Sub-processor" means any third party engaged by either Party to process personal data.
 1.14 "Confidential Information" means all information marked as confidential or which by its nature should be considered confidential.
 1.15 "Effective Date" means the date first written above.
@@ -909,7 +909,7 @@ WHEREAS:
 ────────────────────────────────────────────────────────────────────
 
 6.1 Each Party shall notify the other Party within [12 hours] of becoming aware of a Data Breach affecting jointly processed data.
-6.2 Controller [A/B] shall be responsible for filing notification with DPBI within 72 hours (Rule 9(2)).
+6.2 Controller [A/B] shall be responsible for filing notification with DPBI without delay, with a detailed report within 72 hours of becoming aware (Rule 7(2)).
 6.3 Both Parties shall cooperate in breach investigation and remediation.
 
 ────────────────────────────────────────────────────────────────────
@@ -992,7 +992,7 @@ AMENDMENT HISTORY
       {
         id: "p1-8",
         requirement: "Compile Regulatory Licences & Sector Filings",
-        dpdpRef: "Rule 3(4)",
+        dpdpRef: "Sec 38(1)",
         templateTitle: "Regulatory Licences Register",
         templateContent: `════════════════════════════════════════════════════════════════════
 REGULATORY LICENCES & SECTOR FILINGS REGISTER
@@ -1009,7 +1009,7 @@ Approval Status: PENDING APPROVAL
 1. PURPOSE
 ────────────────────────────────────────────────────────────────────
 
-This Register catalogues all regulatory licences, registrations, and sector-specific filings held by [Organisation Name], pursuant to Rule 3(4) of the DPDP Rules, 2025. Maintaining an accurate register ensures that sector-specific data protection obligations layered on top of the DPDP Act are identified and complied with.
+This Register catalogues all regulatory licences, registrations, and sector-specific filings held by [Organisation Name], because under Section 38(1) the DPDP Act applies in addition to, and not in derogation of, other laws in force. Maintaining an accurate register ensures that sector-specific data protection obligations layered on top of the DPDP Act are identified and complied with.
 
 ────────────────────────────────────────────────────────────────────
 2. SCOPE
@@ -1091,6 +1091,7 @@ AMENDMENT HISTORY
     title: "Policy Matrix",
     icon: "📋",
     items: [
+// TODO(LEGAL-REVIEW-E1): fraud/security basis — Sec 17(1)(c), consent, or Sec 8(5)-linked
       { id: "p2-1", requirement: "Draft Privacy Notice for Website / App", dpdpRef: "Sec 5(1), Rule 3", templateTitle: "Privacy Notice — Website/App", templateContent: `════════════════════════════════════════════════════════════════════
 PRIVACY NOTICE — WEBSITE / APPLICATION
 ════════════════════════════════════════════════════════════════════
@@ -1136,13 +1137,13 @@ This Privacy Notice is issued pursuant to Section 5(1) of the Digital Personal D
 
 | Purpose | Data Categories | Legal Basis (DPDP Act) | Retention |
 |---------|----------------|----------------------|-----------|
-| Service delivery & account management | Identity, Contact, Account | Sec 6 (Consent) / Sec 7(a) (Performance of contract) | Duration of service + 3 years |
-| Payment processing | Financial, Identity | Sec 7(a) (Contractual necessity) | As per RBI/PCI-DSS requirements |
+| Service delivery & account management | Identity, Contact, Account | Sec 6 (Consent) / Sec 7(a) (voluntarily provided for the specified purpose) | Duration of service + 3 years |
+| Payment processing | Financial, Identity | Sec 7(a) (voluntarily provided for the specified purpose) | As per RBI/PCI-DSS requirements |
 | Customer support | Communication, Identity | Sec 6 (Consent) | 2 years from resolution |
 | Analytics & service improvement | Usage, Technical | Sec 6 (Consent) | 2 years (anonymised thereafter) |
-| Legal compliance | As required | Sec 7(c) (Legal obligation) | As per applicable law |
+| Legal compliance | As required | Sec 7(d) (disclosure required by law) / Sec 8(7) (retention required by law) | As per applicable law |
 | Marketing communications | Contact, Preferences | Sec 6 (Explicit consent) | Until consent withdrawn |
-| Security & fraud prevention | Technical, Usage | Sec 7(b) (Legitimate use) | 1 year |
+| Security & fraud prevention | Technical, Usage | Basis to be confirmed by DPO | 1 year |
 
 ────────────────────────────────────────────────────────────────────
 4. CONSENT
@@ -1166,7 +1167,7 @@ This Privacy Notice is issued pursuant to Section 5(1) of the Digital Personal D
 
 We may share your personal data with:
 • Service providers and Data Processors under valid DPAs (Sec 8(2))
-• Legal and regulatory authorities when required by law (Sec 7(c))
+• Legal and regulatory authorities when required by law (Sec 7(d), 7(e))
 • Professional advisors (legal, audit, insurance) under confidentiality obligations
 
 We do NOT sell personal data to third parties.
@@ -1176,7 +1177,7 @@ We do NOT sell personal data to third parties.
 ────────────────────────────────────────────────────────────────────
 
 Your personal data may be transferred to countries outside India. Such transfers are made only to countries not restricted under Section 16(1) and are protected by:
-• Standard Contractual Clauses (SCCs)
+• Contractual safeguards with recipients (good practice; not prescribed by the DPDP Act)
 • Adequacy assessments
 • Equivalent security measures
 
@@ -1255,10 +1256,10 @@ Owner: DPO / HR | Review Date: [Date]
 3. PURPOSES & LEGAL BASIS:
 | Purpose | Legal Basis | Retention |
 |---------|------------|-----------|
-| Payroll & benefits | Sec 7(a) — Employment contract | Employment + 7 years |
-| Performance management | Sec 7(a) | Employment + 3 years |
-| Legal/tax compliance | Sec 7(c) — Legal obligation | As per applicable law |
-| Workplace safety | Sec 7(b) — Legitimate use | 1 year |
+| Payroll & benefits | Sec 7(i) — Employment | Employment + 7 years |
+| Performance management | Sec 7(i) | Employment + 3 years |
+| Legal/tax compliance | Sec 7(d) / Sec 8(7) — Required by law | As per applicable law |
+| Workplace safety | Sec 7(i) — Safeguarding employer from loss or liability | 1 year |
 | Recruitment | Sec 6 (Consent) / Sec 7(a) | Unsuccessful: 1 year; Hired: per employment |
 | Background verification | Sec 6 (Consent) | Employment + 3 years |
 
@@ -1280,7 +1281,7 @@ PRIVACY NOTICE — CCTV & PHYSICAL SURVEILLANCE
 Classification: PUBLIC | Document Reference: POL-003 | Version: v1.0
 Owner: DPO / Operations | Review Date: [Date]
 
-1. PURPOSE: [Organisation Name] operates CCTV surveillance at its premises for security of persons and property, prevention of crime, and health & safety compliance. Legal basis: Sec 7(b) — Legitimate use.
+1. PURPOSE: [Organisation Name] operates CCTV surveillance at its premises for security of persons and property, prevention of crime, and health & safety compliance. Legal basis: to be confirmed by DPO.
 
 2. DATA COLLECTED: Video footage, images, timestamps from cameras at [list locations — entrances, lobbies, car parks, server rooms].
 
@@ -1299,16 +1300,16 @@ DOCUMENT CONTROL:
 
 Cross-references: Information Security Policy (POL-025), Data Retention Policy (POL-011)`, status: "not-started", notes: "" },
 
-      { id: "p2-4", requirement: "Establish Consent Management Policy", dpdpRef: "Sec 6, Rule 4", templateTitle: "Consent Management Policy", templateContent: `════════════════════════════════════════════════════════════════════
+      { id: "p2-4", requirement: "Establish Consent Management Policy", dpdpRef: "Sec 5, 6, Rule 3", templateTitle: "Consent Management Policy", templateContent: `════════════════════════════════════════════════════════════════════
 CONSENT MANAGEMENT POLICY
 ════════════════════════════════════════════════════════════════════
 
 Classification: CONFIDENTIAL | Document Reference: POL-004 | Version: v1.0
 Owner: DPO | Review Date: [Date]
 
-1. PURPOSE: To establish a framework for obtaining, recording, managing, and withdrawing consent in compliance with Sec 6 of the DPDP Act, 2023 and Rule 4 of the DPDP Rules, 2025.
+1. PURPOSE: To establish a framework for obtaining, recording, managing, and withdrawing consent in compliance with Sec 6 of the DPDP Act, 2023 and Rule 3 of the DPDP Rules, 2025.
 
-Penalty Exposure: Non-compliance with consent requirements may attract penalties up to ₹250 Crore under Sec 33.
+Penalty Exposure: Non-compliance with consent requirements may attract penalties under Sec 33 read with the Schedule, up to ₹50 crore (item 7).
 
 2. SCOPE: All processing activities relying on consent as legal basis across [Organisation Name].
 
@@ -1333,7 +1334,7 @@ Clause 5.2: Withdrawal mechanism must be as easy as giving consent
 Clause 5.3: Withdrawal processed within [7 business days]
 Clause 5.4: Consequences of withdrawal communicated at time of withdrawal
 
-6. CONSENT ARTEFACT (Rule 4(2)):
+6. CONSENT ARTEFACT (Sec 6(10)):
 Clause 6.1: Every consent shall generate a Consent Artefact containing: purpose, data categories, consent date, method, Data Principal identifier, withdrawal mechanism
 Clause 6.2: Artefacts stored in the Consent Artefact Register (POL-005)
 Clause 6.3: Artefacts must be producible to DPBI on demand
@@ -1345,20 +1346,20 @@ COMPLIANCE MATRIX:
 | Clause | DPDP Obligation | Status |
 |--------|----------------|--------|
 | 3.1-3.8 | Sec 6(1)-(4) | [Status] |
-| 4.1-4.3 | Rule 4(1) | [Status] |
-| 6.1-6.3 | Rule 4(2) | [Status] |
+| 4.1-4.3 | Sec 6(1) | [Status] |
+| 6.1-6.3 | Sec 6(10) | [Status] |
 
 DOCUMENT CONTROL: Prepared By: [Name] | Reviewed By: [DPO Name] | Approved By: [Legal Head]
 Cross-references: Consent Artefact Register (POL-005), Privacy Notice (POL-001), Children's Data Policy (POL-017)`, status: "not-started", notes: "" },
 
-      { id: "p2-5", requirement: "Maintain Consent Artefact Records & Logs", dpdpRef: "Sec 6(3), Rule 4(2)", templateTitle: "Consent Artefact Register", templateContent: `════════════════════════════════════════════════════════════════════
+      { id: "p2-5", requirement: "Maintain Consent Artefact Records & Logs", dpdpRef: "Sec 6(10)", templateTitle: "Consent Artefact Register", templateContent: `════════════════════════════════════════════════════════════════════
 CONSENT ARTEFACT REGISTER
 ════════════════════════════════════════════════════════════════════
 
 Classification: CONFIDENTIAL | Document Reference: POL-005 | Version: v1.0
 Owner: DPO | Review Date: [Date]
 
-1. PURPOSE: Maintain a verifiable record of all consent artefacts per Sec 6(3) and Rule 4(2). Each artefact must be producible to the DPBI upon request.
+1. PURPOSE: Maintain a verifiable record of all consent artefacts to discharge the burden of proof under Sec 6(10). Each artefact must be producible to the DPBI upon request.
 
 2. DATA DICTIONARY:
 | Field | Description | Mandatory | Format |
@@ -1381,12 +1382,13 @@ Owner: DPO | Review Date: [Date]
 
 4. RETENTION: Consent artefacts retained for duration of processing plus [5] years.
 5. REVIEW: Quarterly by [DPO Name].
-6. REGULATORY BASIS: Sec 6(3), Rule 4(2) — mandatory maintenance of consent records.
+6. REGULATORY BASIS: Sec 6(10) — the Data Fiduciary must prove that notice was given and consent obtained.
 
 DOCUMENT CONTROL: Maintained By: [Name] | Reviewed By: [DPO Name]
 Cross-references: Consent Management Policy (POL-004)`, status: "not-started", notes: "" },
 
-      { id: "p2-6", requirement: "Draft Cookie Policy & Consent Banner", dpdpRef: "Sec 6(1), Rule 4", templateTitle: "Cookie Policy Template", templateContent: `════════════════════════════════════════════════════════════════════
+// TODO(LEGAL-REVIEW-E2): strictly necessary cookies basis
+      { id: "p2-6", requirement: "Draft Cookie Policy & Consent Banner", dpdpRef: "Sec 6(1), Rule 3", templateTitle: "Cookie Policy Template", templateContent: `════════════════════════════════════════════════════════════════════
 COOKIE POLICY
 ════════════════════════════════════════════════════════════════════
 
@@ -1398,7 +1400,7 @@ Owner: DPO | Review Date: [Date]
 2. TYPES OF COOKIES:
 | Category | Purpose | Consent Required | Retention |
 |----------|---------|-----------------|-----------|
-| Strictly Necessary | Website functionality, security | No (Sec 7(b)) | Session |
+| Strictly Necessary | Website functionality, security | No (basis to be confirmed by DPO) | Session |
 | Performance/Analytics | Usage patterns, site improvement | Yes (Sec 6) | [12 months] |
 | Functional | Preferences, language settings | Yes (Sec 6) | [12 months] |
 | Marketing/Targeting | Personalised advertising | Yes (Sec 6) | [12 months] |
@@ -1414,7 +1416,7 @@ Owner: DPO | Review Date: [Date]
 DOCUMENT CONTROL: Prepared By: [Name] | Approved By: [DPO Name]
 Cross-references: Privacy Notice (POL-001), Consent Management Policy (POL-004)`, status: "not-started", notes: "" },
 
-      { id: "p2-7", requirement: "Prepare Data Processing Agreement (DPA) Template", dpdpRef: "Sec 8(2), Rule 14", templateTitle: "DPA Template", templateContent: `════════════════════════════════════════════════════════════════════
+      { id: "p2-7", requirement: "Prepare Data Processing Agreement (DPA) Template", dpdpRef: "Sec 8(2), Rule 6(1)(f)", templateTitle: "DPA Template", templateContent: `════════════════════════════════════════════════════════════════════
 DATA PROCESSING AGREEMENT
 ════════════════════════════════════════════════════════════════════
 
@@ -1434,7 +1436,7 @@ BETWEEN:
 WHEREAS:
 (A) The Data Fiduciary engages the Data Processor to provide [services] which involve processing personal data;
 (B) Section 8(2) of the DPDP Act, 2023 requires the Data Fiduciary to engage processors only under a valid contract;
-(C) Rule 14 prescribes the terms that must be included in such contract;
+(C) Rule 6(1)(f) requires the contract to make appropriate provision for reasonable security safeguards, and Section 8(7)(b) requires the Data Fiduciary to cause the Data Processor to erase personal data made available to it;
 (D) The Parties wish to ensure compliance with the DPDP Act and set out their respective obligations.
 
 ────────────────────────────────────────────────────────────────────
@@ -1562,7 +1564,7 @@ REVIEW: Quarterly | RESPONSIBLE: [DPO Name] | STORAGE: [Secure digital repositor
 
 Cross-references: DPA Template (POL-007), Processor Register (GOV-006)`, status: "not-started", notes: "" },
 
-      { id: "p2-9", requirement: "Draft Data Sharing Agreement", dpdpRef: "Sec 8(3), Rule 14", templateTitle: "Data Sharing Agreement Template", templateContent: `════════════════════════════════════════════════════════════════════
+      { id: "p2-9", requirement: "Draft Data Sharing Agreement", dpdpRef: "Sec 8(3)", templateTitle: "Data Sharing Agreement Template", templateContent: `════════════════════════════════════════════════════════════════════
 DATA SHARING AGREEMENT
 ════════════════════════════════════════════════════════════════════
 
@@ -1570,7 +1572,7 @@ Classification: CONFIDENTIAL | Document Reference: POL-009 | Version: v1.0
 Owner: Legal / DPO | Review Date: [Date]
 
 RECITALS:
-This Agreement is entered into on [Date] between [Organisation Name] ("Disclosing Party") and [Receiving Party Name] ("Receiving Party") to govern the sharing of personal data pursuant to Sec 8(3) of the DPDP Act, 2023 and Rule 14.
+This Agreement is entered into on [Date] between [Organisation Name] ("Disclosing Party") and [Receiving Party Name] ("Receiving Party") to govern the sharing of personal data pursuant to Sec 8(3) of the DPDP Act, 2023.
 
 1. DEFINITIONS: [15+ defined terms as per DPA template above]
 
@@ -1630,6 +1632,7 @@ SIGNED: [Controller A] | [Controller B]
 
 Cross-references: Joint Controller Agreement (GOV-007), DPA Template (POL-007)`, status: "not-started", notes: "" },
 
+// TODO(LEGAL-REVIEW-E2): CCTV basis
       { id: "p2-11", requirement: "Establish Data Retention & Deletion Policy", dpdpRef: "Sec 8(7), Rule 8", templateTitle: "Data Retention Policy", templateContent: `════════════════════════════════════════════════════════════════════
 DATA RETENTION & DELETION POLICY
 ════════════════════════════════════════════════════════════════════
@@ -1639,7 +1642,7 @@ Owner: DPO | Review Date: [Date]
 
 1. PURPOSE: Define retention periods and deletion procedures for all personal data per Sec 8(7) and Rule 8. Personal data shall not be retained beyond what is necessary for the specified purpose.
 
-Penalty Exposure: Retention beyond the specified period without lawful basis may attract penalties under Sec 33.
+Penalty Exposure: Retention beyond the specified period without lawful basis may attract penalties under Sec 33 read with the Schedule, up to ₹50 crore (item 7).
 
 2. SCOPE: All personal data across all systems, databases, backups, and physical records.
 
@@ -1649,7 +1652,7 @@ Penalty Exposure: Retention beyond the specified period without lawful basis may
 | Customer data | CRM | Service duration + 3 years | Sec 7(a) | Account closure + 3 years | Secure wipe | Yes |
 | Employee data | HRMS | Employment + 7 years | Labour laws, Tax laws | Separation date + 7 years | Secure wipe | Yes |
 | Marketing consent | Marketing Platform | Until withdrawal | Sec 6 | Consent withdrawal | Immediate deletion | Yes |
-| CCTV footage | NVR | 90 days | Sec 7(b) | Auto-overwrite | Overwrite | Yes |
+| CCTV footage | NVR | 90 days | To be confirmed by DPO | Auto-overwrite | Overwrite | Yes |
 | Audit logs | SIEM | 3 years | Sec 8(8) | Calendar | Archive + delete | Semi-auto |
 | Backup data | Backup System | Primary + 30 days | Operational | Primary deletion + 30 days | Secure erase | Yes |
 
@@ -1666,14 +1669,14 @@ COMPLIANCE MATRIX:
 
 DOCUMENT CONTROL: Prepared By: [Name] | Reviewed By: [DPO Name] | Approved By: [CIO/Legal]`, status: "not-started", notes: "" },
 
-      { id: "p2-12", requirement: "Document Data Deletion / Erasure Procedure SOP", dpdpRef: "Sec 12(3), Rule 8", templateTitle: "Erasure Procedure SOP", templateContent: `════════════════════════════════════════════════════════════════════
+      { id: "p2-12", requirement: "Document Data Deletion / Erasure Procedure SOP", dpdpRef: "Sec 8(7), 12(3), Rules 8, 14", templateTitle: "Erasure Procedure SOP", templateContent: `════════════════════════════════════════════════════════════════════
 DATA DELETION / ERASURE PROCEDURE — SOP
 ════════════════════════════════════════════════════════════════════
 
 Classification: CONFIDENTIAL | Document Reference: POL-012 | Version: v1.0
 Owner: DPO / IT | Review Date: [Date]
 
-1. PURPOSE: Standardise data deletion procedures per Sec 12(3) and Rule 8.
+1. PURPOSE: Standardise data deletion procedures per Sec 8(7), Sec 12(3), Rule 8 and Rule 14.
 
 2. TRIGGER EVENTS: Consent withdrawal (Sec 6(4)), Purpose fulfilment, Retention period expiry (Sec 8(7)), Erasure request from Data Principal (Sec 12(3)), Account closure.
 
@@ -1710,14 +1713,14 @@ Owner: DPO / IT | Review Date: [Date]
 DOCUMENT CONTROL: Prepared By: [Name] | Approved By: [DPO Name]
 Cross-references: Data Retention Policy (POL-011), Rights Request Procedure (POL-019)`, status: "not-started", notes: "" },
 
-      { id: "p2-13", requirement: "Maintain Records of Processing Activities (RoPA)", dpdpRef: "Sec 8(8), Rule 6", templateTitle: "RoPA Template", templateContent: `════════════════════════════════════════════════════════════════════
+      { id: "p2-13", requirement: "Maintain Records of Processing Activities (RoPA)", dpdpRef: "Sec 8(1), 8(4), 11(1)(a)", templateTitle: "RoPA Template", templateContent: `════════════════════════════════════════════════════════════════════
 RECORDS OF PROCESSING ACTIVITIES (RoPA)
 ════════════════════════════════════════════════════════════════════
 
 Classification: CONFIDENTIAL | Document Reference: POL-013 | Version: v1.0
 Owner: DPO | Review Date: [Date]
 
-1. PURPOSE: Maintain comprehensive records per Sec 8(8) and Rule 6. Mandatory for all Data Fiduciaries.
+1. PURPOSE: Maintain comprehensive records as an accountability measure supporting Sec 8(1), 8(4) and 11(1)(a). The DPDP Act does not prescribe a RoPA in terms.
 
 2. DATA DICTIONARY:
 | Field | Description | Mandatory |
@@ -1740,19 +1743,19 @@ Owner: DPO | Review Date: [Date]
 | 1 | [Activity] | [Dept] | [Purpose] | [Basis] | [Categories] | [Principals] | [Recipients] | [Countries] | [Period] | [Measures] | [Y/N] | [Date] |
 
 4. REVIEW: Quarterly | 5. RETENTION OF REGISTER: Duration of processing + 5 years
-6. REGULATORY BASIS: Sec 8(8), Rule 6
+6. REGULATORY BASIS: Sec 8(1), 8(4), 11(1)(a) (accountability measure)
 
 DOCUMENT CONTROL: Maintained By: [DPO Name] | Review: Quarterly
 Cross-references: Data Flow Diagram (GOV-003), DPIA Framework (POL-014)`, status: "not-started", notes: "" },
 
-      { id: "p2-14", requirement: "Create DPIA Framework", dpdpRef: "Sec 8(9), Rule 10", templateTitle: "DPIA Framework Template", templateContent: `════════════════════════════════════════════════════════════════════
+      { id: "p2-14", requirement: "Create DPIA Framework", dpdpRef: "Sec 10(2)(c)(i), Rule 13(1)", templateTitle: "DPIA Framework Template", templateContent: `════════════════════════════════════════════════════════════════════
 DATA PROTECTION IMPACT ASSESSMENT (DPIA) FRAMEWORK
 ════════════════════════════════════════════════════════════════════
 
 Classification: CONFIDENTIAL | Document Reference: POL-014 | Version: v1.0
 Owner: DPO | Review Date: [Date]
 
-1. PURPOSE: Establish the DPIA process per Sec 8(9) and Rule 10. DPIAs must be conducted before initiating any high-risk processing activity.
+1. PURPOSE: Establish the DPIA process per Sec 10(2)(c)(i) and Rule 13(1), which require a DPIA every twelve months for Significant Data Fiduciaries. For other Data Fiduciaries, a DPIA before high-risk processing is an internal accountability measure under Sec 8(4).
 
 2. WHEN IS A DPIA REQUIRED:
 - New processing involving high-risk personal data
@@ -1793,14 +1796,14 @@ Escalation Threshold: Residual risks scoring ≥ 15 MUST be escalated to the Boa
 DOCUMENT CONTROL: Prepared By: [Name] | Approved By: [DPO Name]
 Cross-references: DPIA Register (POL-015), RoPA (POL-013), Privacy by Design Checklist (POL-037)`, status: "not-started", notes: "" },
 
-      { id: "p2-15", requirement: "Maintain DPIA Register", dpdpRef: "Sec 8(9), Rule 10", templateTitle: "DPIA Register", templateContent: `════════════════════════════════════════════════════════════════════
+      { id: "p2-15", requirement: "Maintain DPIA Register", dpdpRef: "Sec 10(2)(c)(i), Rule 13(1)", templateTitle: "DPIA Register", templateContent: `════════════════════════════════════════════════════════════════════
 DPIA REGISTER
 ════════════════════════════════════════════════════════════════════
 
 Classification: CONFIDENTIAL | Document Reference: POL-015 | Version: v1.0
 Owner: DPO | Review Date: [Date]
 
-PURPOSE: Central register of all DPIAs per Sec 8(9), Rule 10.
+PURPOSE: Central register of all DPIAs per Sec 10(2)(c)(i), Rule 13(1).
 
 DATA DICTIONARY:
 | Field | Description | Mandatory |
@@ -1824,34 +1827,40 @@ REVIEW: Quarterly | RETENTION: Duration of processing + 5 years
 
 Cross-references: DPIA Framework (POL-014), RoPA (POL-013)`, status: "not-started", notes: "" },
 
-      { id: "p2-16", requirement: "Document Legitimate Use Register (Sec 4 Basis)", dpdpRef: "Sec 7, Rule 5", templateTitle: "Legitimate Use Register", templateContent: `════════════════════════════════════════════════════════════════════
+      { id: "p2-16", requirement: "Document Legitimate Use Register (Sec 4 Basis)", dpdpRef: "Sec 4(1)(b), 7", templateTitle: "Legitimate Use Register", templateContent: `════════════════════════════════════════════════════════════════════
 LEGITIMATE USE REGISTER
 ════════════════════════════════════════════════════════════════════
 
 Classification: CONFIDENTIAL | Document Reference: POL-016 | Version: v1.0
 Owner: DPO | Review Date: [Date]
 
-PURPOSE: Document all processing activities relying on Sec 7 (Legitimate Uses) rather than consent, per Rule 5.
+PURPOSE: Document all processing activities relying on Sec 7 (Legitimate Uses) rather than consent, per Sec 4(1)(b).
 
 REGISTER:
 | # | Processing Activity | Sec 7 Sub-clause | Specific Justification | Data Categories | Data Principals | Proportionality Assessment | Review Date |
 |---|--------------------|-----------------|-----------------------|-----------------|-----------------|--------------------------|-----------| 
-| 1 | [Activity] | Sec 7(a) — Specified purpose | [Justification] | [Categories] | [Principals] | [Assessment] | [Date] |
-| 2 | [Activity] | Sec 7(b) — State function | [Justification] | [Categories] | [Principals] | [Assessment] | [Date] |
-| 3 | [Activity] | Sec 7(c) — Legal obligation | [Justification] | [Categories] | [Principals] | [Assessment] | [Date] |
+| 1 | [Activity] | Sec 7(a) — Voluntarily provided for specified purpose | [Justification] | [Categories] | [Principals] | [Assessment] | [Date] |
+| 2 | [Activity] | Sec 7(b) — State subsidy, benefit, service, certificate, licence or permit | [Justification] | [Categories] | [Principals] | [Assessment] | [Date] |
+| 3 | [Activity] | Sec 7(c) — State function under law / sovereignty, integrity, security of the State | [Justification] | [Categories] | [Principals] | [Assessment] | [Date] |
+| 4 | [Activity] | Sec 7(d) — Legal obligation to disclose information to the State | [Justification] | [Categories] | [Principals] | [Assessment] | [Date] |
+| 5 | [Activity] | Sec 7(e) — Compliance with judgment, decree or order | [Justification] | [Categories] | [Principals] | [Assessment] | [Date] |
+| 6 | [Activity] | Sec 7(f) — Medical emergency | [Justification] | [Categories] | [Principals] | [Assessment] | [Date] |
+| 7 | [Activity] | Sec 7(g) — Medical treatment during epidemic / public-health threat | [Justification] | [Categories] | [Principals] | [Assessment] | [Date] |
+| 8 | [Activity] | Sec 7(h) — Disaster / breakdown of public order | [Justification] | [Categories] | [Principals] | [Assessment] | [Date] |
+| 9 | [Activity] | Sec 7(i) — Employment / safeguarding employer from loss or liability | [Justification] | [Categories] | [Principals] | [Assessment] | [Date] |
 
 NOTE: Each legitimate use must be reassessed annually or if processing activity changes materially.
 
 Cross-references: RoPA (POL-013), Consent Management Policy (POL-004)`, status: "not-started", notes: "" },
 
-      { id: "p2-17", requirement: "Establish Children's Data Processing Policy", dpdpRef: "Sec 9, Rule 11", templateTitle: "Children's Data Policy", templateContent: `════════════════════════════════════════════════════════════════════
+      { id: "p2-17", requirement: "Establish Children's Data Processing Policy", dpdpRef: "Sec 9, Rule 10", templateTitle: "Children's Data Policy", templateContent: `════════════════════════════════════════════════════════════════════
 CHILDREN'S DATA PROCESSING POLICY
 ════════════════════════════════════════════════════════════════════
 
 Classification: CONFIDENTIAL | Document Reference: POL-017 | Version: v1.0
 Owner: DPO | Review Date: [Date]
 
-1. PURPOSE: Govern processing of personal data of children (persons under 18 years) per Sec 9 and Rule 11. Penalty: Up to ₹200 Crore per Sec 33 for non-compliance.
+1. PURPOSE: Govern processing of personal data of children (persons under 18 years) per Sec 9 and Rule 10. Penalty: Up to ₹200 Crore per Sec 33 for non-compliance.
 
 2. SCOPE: Any processing of personal data where the Data Principal is under 18 years.
 
@@ -1859,7 +1868,7 @@ Owner: DPO | Review Date: [Date]
 Clause 3.1: Verifiable parental/guardian consent REQUIRED before any processing (Sec 9(1))
 Clause 3.2: NO behavioural tracking or targeted advertising directed at children (Sec 9(3))
 Clause 3.3: NO processing that causes detrimental effect to the well-being of a child (Sec 9(4))
-Clause 3.4: Age verification mechanism mandatory (Rule 11)
+Clause 3.4: Verifiable parental consent, with due diligence that the parent is an identifiable adult (Rule 10(1))
 Clause 3.5: Data minimisation — only data strictly necessary
 Clause 3.6: Enhanced security measures for children's data
 Clause 3.7: Parental access to child's data on request
@@ -1876,7 +1885,7 @@ Data Principal Rights: Parents/guardians may exercise all rights under Sec 11-14
 DOCUMENT CONTROL: Prepared By: [Name] | Approved By: [DPO Name]
 Cross-references: Parental Consent Procedure (POL-018), Privacy Notice (POL-001)`, status: "not-started", notes: "" },
 
-      { id: "p2-18", requirement: "Document Parental / Guardian Consent Procedure", dpdpRef: "Sec 9(1), Rule 11", templateTitle: "Parental Consent Procedure", templateContent: `════════════════════════════════════════════════════════════════════
+      { id: "p2-18", requirement: "Document Parental / Guardian Consent Procedure", dpdpRef: "Sec 9(1), Rule 10", templateTitle: "Parental Consent Procedure", templateContent: `════════════════════════════════════════════════════════════════════
 PARENTAL / GUARDIAN CONSENT PROCEDURE — SOP
 ════════════════════════════════════════════════════════════════════
 
@@ -1902,14 +1911,14 @@ EXCEPTION: If consent not received within 14 days, all collected data is permane
 
 Cross-references: Children's Data Policy (POL-017), Consent Management Policy (POL-004)`, status: "not-started", notes: "" },
 
-      { id: "p2-19", requirement: "Create Data Principal Rights Request Procedure", dpdpRef: "Sec 11-14, Rule 7", templateTitle: "Rights Request Procedure", templateContent: `════════════════════════════════════════════════════════════════════
+      { id: "p2-19", requirement: "Create Data Principal Rights Request Procedure", dpdpRef: "Sec 11-14, Rule 14", templateTitle: "Rights Request Procedure", templateContent: `════════════════════════════════════════════════════════════════════
 DATA PRINCIPAL RIGHTS REQUEST PROCEDURE
 ════════════════════════════════════════════════════════════════════
 
 Classification: CONFIDENTIAL | Document Reference: POL-019 | Version: v1.0
 Owner: DPO | Review Date: [Date]
 
-1. PURPOSE: Establish procedure for handling DSR requests per Sec 11-14 and Rule 7.
+1. PURPOSE: Establish procedure for handling DSR requests per Sec 11-14 and Rule 14.
 
 2. RIGHTS COVERED:
 | Right | Section | Description | Response SLA |
@@ -1950,7 +1959,7 @@ Owner: DPO | Review Date: [Date]
 
 Cross-references: Rights Request Tracker (POL-020), Grievance Policy (POL-021), Erasure SOP (POL-012)`, status: "not-started", notes: "" },
 
-      { id: "p2-20", requirement: "Maintain Rights Request Log / Tracker", dpdpRef: "Sec 11-14, Rule 7", templateTitle: "Rights Request Tracker", templateContent: `════════════════════════════════════════════════════════════════════
+      { id: "p2-20", requirement: "Maintain Rights Request Log / Tracker", dpdpRef: "Sec 11-14, Rule 14", templateTitle: "Rights Request Tracker", templateContent: `════════════════════════════════════════════════════════════════════
 DATA PRINCIPAL RIGHTS REQUEST TRACKER
 ════════════════════════════════════════════════════════════════════
 
@@ -1966,14 +1975,14 @@ Total Requests (YTD): [Number] | Open: [Number] | Average Response Time: [Days] 
 REVIEW: Monthly by DPO | RETENTION: 5 years
 Cross-references: Rights Request Procedure (POL-019)`, status: "not-started", notes: "" },
 
-      { id: "p2-21", requirement: "Establish Grievance Redressal Policy & Escalation Matrix", dpdpRef: "Sec 13, Rule 7(3)", templateTitle: "Grievance Redressal Policy", templateContent: `════════════════════════════════════════════════════════════════════
+      { id: "p2-21", requirement: "Establish Grievance Redressal Policy & Escalation Matrix", dpdpRef: "Sec 13, Rule 14(3)", templateTitle: "Grievance Redressal Policy", templateContent: `════════════════════════════════════════════════════════════════════
 GRIEVANCE REDRESSAL POLICY & ESCALATION MATRIX
 ════════════════════════════════════════════════════════════════════
 
 Classification: INTERNAL | Document Reference: POL-021 | Version: v1.0
 Owner: DPO | Review Date: [Date]
 
-1. PURPOSE: Provide accessible grievance mechanism per Sec 13 and Rule 7(3). Data Principals have the right to have grievances addressed within prescribed timelines.
+1. PURPOSE: Provide accessible grievance mechanism per Sec 13 and Rule 14(3). Grievances must be responded to within a period not exceeding ninety days.
 
 2. CHANNELS: Email: [Email] | Portal: [URL] | Written: [Address] | Phone: [Number]
 
@@ -1992,14 +2001,14 @@ Owner: DPO | Review Date: [Date]
 DOCUMENT CONTROL: Prepared By: [Name] | Approved By: [DPO Name]
 Cross-references: Rights Request Procedure (POL-019), Whistleblower Policy (POL-035)`, status: "not-started", notes: "" },
 
-      { id: "p2-22", requirement: "Create Data Breach / Incident Response Policy", dpdpRef: "Sec 8(6), Rule 9", templateTitle: "Breach Response Policy", templateContent: `════════════════════════════════════════════════════════════════════
+      { id: "p2-22", requirement: "Create Data Breach / Incident Response Policy", dpdpRef: "Sec 8(6), Rule 7", templateTitle: "Breach Response Policy", templateContent: `════════════════════════════════════════════════════════════════════
 DATA BREACH / INCIDENT RESPONSE POLICY
 ════════════════════════════════════════════════════════════════════
 
 Classification: CONFIDENTIAL | Document Reference: POL-022 | Version: v1.0
 Owner: DPO / CISO | Review Date: [Date]
 
-1. PURPOSE: Establish breach detection, response, and notification procedures per Sec 8(6) and Rule 9. Penalty for failure to notify: Up to ₹200 Crore per Sec 33.
+1. PURPOSE: Establish breach detection, response, and notification procedures per Sec 8(6) and Rule 7. Penalty for failure to notify: Up to ₹200 Crore per Sec 33.
 
 2. INCIDENT RESPONSE TEAM:
 | Role | Name | Contact | Responsibility |
@@ -2017,7 +2026,7 @@ Owner: DPO / CISO | Review Date: [Date]
 | 2 | Escalation to DPO | IT Security Lead | DPO | 4 hours | Escalation record |
 | 3 | Containment and mitigation | IT Security Team | CISO | 8 hours | Containment report |
 | 4 | Impact assessment and classification | Privacy Analyst + IT | DPO | 24 hours | Impact assessment |
-| 5 | DPBI notification (if qualifying breach) | DPO | Board | 72 hours (Rule 9(2)) | DPBI notification |
+| 5 | Board intimation (every personal data breach) | DPO | Board | Without delay; detailed report within 72 hours (Rule 7(2)) | DPBI notification |
 | 6 | Data Principal notification | DPO + Comms | Board | Without undue delay | Notification records |
 | 7 | Root cause analysis | IT Security | CISO | 14 days | RCA report |
 | 8 | Remediation and improvement | Project Team | DPO | 30 days | Remediation plan |
@@ -2034,15 +2043,16 @@ Owner: DPO / CISO | Review Date: [Date]
 DOCUMENT CONTROL: Approved By: [DPO Name] + [CISO Name]
 Cross-references: Breach Notification SOP (POL-023), Breach Register (POL-024)`, status: "not-started", notes: "" },
 
-      { id: "p2-23", requirement: "Document Breach Notification SOP (to DPBI)", dpdpRef: "Sec 8(6), Rule 9(2)", templateTitle: "Breach Notification SOP", templateContent: `════════════════════════════════════════════════════════════════════
+// TODO(VERIFY): align content list to Rule 7(2)(b)(i)–(vi)
+      { id: "p2-23", requirement: "Document Breach Notification SOP (to DPBI)", dpdpRef: "Sec 8(6), Rule 7(2)", templateTitle: "Breach Notification SOP", templateContent: `════════════════════════════════════════════════════════════════════
 BREACH NOTIFICATION SOP — TO DPBI
 ════════════════════════════════════════════════════════════════════
 
 Classification: CONFIDENTIAL | Document Reference: POL-023 | Version: v1.0
 
-CRITICAL TIMELINE: Notification to DPBI within 72 hours of becoming aware (Rule 9(2)).
+CRITICAL TIMELINE: Intimation to the Board without delay (Rule 7(2)(a)); detailed report within 72 hours of becoming aware, or a longer period allowed by the Board on written request (Rule 7(2)(b)).
 
-NOTIFICATION CONTENT (Rule 9(2)):
+NOTIFICATION CONTENT (Rule 7(2)(a)–(b)):
 1. Nature of the breach
 2. Categories and approximate number of Data Principals affected
 3. Categories of personal data involved
@@ -2063,7 +2073,7 @@ PROCEDURE:
 
 Cross-references: Breach Response Policy (POL-022), Breach Register (POL-024)`, status: "not-started", notes: "" },
 
-      { id: "p2-24", requirement: "Maintain Breach Register", dpdpRef: "Sec 8(6), Rule 9", templateTitle: "Breach Register", templateContent: `════════════════════════════════════════════════════════════════════
+      { id: "p2-24", requirement: "Maintain Breach Register", dpdpRef: "Sec 8(6), Rule 7", templateTitle: "Breach Register", templateContent: `════════════════════════════════════════════════════════════════════
 BREACH REGISTER
 ════════════════════════════════════════════════════════════════════
 
@@ -2095,14 +2105,14 @@ REVIEW: After each incident + Quarterly summary | RETENTION: Minimum 5 years
 
 Cross-references: Breach Response Policy (POL-022), Breach Notification SOP (POL-023)`, status: "not-started", notes: "" },
 
-      { id: "p2-25", requirement: "Establish Information Security Policy", dpdpRef: "Sec 8(4), Rule 6", templateTitle: "Information Security Policy", templateContent: `════════════════════════════════════════════════════════════════════
+      { id: "p2-25", requirement: "Establish Information Security Policy", dpdpRef: "Sec 8(5), Rule 6", templateTitle: "Information Security Policy", templateContent: `════════════════════════════════════════════════════════════════════
 INFORMATION SECURITY POLICY
 ════════════════════════════════════════════════════════════════════
 
 Classification: CONFIDENTIAL | Document Reference: POL-025 | Version: v1.0
 Owner: CISO / DPO | Review Date: [Date]
 
-1. PURPOSE: Protect personal data through appropriate technical and organisational measures per Sec 8(4). Penalty for inadequate safeguards: Up to ₹250 Crore per Sec 33.
+1. PURPOSE: Protect personal data through appropriate technical and organisational measures per Sec 8(5) and Rule 6. Penalty for inadequate safeguards: Up to ₹250 Crore per Sec 33.
 
 2. KEY CONTROLS (12 Clauses):
 Clause 2.1 — Encryption: AES-256 at rest, TLS 1.2+ in transit, key management via [KMS]
@@ -2151,7 +2161,7 @@ Clause 3.3 — Session timeout: 15 minutes of inactivity
 DOCUMENT CONTROL: Approved By: [CISO Name]
 Cross-references: Information Security Policy (POL-025)`, status: "not-started", notes: "" },
 
-      { id: "p2-27", requirement: "Prepare Vendor Due Diligence Questionnaire", dpdpRef: "Sec 8(2), Rule 14", templateTitle: "Vendor Due Diligence Questionnaire", templateContent: `════════════════════════════════════════════════════════════════════
+      { id: "p2-27", requirement: "Prepare Vendor Due Diligence Questionnaire", dpdpRef: "Sec 8(2), Rule 6(1)(f)", templateTitle: "Vendor Due Diligence Questionnaire", templateContent: `════════════════════════════════════════════════════════════════════
 VENDOR DUE DILIGENCE QUESTIONNAIRE — DATA PROTECTION
 ════════════════════════════════════════════════════════════════════
 
@@ -2241,16 +2251,16 @@ Escalation: Risk score ≥ 15 on any factor requires Board approval.
 
 CHECKS:
 1. Destination on Sec 16(1) restricted list? [Y/N]
-2. SCCs in place? [Y/N]
+2. Contractual safeguards in place (good practice)? [Y/N]
 3. Recipient security assessment completed? [Y/N]
 4. DPO sign-off obtained? [Y/N]
 
 DPO SIGN-OFF: [DPO Name] | Date: [Date]
 Linkage: DPIA Register (POL-015)
 
-Cross-references: SCCs (POL-030), Data Flow Diagram (GOV-003)`, status: "not-started", notes: "" },
+Cross-references: Contractual Safeguards (POL-030), Data Flow Diagram (GOV-003)`, status: "not-started", notes: "" },
 
-      { id: "p2-30", requirement: "Prepare Standard Contractual Clauses / Transfer Safeguards", dpdpRef: "Sec 16(2)", templateTitle: "Standard Contractual Clauses Template", templateContent: `════════════════════════════════════════════════════════════════════
+      { id: "p2-30", requirement: "Prepare Cross-Border Contractual Safeguards (good practice)", dpdpRef: "Sec 16, Rule 15", templateTitle: "Cross-Border Contractual Safeguards Template", templateContent: `════════════════════════════════════════════════════════════════════
 STANDARD CONTRACTUAL CLAUSES — DATA TRANSFER SAFEGUARDS
 ════════════════════════════════════════════════════════════════════
 
@@ -2279,7 +2289,7 @@ SIGNED: Exporter: _____________________ | Importer: _____________________
 
 Cross-references: Cross-Border Risk Assessment (POL-029), DPA Template (POL-007)`, status: "not-started", notes: "" },
 
-      { id: "p2-31", requirement: "Establish Employee Training & Awareness Policy", dpdpRef: "Sec 8(4), Rule 12", templateTitle: "Training & Awareness Policy", templateContent: `════════════════════════════════════════════════════════════════════
+      { id: "p2-31", requirement: "Establish Employee Training & Awareness Policy", dpdpRef: "Sec 8(4)", templateTitle: "Training & Awareness Policy", templateContent: `════════════════════════════════════════════════════════════════════
 EMPLOYEE TRAINING & AWARENESS POLICY — DATA PROTECTION
 ════════════════════════════════════════════════════════════════════
 
@@ -2308,7 +2318,7 @@ Clause 1.5 — Board/Management: Annual briefing on DPDP compliance posture
 
 Cross-references: Training Attendance Register (POL-032), Privacy Notice — Employees (POL-002)`, status: "not-started", notes: "" },
 
-      { id: "p2-32", requirement: "Maintain Training Attendance Records", dpdpRef: "Rule 12(3)", templateTitle: "Training Attendance Register", templateContent: `════════════════════════════════════════════════════════════════════
+      { id: "p2-32", requirement: "Maintain Training Attendance Records", dpdpRef: "Sec 8(4)", templateTitle: "Training Attendance Register", templateContent: `════════════════════════════════════════════════════════════════════
 TRAINING ATTENDANCE REGISTER
 ════════════════════════════════════════════════════════════════════
 
@@ -2324,13 +2334,13 @@ REVIEW: Monthly by HR + DPO | RETENTION: 5 years
 
 Cross-references: Training Policy (POL-031)`, status: "not-started", notes: "" },
 
-      { id: "p2-33", requirement: "Draft Internal Audit Charter — Privacy", dpdpRef: "Rule 12(4)", templateTitle: "Internal Audit Charter — Privacy", templateContent: `════════════════════════════════════════════════════════════════════
+      { id: "p2-33", requirement: "Draft Internal Audit Charter — Privacy", dpdpRef: "Sec 8(4); SDF: Sec 10(2)(b)-(c), Rule 13(1)", templateTitle: "Internal Audit Charter — Privacy", templateContent: `════════════════════════════════════════════════════════════════════
 INTERNAL AUDIT CHARTER — DATA PROTECTION & PRIVACY
 ════════════════════════════════════════════════════════════════════
 
 Classification: CONFIDENTIAL | Document Reference: POL-033 | Version: v1.0
 
-1. PURPOSE: Establish authority, scope, and responsibilities of internal audit for data protection per Rule 12(4).
+1. PURPOSE: Establish authority, scope, and responsibilities of internal audit for data protection as an accountability measure under Sec 8(4) and, for Significant Data Fiduciaries, Sec 10(2)(b)–(c) and Rule 13(1).
 2. SCOPE: All processing activities, systems, policies, and procedures related to personal data.
 3. AUTHORITY: Audit team has unrestricted access to all data processing records, systems, and personnel.
 4. INDEPENDENCE: Audit function reports to Audit Committee, independent of DPO.
@@ -2340,7 +2350,7 @@ Classification: CONFIDENTIAL | Document Reference: POL-033 | Version: v1.0
 
 Cross-references: Audit Findings Register (POL-034)`, status: "not-started", notes: "" },
 
-      { id: "p2-34", requirement: "Maintain Audit Findings & Corrective Action Register", dpdpRef: "Rule 12(4)", templateTitle: "Audit Findings Register", templateContent: `════════════════════════════════════════════════════════════════════
+      { id: "p2-34", requirement: "Maintain Audit Findings & Corrective Action Register", dpdpRef: "Sec 8(4); SDF: Sec 10(2)(b)-(c), Rule 13(1)", templateTitle: "Audit Findings Register", templateContent: `════════════════════════════════════════════════════════════════════
 AUDIT FINDINGS & CORRECTIVE ACTION REGISTER
 ════════════════════════════════════════════════════════════════════
 
@@ -2374,7 +2384,7 @@ Classification: INTERNAL | Document Reference: POL-035 | Version: v1.0
 DOCUMENT CONTROL: Approved By: [Board/Audit Committee Chair]
 Cross-references: Grievance Policy (POL-021), Breach Response Policy (POL-022)`, status: "not-started", notes: "" },
 
-      { id: "p2-36", requirement: "Draft AI & Automated Decision-Making Policy", dpdpRef: "Sec 8(10), Rule 16", templateTitle: "AI & Automated Decision-Making Policy", templateContent: `════════════════════════════════════════════════════════════════════
+      { id: "p2-36", requirement: "Draft AI & Automated Decision-Making Policy", dpdpRef: "Sec 8(3)(a); SDF: Rule 13(3)", templateTitle: "AI & Automated Decision-Making Policy", templateContent: `════════════════════════════════════════════════════════════════════
 AI & AUTOMATED DECISION-MAKING POLICY
 ════════════════════════════════════════════════════════════════════
 
@@ -2463,16 +2473,16 @@ Cross-references: DPIA Framework (POL-014), Information Security Policy (POL-025
       { id: "p3-f1", requirement: "Document retention schedule with automated deletion evidence", dpdpRef: "Sec 8(7)", templateTitle: "Retention Schedule & Deletion Evidence", templateContent: `RETENTION SCHEDULE & AUTOMATED DELETION EVIDENCE\n\nClassification: CONFIDENTIAL | Document Reference: RA-F01 | [Organisation Name] | Domain F — Storage Limitation | Date: [Date]\n\n| Data Category | System | Retention Period | Deletion Method | Automated | Last Run | Records Deleted | Next Run |\n|--------------|--------|-----------------|----------------|-----------|---------|----------------|----------|\n| [Category] | [System] | [Period] | [Method] | [Y/N] | [Date] | [Number] | [Date] |\n\nPrepared by: [Name] | Verified by: [DPO Name]`, domain: "Domain F – Storage Limitation", status: "not-started", notes: "" },
       { id: "p3-f2", requirement: "Provide evidence of automated deletion mechanisms", dpdpRef: "Sec 8(7), Rule 8", templateTitle: "Automated Deletion Evidence", templateContent: `AUTOMATED DELETION EVIDENCE\n\nClassification: CONFIDENTIAL | Document Reference: RA-F02 | [Organisation Name] | Domain F | Date: [Date]\n\nSystems with automated deletion:\n| # | System | Mechanism | Schedule | Last 3 Runs (Date, Records) | Configuration Reference |\n|---|--------|-----------|---------|---------------------------|------------------------|\n| 1 | [System] | [Cron/TTL/Policy] | [Schedule] | [Date1: N], [Date2: N], [Date3: N] | [Config path/screenshot] |\n\nEvidence attached: Configuration screenshots, Deletion job logs, Confirmation receipts\n\nVerified by: [Name] | Date: [Date]`, domain: "Domain F – Storage Limitation", status: "not-started", notes: "" },
       { id: "p3-g1", requirement: "Compile rights request tracker and DSR response evidence", dpdpRef: "Sec 11-14", templateTitle: "DSR Response Evidence Pack", templateContent: `DSR RESPONSE EVIDENCE PACK\n\nClassification: CONFIDENTIAL | Document Reference: RA-G01 | [Organisation Name] | Domain G — Data Principal Rights | Date: [Date]\n\nSTATISTICS:\nTotal Requests (12 months): [Number] | By Type: Access [N], Correction [N], Erasure [N], Grievance [N], Nomination [N]\nAverage Response Time: [Days] | SLA Compliance: [%]\n\nSAMPLE EVIDENCE:\n1. Request acknowledgement emails (3 samples)\n2. Identity verification records\n3. Data export/deletion confirmations\n4. Response letters with outcomes\n5. Escalation records (if any)\n\nPrepared by: [Name] | Reviewed by: [DPO Name]`, domain: "Domain G – Data Principal Rights", status: "not-started", notes: "" },
-      { id: "p3-g2", requirement: "Prepare DSR response templates for all right types", dpdpRef: "Sec 11-14, Rule 7", templateTitle: "DSR Response Templates", templateContent: `DSR RESPONSE TEMPLATES\n\nClassification: INTERNAL | Document Reference: RA-G02 | [Organisation Name] | Domain G | Date: [Date]\n\nTEMPLATE 1 — ACCESS (Sec 11):\nDear [Name], Please find enclosed a summary of your personal data held by [Organisation Name], including processing activities, purposes, recipients, and retention periods.\n\nTEMPLATE 2 — CORRECTION (Sec 12(1)):\nYour request to correct [Field] has been processed. The updated information is now reflected in our records.\n\nTEMPLATE 3 — ERASURE (Sec 12(3)):\nYour personal data has been erased from our systems as of [Date]. Deletion has been confirmed across all primary systems and third-party processors.\n\nTEMPLATE 4 — DENIAL:\nWe are unable to fulfil your request because [legal basis for refusal]. You may escalate to [DPO Name] at [Email] or to the Data Protection Board of India.\n\nTEMPLATE 5 — NOMINATION (Sec 14):\nYour nomination of [Nominee Name] has been recorded. This person may exercise your rights in the event of your death or incapacity.\n\nApproved by: [DPO Name]`, domain: "Domain G – Data Principal Rights", status: "not-started", notes: "" },
+      { id: "p3-g2", requirement: "Prepare DSR response templates for all right types", dpdpRef: "Sec 11-14, Rule 14", templateTitle: "DSR Response Templates", templateContent: `DSR RESPONSE TEMPLATES\n\nClassification: INTERNAL | Document Reference: RA-G02 | [Organisation Name] | Domain G | Date: [Date]\n\nTEMPLATE 1 — ACCESS (Sec 11):\nDear [Name], Please find enclosed a summary of your personal data held by [Organisation Name], including processing activities, purposes, recipients, and retention periods.\n\nTEMPLATE 2 — CORRECTION (Sec 12(1)):\nYour request to correct [Field] has been processed. The updated information is now reflected in our records.\n\nTEMPLATE 3 — ERASURE (Sec 12(3)):\nYour personal data has been erased from our systems as of [Date]. Deletion has been confirmed across all primary systems and third-party processors.\n\nTEMPLATE 4 — DENIAL:\nWe are unable to fulfil your request because [legal basis for refusal]. You may escalate to [DPO Name] at [Email] or to the Data Protection Board of India.\n\nTEMPLATE 5 — NOMINATION (Sec 14):\nYour nomination of [Nominee Name] has been recorded. This person may exercise your rights in the event of your death or incapacity.\n\nApproved by: [DPO Name]`, domain: "Domain G – Data Principal Rights", status: "not-started", notes: "" },
       { id: "p3-h1", requirement: "Compile penetration test reports and security certifications", dpdpRef: "Sec 8(4)", templateTitle: "Security Assessment Evidence Pack", templateContent: `SECURITY ASSESSMENT EVIDENCE PACK\n\nClassification: CONFIDENTIAL | Document Reference: RA-H01 | [Organisation Name] | Domain H — Security Safeguards | Date: [Date]\n\n| # | Evidence | Date | Provider | Valid Until | Critical Findings | Remediated |\n|---|---------|------|----------|-----------|------------------|------------|\n| 1 | Penetration Test Report | [Date] | [Vendor] | N/A | [Number] | [Number] |\n| 2 | ISO 27001 Certificate | [Date] | [CB] | [Date] | N/A | N/A |\n| 3 | SOC 2 Type II Report | [Period] | [Auditor] | [Date] | [Number] | [Number] |\n| 4 | Vulnerability Assessment | [Date] | [Scanner] | N/A | [Number] | [Number] |\n\nPrepared by: [CISO] | Reviewed by: [DPO Name]`, domain: "Domain H – Security Safeguards", status: "not-started", notes: "" },
       { id: "p3-h2", requirement: "Document encryption policy and security controls", dpdpRef: "Sec 8(4), Rule 6", templateTitle: "Encryption & Security Controls Summary", templateContent: `ENCRYPTION & SECURITY CONTROLS SUMMARY\n\nClassification: CONFIDENTIAL | Document Reference: RA-H02 | [Organisation Name] | Domain H | Date: [Date]\n\nENCRYPTION:\n- At Rest: [AES-256 / Other] — Systems: [List]\n- In Transit: TLS [1.2/1.3] — Endpoints: [All]\n- Key Management: [KMS Provider] — Rotation: [Schedule]\n- Database Encryption: [TDE/Column-level]\n\nSECURITY CONTROLS:\n| Control | Solution | Vendor | Coverage | Last Review |\n|---------|----------|--------|----------|-------------|\n| Firewall | [Type] | [Vendor] | [Scope] | [Date] |\n| IDS/IPS | [Type] | [Vendor] | [Scope] | [Date] |\n| EDR | [Type] | [Vendor] | [Scope] | [Date] |\n| SIEM | [Type] | [Vendor] | [Scope] | [Date] |\n| WAF | [Type] | [Vendor] | [Scope] | [Date] |\n| DLP | [Type] | [Vendor] | [Scope] | [Date] |\n\nReviewed by: [CISO] | Date: [Date]`, domain: "Domain H – Security Safeguards", status: "not-started", notes: "" },
-      { id: "p3-i1", requirement: "Compile breach incident log and DPBI notification evidence", dpdpRef: "Sec 8(6), Rule 9", templateTitle: "Breach Incident Evidence Pack", templateContent: `BREACH INCIDENT EVIDENCE PACK\n\nClassification: CONFIDENTIAL | Document Reference: RA-I01 | [Organisation Name] | Domain I — Breach Management | Date: [Date]\n\nTotal Incidents (12 months): [Number] | DPBI Notifications: [Number] | Average Detection Time: [Hours] | Average Notification Time: [Hours]\n\nEvidence:\n1. Breach Register (current year) — POL-024\n2. DPBI notification copies with acknowledgements\n3. Root Cause Analysis reports\n4. Remediation action evidence\n5. Post-incident review minutes\n6. Tabletop exercise records\n\nPrepared by: [Incident Response Lead] | Reviewed by: [DPO Name]`, domain: "Domain I – Breach Management", status: "not-started", notes: "" },
+      { id: "p3-i1", requirement: "Compile breach incident log and DPBI notification evidence", dpdpRef: "Sec 8(6), Rule 7", templateTitle: "Breach Incident Evidence Pack", templateContent: `BREACH INCIDENT EVIDENCE PACK\n\nClassification: CONFIDENTIAL | Document Reference: RA-I01 | [Organisation Name] | Domain I — Breach Management | Date: [Date]\n\nTotal Incidents (12 months): [Number] | DPBI Notifications: [Number] | Average Detection Time: [Hours] | Average Notification Time: [Hours]\n\nEvidence:\n1. Breach Register (current year) — POL-024\n2. DPBI notification copies with acknowledgements\n3. Root Cause Analysis reports\n4. Remediation action evidence\n5. Post-incident review minutes\n6. Tabletop exercise records\n\nPrepared by: [Incident Response Lead] | Reviewed by: [DPO Name]`, domain: "Domain I – Breach Management", status: "not-started", notes: "" },
       { id: "p3-i2", requirement: "Document root cause analysis (RCA) reports for past breaches", dpdpRef: "Sec 8(6)", templateTitle: "RCA Report Template", templateContent: `ROOT CAUSE ANALYSIS REPORT\n\nClassification: CONFIDENTIAL | Document Reference: RA-I02 | [Organisation Name] | Domain I | Date: [Date]\n\nIncident ID: [ID] | Date: [Date] | Severity: [Critical/High/Medium/Low]\n\nDESCRIPTION: [Detailed description]\nROOT CAUSE: [Identified root cause using 5-Why or Fishbone analysis]\nIMPACT: [Number] Data Principals | Data Categories: [Categories]\n\nCORRECTIVE ACTIONS:\n| # | Action | Owner | Due Date | Status | Evidence |\n|---|--------|-------|---------|--------|----------|\n| 1 | [Action] | [Name] | [Date] | [Status] | [Reference] |\n\nPREVENTIVE MEASURES:\n| # | Measure | Implementation Date | Verified |\n|---|---------|-------------------|----------|\n| 1 | [Measure] | [Date] | [Y/N] |\n\nDPO Sign-off: [DPO Name] | Date: [Date]`, domain: "Domain I – Breach Management", status: "not-started", notes: "" },
-      { id: "p3-j1", requirement: "Compile signed DPAs and vendor assessment reports", dpdpRef: "Sec 8(2), Rule 14", templateTitle: "Vendor Compliance Evidence Pack", templateContent: `VENDOR COMPLIANCE EVIDENCE PACK\n\nClassification: CONFIDENTIAL | Document Reference: RA-J01 | [Organisation Name] | Domain J — Third-Party & Processors | Date: [Date]\n\nTotal Processors: [Number] | DPAs Executed: [Number] | Pending: [Number] | Non-compliant: [Number]\n\nEvidence:\n1. Signed DPA copies (all active processors)\n2. Vendor due diligence responses (POL-027)\n3. Security assessment reports\n4. Sub-processor approval records\n5. Annual audit reports\n\nRisk Summary:\n| Risk Level | Count | Action |\n|-----------|-------|--------|\n| High | [N] | Immediate remediation |\n| Medium | [N] | Quarterly monitoring |\n| Low | [N] | Annual review |\n\nPrepared by: [Name] | Reviewed by: [DPO Name]`, domain: "Domain J – Third-Party & Processors", status: "not-started", notes: "" },
+      { id: "p3-j1", requirement: "Compile signed DPAs and vendor assessment reports", dpdpRef: "Sec 8(2), Rule 6(1)(f)", templateTitle: "Vendor Compliance Evidence Pack", templateContent: `VENDOR COMPLIANCE EVIDENCE PACK\n\nClassification: CONFIDENTIAL | Document Reference: RA-J01 | [Organisation Name] | Domain J — Third-Party & Processors | Date: [Date]\n\nTotal Processors: [Number] | DPAs Executed: [Number] | Pending: [Number] | Non-compliant: [Number]\n\nEvidence:\n1. Signed DPA copies (all active processors)\n2. Vendor due diligence responses (POL-027)\n3. Security assessment reports\n4. Sub-processor approval records\n5. Annual audit reports\n\nRisk Summary:\n| Risk Level | Count | Action |\n|-----------|-------|--------|\n| High | [N] | Immediate remediation |\n| Medium | [N] | Quarterly monitoring |\n| Low | [N] | Annual review |\n\nPrepared by: [Name] | Reviewed by: [DPO Name]`, domain: "Domain J – Third-Party & Processors", status: "not-started", notes: "" },
       { id: "p3-k1", requirement: "Document transfer risk assessments and adequacy notes", dpdpRef: "Sec 16", templateTitle: "Transfer Compliance Evidence", templateContent: `CROSS-BORDER TRANSFER COMPLIANCE EVIDENCE\n\nClassification: CONFIDENTIAL | Document Reference: RA-K01 | [Organisation Name] | Domain K — Cross-Border Transfers | Date: [Date]\n\nTotal Transfers: [Number] | Countries: [List] | Restricted Countries: [List]\n\nEvidence:\n1. Transfer Risk Assessment for each destination (POL-029)\n2. SCCs / Adequacy documentation (POL-030)\n3. Recipient security assessments\n4. DPO approvals for each transfer\n5. Data localisation compliance evidence (if sector-specific)\n\nPrepared by: [Name] | Reviewed by: [DPO Name]`, domain: "Domain K – Cross-Border Transfers", status: "not-started", notes: "" },
       { id: "p3-l1", requirement: "Compile age-verification evidence and parental consent logs", dpdpRef: "Sec 9, Rule 11", templateTitle: "Children's Data Evidence Pack", templateContent: `CHILDREN'S DATA PROTECTION EVIDENCE PACK\n\nClassification: CONFIDENTIAL | Document Reference: RA-L01 | [Organisation Name] | Domain L — Children & Special Categories | Date: [Date]\n\nProcesses children's data: [Y/N]\n\nIf Yes:\n1. Age verification mechanism: [Method] — Evidence: [Screenshot/Config]\n2. Parental consent records: [Number] — Sample artefacts attached\n3. Evidence of NO behavioural tracking of children (Sec 9(3))\n4. Evidence of NO detrimental processing (Sec 9(4))\n5. Enhanced security measures documentation\n\nIf No: Documented confirmation with technical controls preventing children's data collection.\n\nPrepared by: [Name] | Verified by: [DPO Name]`, domain: "Domain L – Children & Special Categories", status: "not-started", notes: "" },
-      { id: "p3-m1", requirement: "Compile DPO reports and governance meeting minutes", dpdpRef: "Sec 8(6), Rule 13", templateTitle: "Governance Evidence Pack", templateContent: `ACCOUNTABILITY & GOVERNANCE EVIDENCE PACK\n\nClassification: CONFIDENTIAL | Document Reference: RA-M01 | [Organisation Name] | Domain M — Accountability & Governance | Date: [Date]\n\nEvidence:\n1. DPO Appointment Letter (GOV-004)\n2. DPO Quarterly Reports to Board (last 4)\n3. Governance/Privacy Committee Meeting Minutes (last 4)\n4. Board Resolution on Data Protection (GOV-005)\n5. Annual Privacy Report\n6. DPO Budget allocation records\n7. DPO independence documentation\n\nDPO Contact: [DPO Name] | [Email]\n\nPrepared by: [DPO Name]`, domain: "Domain M – Accountability & Governance", status: "not-started", notes: "" },
-      { id: "p3-n1", requirement: "Compile LMS completion records and training materials", dpdpRef: "Rule 12", templateTitle: "Training Evidence Pack", templateContent: `TRAINING & AWARENESS EVIDENCE PACK\n\nClassification: INTERNAL | Document Reference: RA-N01 | [Organisation Name] | Domain N — Training & Awareness | Date: [Date]\n\nLMS Platform: [Name] | Training Programme: [Name]\n\nCompletion Stats: Total: [Number] | Completed: [Number] ([%]) | Pending: [Number] | Average Score: [%]\n\nEvidence:\n1. LMS completion report (export)\n2. Training material copies (all modules)\n3. Assessment question bank\n4. Attendance registers (POL-032)\n5. Role-specific training records\n6. Incident response simulation records\n\nPrepared by: [HR/Training Manager] | Reviewed by: [DPO Name]`, domain: "Domain N – Training & Awareness", status: "not-started", notes: "" },
+      { id: "p3-m1", requirement: "Compile DPO reports and governance meeting minutes", dpdpRef: "Sec 10(2)(a), 8(9), Rule 9", templateTitle: "Governance Evidence Pack", templateContent: `ACCOUNTABILITY & GOVERNANCE EVIDENCE PACK\n\nClassification: CONFIDENTIAL | Document Reference: RA-M01 | [Organisation Name] | Domain M — Accountability & Governance | Date: [Date]\n\nEvidence:\n1. DPO Appointment Letter (GOV-004)\n2. DPO Quarterly Reports to Board (last 4)\n3. Governance/Privacy Committee Meeting Minutes (last 4)\n4. Board Resolution on Data Protection (GOV-005)\n5. Annual Privacy Report\n6. DPO Budget allocation records\n7. DPO independence documentation\n\nDPO Contact: [DPO Name] | [Email]\n\nPrepared by: [DPO Name]`, domain: "Domain M – Accountability & Governance", status: "not-started", notes: "" },
+      { id: "p3-n1", requirement: "Compile LMS completion records and training materials", dpdpRef: "Sec 8(1), 8(4)", templateTitle: "Training Evidence Pack", templateContent: `TRAINING & AWARENESS EVIDENCE PACK\n\nClassification: INTERNAL | Document Reference: RA-N01 | [Organisation Name] | Domain N — Training & Awareness | Date: [Date]\n\nLMS Platform: [Name] | Training Programme: [Name]\n\nCompletion Stats: Total: [Number] | Completed: [Number] ([%]) | Pending: [Number] | Average Score: [%]\n\nEvidence:\n1. LMS completion report (export)\n2. Training material copies (all modules)\n3. Assessment question bank\n4. Attendance registers (POL-032)\n5. Role-specific training records\n6. Incident response simulation records\n\nPrepared by: [HR/Training Manager] | Reviewed by: [DPO Name]`, domain: "Domain N – Training & Awareness", status: "not-started", notes: "" },
       { id: "p3-o1", requirement: "Compile PbD checklists, DPIA outcomes, and design review evidence", dpdpRef: "Sec 8(4)", templateTitle: "Privacy by Design Evidence Pack", templateContent: `PRIVACY BY DESIGN EVIDENCE PACK\n\nClassification: CONFIDENTIAL | Document Reference: RA-O01 | [Organisation Name] | Domain O — Privacy by Design & Default | Date: [Date]\n\nEvidence:\n1. Completed PbD Checklists (POL-037) — [Number] projects\n2. DPIA Reports and Outcomes (POL-014/015) — [Number] assessments\n3. Design Review Meeting Minutes\n4. Architecture diagrams with privacy annotations\n5. Default privacy settings documentation\n6. ISO 31700 alignment assessment\n\nProjects Assessed: [Number] | DPIAs Completed: [Number]\n\nPrepared by: [Name] | Reviewed by: [DPO Name]`, domain: "Domain O – Privacy by Design & Default", status: "not-started", notes: "" }
     ]
   },
@@ -2482,12 +2492,12 @@ Cross-references: DPIA Framework (POL-014), Information Security Policy (POL-025
     title: "Dept Grid",
     icon: "📊",
     items: [
-      { id: "p4-1", requirement: "Prepare Department-wise Data Inventory Matrix", dpdpRef: "Rule 6(2)", templateTitle: "Department Data Inventory Matrix", templateContent: `DEPARTMENT-WISE DATA INVENTORY MATRIX\n\nClassification: CONFIDENTIAL | Document Reference: DPT-001 | [Organisation Name] | Date: [Date]\n\n| Department | Data Categories | Systems | Data Principals | Volume | Purpose | Legal Basis | Retention | Cross-border | Risk Rating |\n|-----------|----------------|---------|----------------|--------|---------|------------|-----------|-------------|------------|\n| HR | Employee PII, Bank Details | HRMS, Payroll | Employees | [N] | Employment | Sec 7(a) | 7 years | N | Medium |\n| Marketing | Customer contacts, Preferences | CRM, Email | Customers | [N] | Marketing | Sec 6 | 2 years | Y | High |\n| IT | Access logs, Device data | AD, SIEM | All users | [N] | Security | Sec 7(b) | 1 year | N | Low |\n| Finance | Payment data, Tax records | ERP | Customers, Employees | [N] | Financial | Sec 7(c) | 8 years | N | High |\n| Legal | Contract data, Litigation | DMS | Various | [N] | Legal | Sec 7(c) | As required | N | Medium |\n| Operations | CCTV, Visitor logs | NVR, Access Control | Visitors, Employees | [N] | Security | Sec 7(b) | 90 days | N | Low |\n\nPrepared by: [Department Heads] | Consolidated by: [DPO Name]`, status: "not-started", notes: "" },
-      { id: "p4-2", requirement: "Create Departmental Data Flow Maps", dpdpRef: "Rule 6(2)", templateTitle: "Departmental Data Flow Map Template", templateContent: `DEPARTMENTAL DATA FLOW MAP\n\nClassification: CONFIDENTIAL | Document Reference: DPT-002 | Department: [Department] | [Organisation Name] | Date: [Date]\n\nDATA INPUTS:\n| Source | Channel | Data Categories | Volume | Legal Basis |\n|--------|---------|----------------|--------|------------|\n| [Source] | [Channel] | [Categories] | [Volume] | [Basis] |\n\nINTERNAL PROCESSING:\n| System | Process | Data Accessed | Purpose | Access Controls |\n|--------|---------|-------------|---------|----------------|\n| [System] | [Process] | [Data] | [Purpose] | [Controls] |\n\nDATA OUTPUTS:\n| Recipient | Type | Data Categories | Purpose | DPA in Place |\n|----------|------|----------------|---------|-------------|\n| [Recipient] | [Int/Ext] | [Categories] | [Purpose] | [Y/N] |\n\nDATA STORES:\n| Database | Location | Encryption | Retention | Backup |\n|----------|----------|-----------|-----------|--------|\n| [Name] | [Location] | [Y/N, Method] | [Period] | [Y/N] |\n\nPrepared by: [Department Head] | Reviewed by: [DPO Name]`, status: "not-started", notes: "" },
-      { id: "p4-3", requirement: "Define RACI Matrix for Data Processing Responsibilities", dpdpRef: "Rule 12", templateTitle: "RACI Matrix — Data Processing", templateContent: `RACI MATRIX — DATA PROCESSING RESPONSIBILITIES\n\nClassification: INTERNAL | Document Reference: DPT-003 | [Organisation Name] | Date: [Date]\n\n| Activity | Board | DPO | CISO | IT | HR | Legal | Marketing | Finance | Operations |\n|---------|-------|-----|------|----|----|-------|-----------|---------|------------|\n| Consent Management | I | A | C | R | C | C | R | I | I |\n| Breach Detection | I | A | R | R | I | C | I | I | I |\n| Breach Notification (DPBI) | I | R | C | C | I | A | I | I | I |\n| DSR Fulfilment | I | A | C | R | R | C | R | R | I |\n| Retention Enforcement | I | A | C | R | R | C | R | R | R |\n| Training Delivery | I | A | C | C | R | C | C | C | C |\n| DPIA Execution | C | A | C | R | C | C | R | C | C |\n| Vendor DPA Management | I | A | C | C | C | R | C | C | C |\n| Cross-border Assessment | I | A | C | C | I | R | C | I | I |\n| Audit Response | A | R | R | R | R | R | R | R | R |\n\nR = Responsible | A = Accountable | C = Consulted | I = Informed\n\nApproved by: [DPO Name]`, status: "not-started", notes: "" },
-      { id: "p4-4", requirement: "Collect Department Self-Assessment Responses", dpdpRef: "Rule 12", templateTitle: "Department Self-Assessment Questionnaire", templateContent: `DEPARTMENT SELF-ASSESSMENT QUESTIONNAIRE\n\nClassification: INTERNAL | Document Reference: DPT-004 | Department: [Department] | Completed by: [Name] | Date: [Date]\n\n| # | Question | DPDP Ref | Yes | No | Partial | Evidence | Notes |\n|---|---------|---------|-----|-----|---------|----------|-------|\n| 1 | Does your department process personal data? | General | | | | | |\n| 2 | Are all processing activities documented in RoPA? | Sec 8(8) | | | | | |\n| 3 | Are privacy notices provided to all Data Principals? | Sec 5 | | | | | |\n| 4 | Is consent collected where required? | Sec 6 | | | | | |\n| 5 | Are retention periods defined and enforced? | Sec 8(7) | | | | | |\n| 6 | Have all staff completed data protection training? | Rule 12 | | | | | |\n| 7 | Are third-party processors covered by DPAs? | Sec 8(2) | | | | | |\n| 8 | Is there a process for handling DSR requests? | Sec 11-14 | | | | | |\n| 9 | Are access controls implemented (RBAC, MFA)? | Sec 8(4) | | | | | |\n| 10 | Are data breaches reported to DPO promptly? | Sec 8(6) | | | | | |\n| 11 | Is data encrypted at rest and in transit? | Sec 8(4) | | | | | |\n| 12 | Are cross-border transfers documented and assessed? | Sec 16 | | | | | |\n\nCompliance Score: [Score] / 12 | Rating: [High/Medium/Low]\n\nReviewed by: [DPO Name]`, status: "not-started", notes: "" },
-      { id: "p4-5", requirement: "Conduct Department-level Gap Analysis", dpdpRef: "Rule 12", templateTitle: "Department Gap Analysis Report", templateContent: `DEPARTMENT GAP ANALYSIS REPORT\n\nClassification: CONFIDENTIAL | Document Reference: DPT-005 | Department: [Department] | [Organisation Name] | Date: [Date]\n\n5×5 RISK SCORING per gap:\n\n| # | Requirement | DPDP Ref | Current State | Target State | Gap Description | Likelihood | Impact | Risk Score | Priority | Remediation | Owner | Due Date |\n|---|-----------|---------|-------------|-------------|----------------|-----------|--------|-----------|----------|------------|-------|----------|\n| 1 | [Req] | [Ref] | [Current] | [Target] | [Gap] | [1-5] | [1-5] | [Score] | [H/M/L] | [Action] | [Name] | [Date] |\n\nSummary: Total Gaps: [N] | Critical (≥20): [N] | High (15-19): [N] | Medium (10-14): [N] | Low (1-9): [N]\nEscalation: Gaps with risk score ≥ 15 escalated to Board.\n\nDPO Sign-off: [DPO Name] | Date: [Date]\nLinkage: DPIA Register (POL-015)`, status: "not-started", notes: "" },
-      { id: "p4-6", requirement: "Create Corrective Action Plans per Department", dpdpRef: "Rule 12", templateTitle: "Corrective Action Plan Template", templateContent: `CORRECTIVE ACTION PLAN\n\nClassification: CONFIDENTIAL | Document Reference: DPT-006 | Department: [Department] | [Organisation Name] | Date: [Date]\n\n| # | Gap/Finding Ref | Description | Corrective Action | RACI (R/A/C/I) | Start Date | Due Date | Status | Evidence | Escalation (if overdue) |\n|---|----------------|------------|-------------------|---------------|-----------|---------|--------|---------|------------------------|\n| 1 | DPT-005-[#] | [Gap] | [Action] | R:[Name] A:[DPO] | [Date] | [Date] | [Status] | [Evidence] | [DPO → Board if >14 days overdue] |\n\nProgress: [N] / [Total] completed | Overdue: [N]\nException: [Document any exceptions with legal basis and review date]\nNext Review: [Date]\n\nDepartment Head: [Name] | DPO Review: [DPO Name]`, status: "not-started", notes: "" }
+      { id: "p4-1", requirement: "Prepare Department-wise Data Inventory Matrix", dpdpRef: "Sec 8(1), 8(4)", templateTitle: "Department Data Inventory Matrix", templateContent: `DEPARTMENT-WISE DATA INVENTORY MATRIX\n\nClassification: CONFIDENTIAL | Document Reference: DPT-001 | [Organisation Name] | Date: [Date]\n\n| Department | Data Categories | Systems | Data Principals | Volume | Purpose | Legal Basis | Retention | Cross-border | Risk Rating |\n|-----------|----------------|---------|----------------|--------|---------|------------|-----------|-------------|------------|\n| HR | Employee PII, Bank Details | HRMS, Payroll | Employees | [N] | Employment | Sec 7(a) | 7 years | N | Medium |\n| Marketing | Customer contacts, Preferences | CRM, Email | Customers | [N] | Marketing | Sec 6 | 2 years | Y | High |\n| IT | Access logs, Device data | AD, SIEM | All users | [N] | Security | Sec 7(b) | 1 year | N | Low |\n| Finance | Payment data, Tax records | ERP | Customers, Employees | [N] | Financial | Sec 7(c) | 8 years | N | High |\n| Legal | Contract data, Litigation | DMS | Various | [N] | Legal | Sec 7(c) | As required | N | Medium |\n| Operations | CCTV, Visitor logs | NVR, Access Control | Visitors, Employees | [N] | Security | Sec 7(b) | 90 days | N | Low |\n\nPrepared by: [Department Heads] | Consolidated by: [DPO Name]`, status: "not-started", notes: "" },
+      { id: "p4-2", requirement: "Create Departmental Data Flow Maps", dpdpRef: "Sec 8(1), 8(4)", templateTitle: "Departmental Data Flow Map Template", templateContent: `DEPARTMENTAL DATA FLOW MAP\n\nClassification: CONFIDENTIAL | Document Reference: DPT-002 | Department: [Department] | [Organisation Name] | Date: [Date]\n\nDATA INPUTS:\n| Source | Channel | Data Categories | Volume | Legal Basis |\n|--------|---------|----------------|--------|------------|\n| [Source] | [Channel] | [Categories] | [Volume] | [Basis] |\n\nINTERNAL PROCESSING:\n| System | Process | Data Accessed | Purpose | Access Controls |\n|--------|---------|-------------|---------|----------------|\n| [System] | [Process] | [Data] | [Purpose] | [Controls] |\n\nDATA OUTPUTS:\n| Recipient | Type | Data Categories | Purpose | DPA in Place |\n|----------|------|----------------|---------|-------------|\n| [Recipient] | [Int/Ext] | [Categories] | [Purpose] | [Y/N] |\n\nDATA STORES:\n| Database | Location | Encryption | Retention | Backup |\n|----------|----------|-----------|-----------|--------|\n| [Name] | [Location] | [Y/N, Method] | [Period] | [Y/N] |\n\nPrepared by: [Department Head] | Reviewed by: [DPO Name]`, status: "not-started", notes: "" },
+      { id: "p4-3", requirement: "Define RACI Matrix for Data Processing Responsibilities", dpdpRef: "Sec 8(1), 8(4)", templateTitle: "RACI Matrix — Data Processing", templateContent: `RACI MATRIX — DATA PROCESSING RESPONSIBILITIES\n\nClassification: INTERNAL | Document Reference: DPT-003 | [Organisation Name] | Date: [Date]\n\n| Activity | Board | DPO | CISO | IT | HR | Legal | Marketing | Finance | Operations |\n|---------|-------|-----|------|----|----|-------|-----------|---------|------------|\n| Consent Management | I | A | C | R | C | C | R | I | I |\n| Breach Detection | I | A | R | R | I | C | I | I | I |\n| Breach Notification (DPBI) | I | R | C | C | I | A | I | I | I |\n| DSR Fulfilment | I | A | C | R | R | C | R | R | I |\n| Retention Enforcement | I | A | C | R | R | C | R | R | R |\n| Training Delivery | I | A | C | C | R | C | C | C | C |\n| DPIA Execution | C | A | C | R | C | C | R | C | C |\n| Vendor DPA Management | I | A | C | C | C | R | C | C | C |\n| Cross-border Assessment | I | A | C | C | I | R | C | I | I |\n| Audit Response | A | R | R | R | R | R | R | R | R |\n\nR = Responsible | A = Accountable | C = Consulted | I = Informed\n\nApproved by: [DPO Name]`, status: "not-started", notes: "" },
+      { id: "p4-4", requirement: "Collect Department Self-Assessment Responses", dpdpRef: "Sec 8(1), 8(4)", templateTitle: "Department Self-Assessment Questionnaire", templateContent: `DEPARTMENT SELF-ASSESSMENT QUESTIONNAIRE\n\nClassification: INTERNAL | Document Reference: DPT-004 | Department: [Department] | Completed by: [Name] | Date: [Date]\n\n| # | Question | DPDP Ref | Yes | No | Partial | Evidence | Notes |\n|---|---------|---------|-----|-----|---------|----------|-------|\n| 1 | Does your department process personal data? | General | | | | | |\n| 2 | Are all processing activities documented in RoPA? | Sec 8(8) | | | | | |\n| 3 | Are privacy notices provided to all Data Principals? | Sec 5 | | | | | |\n| 4 | Is consent collected where required? | Sec 6 | | | | | |\n| 5 | Are retention periods defined and enforced? | Sec 8(7) | | | | | |\n| 6 | Have all staff completed data protection training? | Rule 12 | | | | | |\n| 7 | Are third-party processors covered by DPAs? | Sec 8(2) | | | | | |\n| 8 | Is there a process for handling DSR requests? | Sec 11-14 | | | | | |\n| 9 | Are access controls implemented (RBAC, MFA)? | Sec 8(4) | | | | | |\n| 10 | Are data breaches reported to DPO promptly? | Sec 8(6) | | | | | |\n| 11 | Is data encrypted at rest and in transit? | Sec 8(4) | | | | | |\n| 12 | Are cross-border transfers documented and assessed? | Sec 16 | | | | | |\n\nCompliance Score: [Score] / 12 | Rating: [High/Medium/Low]\n\nReviewed by: [DPO Name]`, status: "not-started", notes: "" },
+      { id: "p4-5", requirement: "Conduct Department-level Gap Analysis", dpdpRef: "Sec 8(1), 8(4)", templateTitle: "Department Gap Analysis Report", templateContent: `DEPARTMENT GAP ANALYSIS REPORT\n\nClassification: CONFIDENTIAL | Document Reference: DPT-005 | Department: [Department] | [Organisation Name] | Date: [Date]\n\n5×5 RISK SCORING per gap:\n\n| # | Requirement | DPDP Ref | Current State | Target State | Gap Description | Likelihood | Impact | Risk Score | Priority | Remediation | Owner | Due Date |\n|---|-----------|---------|-------------|-------------|----------------|-----------|--------|-----------|----------|------------|-------|----------|\n| 1 | [Req] | [Ref] | [Current] | [Target] | [Gap] | [1-5] | [1-5] | [Score] | [H/M/L] | [Action] | [Name] | [Date] |\n\nSummary: Total Gaps: [N] | Critical (≥20): [N] | High (15-19): [N] | Medium (10-14): [N] | Low (1-9): [N]\nEscalation: Gaps with risk score ≥ 15 escalated to Board.\n\nDPO Sign-off: [DPO Name] | Date: [Date]\nLinkage: DPIA Register (POL-015)`, status: "not-started", notes: "" },
+      { id: "p4-6", requirement: "Create Corrective Action Plans per Department", dpdpRef: "Sec 8(1), 8(4)", templateTitle: "Corrective Action Plan Template", templateContent: `CORRECTIVE ACTION PLAN\n\nClassification: CONFIDENTIAL | Document Reference: DPT-006 | Department: [Department] | [Organisation Name] | Date: [Date]\n\n| # | Gap/Finding Ref | Description | Corrective Action | RACI (R/A/C/I) | Start Date | Due Date | Status | Evidence | Escalation (if overdue) |\n|---|----------------|------------|-------------------|---------------|-----------|---------|--------|---------|------------------------|\n| 1 | DPT-005-[#] | [Gap] | [Action] | R:[Name] A:[DPO] | [Date] | [Date] | [Status] | [Evidence] | [DPO → Board if >14 days overdue] |\n\nProgress: [N] / [Total] completed | Overdue: [N]\nException: [Document any exceptions with legal basis and review date]\nNext Review: [Date]\n\nDepartment Head: [Name] | DPO Review: [DPO Name]`, status: "not-started", notes: "" }
     ]
   },
   {
@@ -2496,12 +2506,12 @@ Cross-references: DPIA Framework (POL-014), Information Security Policy (POL-025
     title: "File References",
     icon: "📎",
     items: [
-      { id: "p5-1", requirement: "Create Master Evidence Index (hyperlinked)", dpdpRef: "Rule 6", templateTitle: "Master Evidence Index", templateContent: `MASTER EVIDENCE INDEX\n\nClassification: CONFIDENTIAL | Document Reference: FIL-001 | [Organisation Name] | Last Updated: [Date]\n\n| # | Document Title | Ref | Category | Phase | File Location | Version | Last Updated | Owner | Status |\n|---|---------------|-----|----------|-------|-------------|---------|-------------|-------|--------|\n| 1 | Statement on Applicability | GOV-001 | Governance | Phase 1 | [Link] | v1.0 | [Date] | DPO | [Active] |\n| 2 | Organisation Chart | GOV-002 | Governance | Phase 1 | [Link] | v1.0 | [Date] | DPO | [Active] |\n| 3 | Privacy Notice — Website | POL-001 | Policy | Phase 2 | [Link] | v1.0 | [Date] | DPO | [Active] |\n| 4 | DPA Template | POL-007 | Agreement | Phase 2 | [Link] | v1.0 | [Date] | Legal | [Active] |\n\nTotal Documents: [Number] | Review: Quarterly\nMaintained by: [DPO Name]`, status: "not-started", notes: "" },
+      { id: "p5-1", requirement: "Create Master Evidence Index (hyperlinked)", dpdpRef: "Sec 8(1), 8(4)", templateTitle: "Master Evidence Index", templateContent: `MASTER EVIDENCE INDEX\n\nClassification: CONFIDENTIAL | Document Reference: FIL-001 | [Organisation Name] | Last Updated: [Date]\n\n| # | Document Title | Ref | Category | Phase | File Location | Version | Last Updated | Owner | Status |\n|---|---------------|-----|----------|-------|-------------|---------|-------------|-------|--------|\n| 1 | Statement on Applicability | GOV-001 | Governance | Phase 1 | [Link] | v1.0 | [Date] | DPO | [Active] |\n| 2 | Organisation Chart | GOV-002 | Governance | Phase 1 | [Link] | v1.0 | [Date] | DPO | [Active] |\n| 3 | Privacy Notice — Website | POL-001 | Policy | Phase 2 | [Link] | v1.0 | [Date] | DPO | [Active] |\n| 4 | DPA Template | POL-007 | Agreement | Phase 2 | [Link] | v1.0 | [Date] | Legal | [Active] |\n\nTotal Documents: [Number] | Review: Quarterly\nMaintained by: [DPO Name]`, status: "not-started", notes: "" },
       { id: "p5-2", requirement: "Compile External Regulatory Reference Links", dpdpRef: "General", templateTitle: "Regulatory Reference Links Register", templateContent: `EXTERNAL REGULATORY REFERENCE LINKS\n\nClassification: PUBLIC | Document Reference: FIL-002 | [Organisation Name] | Last Updated: [Date]\n\n| # | Reference | Source | URL | Category | Relevance | Published | Last Checked |\n|---|----------|--------|-----|----------|-----------|-----------|-------------|\n| 1 | DPDP Act, 2023 (Full Text) | MeitY | [URL] | Primary Legislation | Core | Aug 2023 | [Date] |\n| 2 | DPDP Rules, 2025 | MeitY | [URL] | Rules | Implementing | Jan 2025 | [Date] |\n| 3 | DPBI Circulars & Orders | DPBI | [URL] | Regulatory Guidance | Compliance | Ongoing | [Date] |\n| 4 | ISO 27001:2022 | ISO | [URL] | Standard | Security | 2022 | [Date] |\n| 5 | ISO 31700 (PbD) | ISO | [URL] | Standard | Privacy | 2023 | [Date] |\n\nMaintained by: [Legal Team] | Reviewed by: [DPO Name]`, status: "not-started", notes: "" },
       { id: "p5-3", requirement: "Compile Sector-Specific Guidelines Index", dpdpRef: "Sec 16", templateTitle: "Sector Guidelines Index", templateContent: `SECTOR-SPECIFIC GUIDELINES INDEX\n\nClassification: INTERNAL | Document Reference: FIL-003 | [Organisation Name] | Industry: [Industry] | Date: [Date]\n\n| # | Guideline | Authority | Applicable To | Data Protection Requirements | DPDP Overlap | Status |\n|---|----------|-----------|-------------|----------------------------|-------------|--------|\n| 1 | [Guideline] | [Authority] | [Scope] | [Requirements] | [DPDP Section] | [Reviewed/Pending] |\n\nSector examples: FinTech → RBI directions | Healthcare → DISHA/ICMR | Telecom → DoT/TRAI | E-commerce → Consumer Protection Rules\n\nMaintained by: [Legal/Compliance]`, status: "not-started", notes: "" },
       { id: "p5-4", requirement: "Maintain Court Judgements & Precedent Register", dpdpRef: "General", templateTitle: "Court Judgements Register", templateContent: `COURT JUDGEMENTS & PRECEDENT REGISTER\n\nClassification: INTERNAL | Document Reference: FIL-004 | [Organisation Name] | Last Updated: [Date]\n\n| # | Case Name | Court | Citation | Date | Key Holding | DPDP Relevance | Action Required | Status |\n|---|----------|-------|---------|------|------------|---------------|----------------|--------|\n| 1 | [Case] | [Court] | [Citation] | [Date] | [Holding] | [Section] | [Action] | [Reviewed] |\n\nReview: Quarterly by Legal Counsel\nMaintained by: [Legal Counsel] | Reviewed by: [DPO Name]`, status: "not-started", notes: "" },
-      { id: "p5-5", requirement: "Maintain Internal Policy Version History Log", dpdpRef: "Rule 6", templateTitle: "Policy Version History Log", templateContent: `INTERNAL POLICY VERSION HISTORY LOG\n\nClassification: INTERNAL | Document Reference: FIL-005 | [Organisation Name] | Last Updated: [Date]\n\n| # | Policy Name | Ref | Current Ver | Previous Ver | Change Summary | Changed By | Date | Approved By | Effective Date |\n|---|-----------|-----|-----------|-------------|---------------|-----------|------|-----------|---------------|\n| 1 | Privacy Notice — Website | POL-001 | v2.0 | v1.0 | Added DPDP Act references | [Name] | [Date] | [DPO] | [Date] |\n\nVersion Control Rules:\n- Major changes (scope, legal basis): Increment major version (v1.0 → v2.0)\n- Minor changes (formatting, clarification): Increment minor version (v1.0 → v1.1)\n- All changes require DPO approval before publication\n\nMaintained by: [Name]`, status: "not-started", notes: "" },
-      { id: "p5-6", requirement: "Archive Superseded Documents", dpdpRef: "Rule 6", templateTitle: "Archived Documents Register", templateContent: `ARCHIVED / SUPERSEDED DOCUMENTS REGISTER\n\nClassification: INTERNAL | Document Reference: FIL-006 | [Organisation Name] | Last Updated: [Date]\n\n| # | Document Title | Ref | Superseded Version | Superseded Date | Replaced By | Archive Location | Retention Until | Destruction Date |\n|---|---------------|-----|-------------------|----------------|-----------|-----------------|----------------|------------------|\n| 1 | [Document] | [Ref] | [Version] | [Date] | [New Version] | [Location] | [Date] | [Date] |\n\nArchive Policy: Superseded documents retained for [5] years in read-only archive. Destruction requires DPO approval.\n\nMaintained by: [Name] | Reviewed by: [DPO Name]`, status: "not-started", notes: "" }
+      { id: "p5-5", requirement: "Maintain Internal Policy Version History Log", dpdpRef: "Sec 8(1), 8(4)", templateTitle: "Policy Version History Log", templateContent: `INTERNAL POLICY VERSION HISTORY LOG\n\nClassification: INTERNAL | Document Reference: FIL-005 | [Organisation Name] | Last Updated: [Date]\n\n| # | Policy Name | Ref | Current Ver | Previous Ver | Change Summary | Changed By | Date | Approved By | Effective Date |\n|---|-----------|-----|-----------|-------------|---------------|-----------|------|-----------|---------------|\n| 1 | Privacy Notice — Website | POL-001 | v2.0 | v1.0 | Added DPDP Act references | [Name] | [Date] | [DPO] | [Date] |\n\nVersion Control Rules:\n- Major changes (scope, legal basis): Increment major version (v1.0 → v2.0)\n- Minor changes (formatting, clarification): Increment minor version (v1.0 → v1.1)\n- All changes require DPO approval before publication\n\nMaintained by: [Name]`, status: "not-started", notes: "" },
+      { id: "p5-6", requirement: "Archive Superseded Documents", dpdpRef: "Sec 8(1), 8(4)", templateTitle: "Archived Documents Register", templateContent: `ARCHIVED / SUPERSEDED DOCUMENTS REGISTER\n\nClassification: INTERNAL | Document Reference: FIL-006 | [Organisation Name] | Last Updated: [Date]\n\n| # | Document Title | Ref | Superseded Version | Superseded Date | Replaced By | Archive Location | Retention Until | Destruction Date |\n|---|---------------|-----|-------------------|----------------|-----------|-----------------|----------------|------------------|\n| 1 | [Document] | [Ref] | [Version] | [Date] | [New Version] | [Location] | [Date] | [Date] |\n\nArchive Policy: Superseded documents retained for [5] years in read-only archive. Destruction requires DPO approval.\n\nMaintained by: [Name] | Reviewed by: [DPO Name]`, status: "not-started", notes: "" }
     ]
   },
   {
@@ -2510,13 +2520,13 @@ Cross-references: DPIA Framework (POL-014), Information Security Policy (POL-025
     title: "Dashboard Reports",
     icon: "📈",
     items: [
-      { id: "p6-1", requirement: "Generate Compliance Score Report (versioned)", dpdpRef: "Rule 12", templateTitle: "Compliance Score Report Template", templateContent: `COMPLIANCE SCORE REPORT\n\nClassification: CONFIDENTIAL | Document Reference: RPT-001 | [Organisation Name] | Version: [Version] | Date: [Date]\n\nOVERALL COMPLIANCE SCORE: [Score]%\n\n| Domain | Weight | Score | Status | Critical Gaps | Remediation ETA |\n|--------|--------|-------|--------|--------------|----------------|\n| A — Lawful Processing | 15% | [Score]% | [Status] | [Gaps] | [Date] |\n| B — Notice & Transparency | 10% | [Score]% | [Status] | [Gaps] | [Date] |\n| C — Purpose Limitation | 10% | [Score]% | [Status] | [Gaps] | [Date] |\n| D — Data Minimisation | 8% | [Score]% | [Status] | [Gaps] | [Date] |\n| E — Accuracy & Quality | 7% | [Score]% | [Status] | [Gaps] | [Date] |\n| F — Storage Limitation | 8% | [Score]% | [Status] | [Gaps] | [Date] |\n| G — Data Principal Rights | 12% | [Score]% | [Status] | [Gaps] | [Date] |\n| H — Security Safeguards | 15% | [Score]% | [Status] | [Gaps] | [Date] |\n| I — Breach Management | 10% | [Score]% | [Status] | [Gaps] | [Date] |\n| J — Third-Party Management | 5% | [Score]% | [Status] | [Gaps] | [Date] |\n\nTrend (vs previous): [Improving/Stable/Declining] | Penalty Exposure: ₹[Amount] Crore\nNext Assessment: [Date]\n\nPrepared by: [DPO Name]`, status: "not-started", notes: "" },
-      { id: "p6-2", requirement: "Export Domain-wise Risk Heat Map", dpdpRef: "Rule 12", templateTitle: "Risk Heat Map Template", templateContent: `DOMAIN-WISE RISK HEAT MAP\n\nClassification: CONFIDENTIAL | Document Reference: RPT-002 | [Organisation Name] | Date: [Date]\n\n5×5 RISK MATRIX:\n| Domain | Likelihood (1-5) | Impact (1-5) | Inherent Risk | Controls Effectiveness | Residual Risk | Priority |\n|--------|-----------------|-------------|--------------|----------------------|--------------|----------|\n| A — Lawful Processing | [Score] | [Score] | [Score] | [%] | [Score] | [Priority] |\n| B — Notice | [Score] | [Score] | [Score] | [%] | [Score] | [Priority] |\n| ... | | | | | | |\n\nRisk Levels: Critical (20-25) | High (15-19) | Medium (10-14) | Low (1-9)\nEscalation: All Critical and High risks reported to Board.\n\nPrepared by: [DPO Name]`, status: "not-started", notes: "" },
-      { id: "p6-3", requirement: "Prepare Penalty Exposure Map", dpdpRef: "Sec 33-34", templateTitle: "Penalty Exposure Map Template", templateContent: `PENALTY EXPOSURE MAP\n\nClassification: CONFIDENTIAL | Document Reference: RPT-003 | [Organisation Name] | Date: [Date]\n\n| # | Violation | DPDP Section | Maximum Penalty | Current Compliance | Controls in Place | Residual Exposure | Priority |\n|---|----------|-------------|----------------|-------------------|------------------|------------------|----------|\n| 1 | Failure to take security safeguards | Sec 8(4), Sec 33(a) | ₹250 Crore | [Score]% | [Controls] | [₹Amount] | [H/M/L] |\n| 2 | Failure to notify data breach | Sec 8(6), Sec 33(b) | ₹200 Crore | [Score]% | [Controls] | [₹Amount] | [H/M/L] |\n| 3 | Non-compliance children's data | Sec 9, Sec 33(c) | ₹200 Crore | [Score]% | [Controls] | [₹Amount] | [H/M/L] |\n| 4 | Breach of additional SDF obligations | Sec 10, Sec 33(d) | ₹150 Crore | [Score]% | [Controls] | [₹Amount] | [H/M/L] |\n| 5 | Non-compliance by Data Principal | Sec 15, Sec 33(e) | ₹10,000 | N/A | N/A | N/A | N/A |\n| 6 | General non-compliance | Sec 33(f) | ₹50 Crore | [Score]% | [Controls] | [₹Amount] | [H/M/L] |\n\nTotal Maximum Exposure: ₹[Amount] Crore | Total Residual Exposure: ₹[Amount] Crore\n\nPrepared by: [Legal/DPO]`, status: "not-started", notes: "" },
-      { id: "p6-4", requirement: "Export Audit Trail / Activity Log", dpdpRef: "Rule 12", templateTitle: "Audit Trail Export Template", templateContent: `AUDIT TRAIL / ACTIVITY LOG EXPORT\n\nClassification: CONFIDENTIAL | Document Reference: RPT-004 | [Organisation Name] | Export Date: [Date] | Period: [Start] to [End]\n\n| # | Timestamp | User | Role | Action | Module | Resource | IP Address | Details | Result |\n|---|----------|------|------|--------|--------|----------|-----------|---------|--------|\n| 1 | [DateTime] | [User] | [Role] | [Action] | [Module] | [Resource] | [IP] | [Details] | [Success/Fail] |\n\nTotal Activities: [Number] | Unique Users: [Number] | Failed Actions: [Number]\nFilters Applied: [Filters]\n\nGenerated by: System | Requested by: [Name] | Approved by: [DPO Name]`, status: "not-started", notes: "" },
-      { id: "p6-5", requirement: "Prepare Board/Management Compliance Summary Report", dpdpRef: "Rule 12", templateTitle: "Board Compliance Summary", templateContent: `BOARD / MANAGEMENT COMPLIANCE SUMMARY REPORT\n\nClassification: CONFIDENTIAL — BOARD PAPER | Document Reference: RPT-005 | [Organisation Name] | Period: [Period] | Date: [Date]\n\nEXECUTIVE SUMMARY:\nOverall Compliance Score: [Score]% | Trend: [↑/→/↓] vs Previous: [Score]%\nPenalty Exposure: ₹[Amount] Crore (reduced from ₹[Previous] Crore)\n\nKEY HIGHLIGHTS:\n1. [Highlight — e.g., ISO 27001 certification achieved]\n2. [Highlight — e.g., 100% DPA coverage for all processors]\n3. [Highlight — e.g., Zero data breaches this quarter]\n\nRISK AREAS REQUIRING BOARD ATTENTION:\n| Risk | Domain | Score | Mitigation | Owner | ETA |\n|------|--------|-------|-----------|-------|-----|\n| [Risk] | [Domain] | [Score] | [Action] | [Name] | [Date] |\n\nBREACH SUMMARY:\nIncidents: [Number] | DPBI Notifications: [Number] | Data Principals Affected: [Number] | Average Response: [Hours]\n\nDSR SUMMARY:\nRequests Received: [Number] | Fulfilled: [Number] | Average Response: [Days] | SLA Compliance: [%]\n\nTRAINING:\nCompletion Rate: [%] | Overdue: [Number employees]\n\nBUDGET:\nAllocated: ₹[Amount] | Spent: ₹[Amount] | Utilisation: [%]\n\nRECOMMENDATIONS:\n1. [Recommendation with business case]\n2. [Recommendation]\n\nPresented by: [DPO Name] | Date: [Date]`, status: "not-started", notes: "" },
-      { id: "p6-6", requirement: "Maintain Shared Report Links / Access Log", dpdpRef: "Rule 12", templateTitle: "Shared Reports Access Log", templateContent: `SHARED REPORT LINKS / ACCESS LOG\n\nClassification: INTERNAL | Document Reference: RPT-006 | [Organisation Name] | Last Updated: [Date]\n\n| # | Report Title | Share Code | Shared By | Shared With | Share Date | Expiry | Access Count | Last Accessed | Status |\n|---|-------------|-----------|-----------|-------------|-----------|--------|-------------|-------------|--------|\n| 1 | [Report] | [Code] | [Name] | [Recipient] | [Date] | [Date] | [Count] | [Date] | Active/Expired |\n\nAccess Policy: Links expire after [30/60/90] days. Audit trail maintained for all access.\nMaintained by: [Name]`, status: "not-started", notes: "" },
-      { id: "p6-7", requirement: "Archive Assessment Version History", dpdpRef: "Rule 12", templateTitle: "Assessment Version Archive", templateContent: `ASSESSMENT VERSION HISTORY ARCHIVE\n\nClassification: CONFIDENTIAL | Document Reference: RPT-007 | [Organisation Name] | Last Updated: [Date]\n\n| # | Assessment ID | Version | Date | Overall Score | Status | Key Changes | Archived By | Verified |\n|---|-------------|---------|------|-------------|--------|------------|-----------|----------|\n| 1 | [ID] | v[N] | [Date] | [Score]% | [Status] | [Summary] | [Name] | [Y/N] |\n\nArchive Policy: All versions retained for [7] years. Previous versions read-only. Tamper-evident logging enabled.\nRetention Period for Archive: 7 years from assessment date.\n\nMaintained by: [DPO Name]`, status: "not-started", notes: "" }
+      { id: "p6-1", requirement: "Generate Compliance Score Report (versioned)", dpdpRef: "Sec 8(1), 8(4)", templateTitle: "Compliance Score Report Template", templateContent: `COMPLIANCE SCORE REPORT\n\nClassification: CONFIDENTIAL | Document Reference: RPT-001 | [Organisation Name] | Version: [Version] | Date: [Date]\n\nOVERALL COMPLIANCE SCORE: [Score]%\n\n| Domain | Weight | Score | Status | Critical Gaps | Remediation ETA |\n|--------|--------|-------|--------|--------------|----------------|\n| A — Lawful Processing | 15% | [Score]% | [Status] | [Gaps] | [Date] |\n| B — Notice & Transparency | 10% | [Score]% | [Status] | [Gaps] | [Date] |\n| C — Purpose Limitation | 10% | [Score]% | [Status] | [Gaps] | [Date] |\n| D — Data Minimisation | 8% | [Score]% | [Status] | [Gaps] | [Date] |\n| E — Accuracy & Quality | 7% | [Score]% | [Status] | [Gaps] | [Date] |\n| F — Storage Limitation | 8% | [Score]% | [Status] | [Gaps] | [Date] |\n| G — Data Principal Rights | 12% | [Score]% | [Status] | [Gaps] | [Date] |\n| H — Security Safeguards | 15% | [Score]% | [Status] | [Gaps] | [Date] |\n| I — Breach Management | 10% | [Score]% | [Status] | [Gaps] | [Date] |\n| J — Third-Party Management | 5% | [Score]% | [Status] | [Gaps] | [Date] |\n\nTrend (vs previous): [Improving/Stable/Declining] | Penalty Exposure: ₹[Amount] Crore\nNext Assessment: [Date]\n\nPrepared by: [DPO Name]`, status: "not-started", notes: "" },
+      { id: "p6-2", requirement: "Export Domain-wise Risk Heat Map", dpdpRef: "Sec 8(1), 8(4)", templateTitle: "Risk Heat Map Template", templateContent: `DOMAIN-WISE RISK HEAT MAP\n\nClassification: CONFIDENTIAL | Document Reference: RPT-002 | [Organisation Name] | Date: [Date]\n\n5×5 RISK MATRIX:\n| Domain | Likelihood (1-5) | Impact (1-5) | Inherent Risk | Controls Effectiveness | Residual Risk | Priority |\n|--------|-----------------|-------------|--------------|----------------------|--------------|----------|\n| A — Lawful Processing | [Score] | [Score] | [Score] | [%] | [Score] | [Priority] |\n| B — Notice | [Score] | [Score] | [Score] | [%] | [Score] | [Priority] |\n| ... | | | | | | |\n\nRisk Levels: Critical (20-25) | High (15-19) | Medium (10-14) | Low (1-9)\nEscalation: All Critical and High risks reported to Board.\n\nPrepared by: [DPO Name]`, status: "not-started", notes: "" },
+      { id: "p6-3", requirement: "Prepare Penalty Exposure Map", dpdpRef: "Sec 33, Schedule", templateTitle: "Penalty Exposure Map Template", templateContent: `PENALTY EXPOSURE MAP\n\nClassification: CONFIDENTIAL | Document Reference: RPT-003 | [Organisation Name] | Date: [Date]\n\n| # | Violation | DPDP Section | Maximum Penalty | Current Compliance | Controls in Place | Residual Exposure | Priority |\n|---|----------|-------------|----------------|-------------------|------------------|------------------|----------|\n| 1 | Failure to take security safeguards | Sec 8(4), Sec 33(a) | ₹250 Crore | [Score]% | [Controls] | [₹Amount] | [H/M/L] |\n| 2 | Failure to notify data breach | Sec 8(6), Sec 33(b) | ₹200 Crore | [Score]% | [Controls] | [₹Amount] | [H/M/L] |\n| 3 | Non-compliance children's data | Sec 9, Sec 33(c) | ₹200 Crore | [Score]% | [Controls] | [₹Amount] | [H/M/L] |\n| 4 | Breach of additional SDF obligations | Sec 10, Sec 33(d) | ₹150 Crore | [Score]% | [Controls] | [₹Amount] | [H/M/L] |\n| 5 | Non-compliance by Data Principal | Sec 15, Sec 33(e) | ₹10,000 | N/A | N/A | N/A | N/A |\n| 6 | General non-compliance | Sec 33(f) | ₹50 Crore | [Score]% | [Controls] | [₹Amount] | [H/M/L] |\n\nTotal Maximum Exposure: ₹[Amount] Crore | Total Residual Exposure: ₹[Amount] Crore\n\nPrepared by: [Legal/DPO]`, status: "not-started", notes: "" },
+      { id: "p6-4", requirement: "Export Audit Trail / Activity Log", dpdpRef: "Sec 8(1), 8(4)", templateTitle: "Audit Trail Export Template", templateContent: `AUDIT TRAIL / ACTIVITY LOG EXPORT\n\nClassification: CONFIDENTIAL | Document Reference: RPT-004 | [Organisation Name] | Export Date: [Date] | Period: [Start] to [End]\n\n| # | Timestamp | User | Role | Action | Module | Resource | IP Address | Details | Result |\n|---|----------|------|------|--------|--------|----------|-----------|---------|--------|\n| 1 | [DateTime] | [User] | [Role] | [Action] | [Module] | [Resource] | [IP] | [Details] | [Success/Fail] |\n\nTotal Activities: [Number] | Unique Users: [Number] | Failed Actions: [Number]\nFilters Applied: [Filters]\n\nGenerated by: System | Requested by: [Name] | Approved by: [DPO Name]`, status: "not-started", notes: "" },
+      { id: "p6-5", requirement: "Prepare Board/Management Compliance Summary Report", dpdpRef: "Sec 8(1), 8(4)", templateTitle: "Board Compliance Summary", templateContent: `BOARD / MANAGEMENT COMPLIANCE SUMMARY REPORT\n\nClassification: CONFIDENTIAL — BOARD PAPER | Document Reference: RPT-005 | [Organisation Name] | Period: [Period] | Date: [Date]\n\nEXECUTIVE SUMMARY:\nOverall Compliance Score: [Score]% | Trend: [↑/→/↓] vs Previous: [Score]%\nPenalty Exposure: ₹[Amount] Crore (reduced from ₹[Previous] Crore)\n\nKEY HIGHLIGHTS:\n1. [Highlight — e.g., ISO 27001 certification achieved]\n2. [Highlight — e.g., 100% DPA coverage for all processors]\n3. [Highlight — e.g., Zero data breaches this quarter]\n\nRISK AREAS REQUIRING BOARD ATTENTION:\n| Risk | Domain | Score | Mitigation | Owner | ETA |\n|------|--------|-------|-----------|-------|-----|\n| [Risk] | [Domain] | [Score] | [Action] | [Name] | [Date] |\n\nBREACH SUMMARY:\nIncidents: [Number] | DPBI Notifications: [Number] | Data Principals Affected: [Number] | Average Response: [Hours]\n\nDSR SUMMARY:\nRequests Received: [Number] | Fulfilled: [Number] | Average Response: [Days] | SLA Compliance: [%]\n\nTRAINING:\nCompletion Rate: [%] | Overdue: [Number employees]\n\nBUDGET:\nAllocated: ₹[Amount] | Spent: ₹[Amount] | Utilisation: [%]\n\nRECOMMENDATIONS:\n1. [Recommendation with business case]\n2. [Recommendation]\n\nPresented by: [DPO Name] | Date: [Date]`, status: "not-started", notes: "" },
+      { id: "p6-6", requirement: "Maintain Shared Report Links / Access Log", dpdpRef: "Sec 8(1), 8(4)", templateTitle: "Shared Reports Access Log", templateContent: `SHARED REPORT LINKS / ACCESS LOG\n\nClassification: INTERNAL | Document Reference: RPT-006 | [Organisation Name] | Last Updated: [Date]\n\n| # | Report Title | Share Code | Shared By | Shared With | Share Date | Expiry | Access Count | Last Accessed | Status |\n|---|-------------|-----------|-----------|-------------|-----------|--------|-------------|-------------|--------|\n| 1 | [Report] | [Code] | [Name] | [Recipient] | [Date] | [Date] | [Count] | [Date] | Active/Expired |\n\nAccess Policy: Links expire after [30/60/90] days. Audit trail maintained for all access.\nMaintained by: [Name]`, status: "not-started", notes: "" },
+      { id: "p6-7", requirement: "Archive Assessment Version History", dpdpRef: "Sec 8(1), 8(4)", templateTitle: "Assessment Version Archive", templateContent: `ASSESSMENT VERSION HISTORY ARCHIVE\n\nClassification: CONFIDENTIAL | Document Reference: RPT-007 | [Organisation Name] | Last Updated: [Date]\n\n| # | Assessment ID | Version | Date | Overall Score | Status | Key Changes | Archived By | Verified |\n|---|-------------|---------|------|-------------|--------|------------|-----------|----------|\n| 1 | [ID] | v[N] | [Date] | [Score]% | [Status] | [Summary] | [Name] | [Y/N] |\n\nArchive Policy: All versions retained for [7] years. Previous versions read-only. Tamper-evident logging enabled.\nRetention Period for Archive: 7 years from assessment date.\n\nMaintained by: [DPO Name]`, status: "not-started", notes: "" }
     ]
   }
 ];
