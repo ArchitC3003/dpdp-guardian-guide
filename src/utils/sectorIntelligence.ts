@@ -133,7 +133,7 @@ const SECTOR_OVERLAYS: Record<string, SectorOverlay> = {
     typicalProcessingBasis: [
       { activity: "Patient Registration & Medical Records", lawfulBasis: "Consent; medical emergency", dpdpSection: "Sec 6; Sec 7(f)" },
       { activity: "Emergency Treatment", lawfulBasis: "Medical emergency (without consent)", dpdpSection: "Sec 7(f)" },
-      { activity: "Insurance Claims Processing", lawfulBasis: "Voluntarily provided for specified purpose", dpdpSection: "Sec 7(a)(b)" },
+      { activity: "Insurance Claims Processing", lawfulBasis: "Voluntarily provided for specified purpose", dpdpSection: "Sec 7(a)" },
       { activity: "Clinical Research", lawfulBasis: "Explicit Consent (ICMR informed consent)", dpdpSection: "Sec 6(1)" },
       { activity: "Public Health Reporting", lawfulBasis: "Reporting required by law; treatment during epidemic", dpdpSection: "Sec 7(d); Sec 7(g)" },
       { activity: "Telemedicine Consultations", lawfulBasis: "Consent", dpdpSection: "Sec 6" },
