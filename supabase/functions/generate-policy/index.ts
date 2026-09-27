@@ -252,10 +252,10 @@ CRITICAL: DPDP Act Sec 9 + Rule 10 — Children's data processing requires:
   }
 
   if (lower.includes("tech") || lower.includes("it ") || lower.includes("saas") || lower.includes("software")) {
+    // TODO(VERIFY): commencement of DPDP Sec 44(2)
     return `═══ SECTOR REGULATORY OVERLAY: TECHNOLOGY / IT SERVICES ═══
 
 REGULATORY INSTRUMENTS:
-// TODO(VERIFY): commencement of DPDP Sec 44(2)
 • IT Act 2000 Sec 43A (omitted by DPDP Act Sec 44(2)(a) on commencement) + IT Amendment 2008
 • IT (Reasonable Security Practices) Rules 2011 — ISO 27001 equivalence
 • CERT-In Directions 2022 — 6-hour reporting, 180-day log retention, VPN/cloud obligations
