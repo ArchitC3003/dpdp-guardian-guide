@@ -30,6 +30,7 @@ export interface SectorOverlay {
   typicalProcessingBasis: { activity: string; lawfulBasis: string; dpdpSection: string }[];
 }
 
+// TODO(VERIFY): sectoral instruments, citations, retention periods and timelines (RBI, SEBI, PMLA, CERT-In, NHA, ICMR, UGC, NCPCR) not verified in the DPDP citation audit
 const SECTOR_OVERLAYS: Record<string, SectorOverlay> = {
   "BFSI/Banking": {
     regulators: [
@@ -65,7 +66,7 @@ const SECTOR_OVERLAYS: Record<string, SectorOverlay> = {
       { regulator: "CERT-In", timeline: "6 hours from detection", format: "Incident Report Form (IRF) per CERT-In Directions 2022" },
       { regulator: "RBI", timeline: "Within 6 hours for cyber incidents; 2–6 hours for card/payment fraud", format: "CSITE Incident Reporting Portal + email to csite@rbi.org.in" },
       { regulator: "SEBI", timeline: "6 hours from detection for Market Infrastructure Institutions", format: "CSCRF Annex-B format + quarterly incident summary" },
-      { regulator: "DPBI (Data Protection Board of India)", timeline: "72 hours per DPDP Act Sec 8(6), Rule 7", format: "Prescribed Form under Rule 7(2)" },
+      { regulator: "DPBI (Data Protection Board of India)", timeline: "Without delay; detailed report within 72 hours of becoming aware [Sec 8(6), Rule 7(2)]", format: "Contents per Rule 7(2)(a)–(b); affected Data Principals without delay per Rule 7(1)" },
     ],
     riskFactors: [
       "Systemic risk from interconnected payment infrastructure",
@@ -76,12 +77,14 @@ const SECTOR_OVERLAYS: Record<string, SectorOverlay> = {
       "Regulatory arbitrage in multi-jurisdictional operations",
     ],
     typicalProcessingBasis: [
-      { activity: "Account Opening & KYC", lawfulBasis: "Legal Obligation (PMLA) + Consent", dpdpSection: "Sec 7(b) + Sec 6" },
-      { activity: "Transaction Processing", lawfulBasis: "Performance of Contract + Legal Obligation", dpdpSection: "Sec 7(a)" },
+      // TODO(LEGAL-REVIEW-E4): KYC collection basis
+      { activity: "Account Opening & KYC", lawfulBasis: "Basis to be confirmed by DPO; retention required by law", dpdpSection: "Sec 6 or Sec 7(a); retention Sec 8(7)" },
+      { activity: "Transaction Processing", lawfulBasis: "Voluntarily provided for specified purpose", dpdpSection: "Sec 7(a)" },
       { activity: "Credit Scoring & Underwriting", lawfulBasis: "Consent (explicit) + Legitimate Use", dpdpSection: "Sec 6 + Sec 7" },
-      { activity: "Fraud Monitoring", lawfulBasis: "Legal Obligation (RBI Directions)", dpdpSection: "Sec 7(b)" },
+      // TODO(LEGAL-REVIEW-E1): fraud monitoring basis
+      { activity: "Fraud Monitoring", lawfulBasis: "Basis to be confirmed by DPO", dpdpSection: "TBC" },
       { activity: "Marketing & Cross-sell", lawfulBasis: "Consent (granular, withdrawable)", dpdpSection: "Sec 6(1)" },
-      { activity: "Regulatory Reporting", lawfulBasis: "Legal Obligation", dpdpSection: "Sec 7(b)(c)" },
+      { activity: "Regulatory Reporting", lawfulBasis: "Legal obligation to disclose information to the State", dpdpSection: "Sec 7(d)" },
     ],
   },
 
@@ -116,7 +119,7 @@ const SECTOR_OVERLAYS: Record<string, SectorOverlay> = {
     breachOverlays: [
       { regulator: "CERT-In", timeline: "6 hours from detection", format: "Incident Report Form per CERT-In Directions 2022" },
       { regulator: "NHA (ABDM participants)", timeline: "72 hours; affected patients notified within 7 days", format: "ABDM Health Data Breach Notification Format" },
-      { regulator: "DPBI", timeline: "72 hours per DPDP Act Sec 8(6), Rule 7", format: "Prescribed Form under Rule 7(2)" },
+      { regulator: "DPBI", timeline: "Without delay; detailed report within 72 hours of becoming aware [Sec 8(6), Rule 7(2)]", format: "Contents per Rule 7(2)(a)–(b); affected Data Principals without delay per Rule 7(1)" },
       { regulator: "State Health Authority", timeline: "As per state Clinical Establishments Rules", format: "State-specific format" },
     ],
     riskFactors: [
@@ -128,12 +131,12 @@ const SECTOR_OVERLAYS: Record<string, SectorOverlay> = {
       "Cross-border transfer of clinical trial data to foreign sponsors",
     ],
     typicalProcessingBasis: [
-      { activity: "Patient Registration & Medical Records", lawfulBasis: "Consent + Vital Interest", dpdpSection: "Sec 6 + Sec 7(f)" },
-      { activity: "Emergency Treatment", lawfulBasis: "Vital Interest (without consent)", dpdpSection: "Sec 7(f)" },
-      { activity: "Insurance Claims Processing", lawfulBasis: "Performance of Contract + Legal Obligation", dpdpSection: "Sec 7(a)(b)" },
+      { activity: "Patient Registration & Medical Records", lawfulBasis: "Consent; medical emergency", dpdpSection: "Sec 6; Sec 7(f)" },
+      { activity: "Emergency Treatment", lawfulBasis: "Medical emergency (without consent)", dpdpSection: "Sec 7(f)" },
+      { activity: "Insurance Claims Processing", lawfulBasis: "Voluntarily provided for specified purpose", dpdpSection: "Sec 7(a)(b)" },
       { activity: "Clinical Research", lawfulBasis: "Explicit Consent (ICMR informed consent)", dpdpSection: "Sec 6(1)" },
-      { activity: "Public Health Reporting", lawfulBasis: "Legal Obligation (Epidemic Diseases Act)", dpdpSection: "Sec 7(g)" },
-      { activity: "Telemedicine Consultations", lawfulBasis: "Consent + Performance of Contract", dpdpSection: "Sec 6 + Sec 7(a)" },
+      { activity: "Public Health Reporting", lawfulBasis: "Reporting required by law; treatment during epidemic", dpdpSection: "Sec 7(d); Sec 7(g)" },
+      { activity: "Telemedicine Consultations", lawfulBasis: "Consent", dpdpSection: "Sec 6" },
     ],
   },
 
@@ -144,8 +147,9 @@ const SECTOR_OVERLAYS: Record<string, SectorOverlay> = {
       "Telecom Regulatory Authority of India (TRAI — for telecom-adjacent services)",
     ],
     instruments: [
-      { name: "Information Technology Act 2000 & IT Amendment Act 2008", citation: "Section 43A, 66, 72A", applicability: "All body corporates possessing sensitive personal data" },
-      { name: "IT (Reasonable Security Practices) Rules 2011", citation: "Rule 4, 5, 8", applicability: "All entities implementing IS/ISO/IEC 27001 or equivalent" },
+      // TODO(VERIFY): commencement of DPDP Sec 44(2)
+      { name: "Information Technology Act 2000 & IT Amendment Act 2008", citation: "Section 43A (omitted by DPDP Act Sec 44(2)(a) on commencement), 66, 72A", applicability: "All body corporates possessing sensitive personal data" },
+      { name: "IT (Reasonable Security Practices) Rules 2011 (made under Sec 43A — see note)", citation: "Rule 4, 5, 8", applicability: "All entities implementing IS/ISO/IEC 27001 or equivalent" },
       { name: "CERT-In Directions 2022", citation: "No. 20(3)/2022-CERT-In", applicability: "Service providers, data centres, body corporates, VPN providers" },
       { name: "IT Intermediary Guidelines 2021", citation: "Rule 3, 4, 7", applicability: "Social media intermediaries, significant social media intermediaries" },
       { name: "STPI/SEZ Compliance Framework", citation: "STPI/IT/Export Guidelines", applicability: "IT/ITES companies operating under STPI/SEZ registration" },
@@ -154,17 +158,17 @@ const SECTOR_OVERLAYS: Record<string, SectorOverlay> = {
       { category: "Client/Customer PII (processed as processor)", handlingRequirement: "Strictly per client DPA; no commingling across clients; sub-processor approval chain; data isolation in multi-tenant SaaS", dpdpRef: "Sec 8(4), Sec 8(8)" },
       { category: "Employee Monitoring Data", handlingRequirement: "Proportionality assessment; notice before monitoring; keystroke/screen recording only with explicit consent and documented business justification", dpdpRef: "Sec 6(1), Sec 7(i)" },
       { category: "Source Code & IP", handlingRequirement: "While not personal data, access controls must prevent inadvertent PII exposure in code repositories; automated PII scanning in CI/CD pipelines", dpdpRef: "Sec 8(5)" },
-      { category: "Log Data (containing user identifiers)", handlingRequirement: "Pseudonymise where possible; retention per CERT-In (5 years); access-controlled SIEM with tamper-proof logging", dpdpRef: "Rule 6(e), CERT-In Directions" },
+      { category: "Log Data (containing user identifiers)", handlingRequirement: "Pseudonymise where possible; minimum 1 year [DPDP Rules 6(1)(e), 8(3)]; CERT-In ICT log requirement separately applies; access-controlled SIEM with tamper-proof logging", dpdpRef: "Rule 6(e), CERT-In Directions" },
     ],
     retentionGuidance: [
-      { dataType: "System/Application Logs", minimumPeriod: "180 days rolling (CERT-In Directions mandate)", legalBasis: "CERT-In Directions 2022, Para 4(vi)" },
+      { dataType: "System/Application Logs", minimumPeriod: "Minimum 1 year (DPDP); CERT-In: 180 days", legalBasis: "DPDP Rules 6(1)(e), 8(3); CERT-In Directions 2022" },
       { dataType: "Employee HR Records", minimumPeriod: "8 years post-separation", legalBasis: "Payment of Wages Act, EPF Act, Shops & Establishments Act" },
-      { dataType: "Client Data (as Processor)", minimumPeriod: "As per client DPA; default: delete/return within 30 days of contract termination", legalBasis: "DPDP Act Sec 8(8)" },
+      { dataType: "Client Data (as Processor)", minimumPeriod: "Erase or return per contract, subject to minimum 1-year retention of data and logs", legalBasis: "DPDP Act Sec 8(7)(b); Rule 8(3)" },
       { dataType: "NDA/Contract Records", minimumPeriod: "Limitation period + 3 years (typically 6 years)", legalBasis: "Indian Limitation Act 1963" },
     ],
     breachOverlays: [
       { regulator: "CERT-In", timeline: "6 hours from detection", format: "Incident Report Form per CERT-In Directions 2022" },
-      { regulator: "DPBI", timeline: "72 hours per DPDP Act Sec 8(6), Rule 7", format: "Prescribed Form under Rule 7(2)" },
+      { regulator: "DPBI", timeline: "Without delay; detailed report within 72 hours of becoming aware [Sec 8(6), Rule 7(2)]", format: "Contents per Rule 7(2)(a)–(b); affected Data Principals without delay per Rule 7(1)" },
       { regulator: "Affected Data Fiduciary clients", timeline: "As per DPA SLA (typically 24–48 hours)", format: "Per contractual template" },
     ],
     riskFactors: [
@@ -177,10 +181,11 @@ const SECTOR_OVERLAYS: Record<string, SectorOverlay> = {
     ],
     typicalProcessingBasis: [
       { activity: "SaaS Service Delivery (as Processor)", lawfulBasis: "Client DPA (processor acting on DF instructions)", dpdpSection: "Sec 8(4)" },
-      { activity: "Employee HR Processing", lawfulBasis: "Employment Contract + Legal Obligation", dpdpSection: "Sec 7(i)" },
+      { activity: "Employee HR Processing", lawfulBasis: "Employment", dpdpSection: "Sec 7(i)" },
       { activity: "Business Development / CRM", lawfulBasis: "Consent", dpdpSection: "Sec 6(1)" },
       { activity: "Product Analytics", lawfulBasis: "Consent (if PII) / Legitimate Use (if anonymised)", dpdpSection: "Sec 6 / Sec 7" },
-      { activity: "Security Monitoring & Logging", lawfulBasis: "Legal Obligation (CERT-In) + Legitimate Interest", dpdpSection: "Sec 7(b)" },
+      // TODO(LEGAL-REVIEW-E2): security logging basis (Rule 6(1)(c),(e))
+      { activity: "Security Monitoring & Logging", lawfulBasis: "Basis to be confirmed by DPO", dpdpSection: "TBC" },
     ],
   },
 
@@ -199,7 +204,8 @@ const SECTOR_OVERLAYS: Record<string, SectorOverlay> = {
     ],
     specialDataCategories: [
       { category: "Student Academic Records", handlingRequirement: "Immutable audit trail for grade modifications; parent/guardian access for minors; portability per UGC norms", dpdpRef: "Sec 11, Sec 12" },
-      { category: "Children's Data (under 18)", handlingRequirement: "Verifiable parental consent before processing; no behavioural tracking, profiling, or targeted advertising; age-gating mechanisms at registration; purpose-limited to educational delivery only", dpdpRef: "Sec 9, Rule 10" },
+      // TODO(LEGAL-REVIEW-E3): Fourth Schedule Part A educational-institution exemption
+      { category: "Children's Data (under 18)", handlingRequirement: "Verifiable parental consent before processing; no tracking, behavioural monitoring or targeted advertising (Sec 9(3)); verifiable parental consent with due diligence on the parent (Rule 10); purpose-limited to educational delivery only", dpdpRef: "Sec 9, Rule 10" },
       { category: "Proctoring/Examination Data", handlingRequirement: "Facial recognition/webcam data collected only during examination; deleted within 30 days of result publication; explicit consent with right to alternative examination mode", dpdpRef: "Sec 6(1), Sec 8(7)" },
       { category: "Learning Analytics & Behavioural Data", handlingRequirement: "Aggregated/anonymised for platform improvement; individual-level analytics only with consent; no sharing with third-party advertisers", dpdpRef: "Sec 6(1), Sec 8(4)" },
     ],
@@ -208,12 +214,12 @@ const SECTOR_OVERLAYS: Record<string, SectorOverlay> = {
       { dataType: "Examination Records & Results", minimumPeriod: "Permanent (statutory academic records)", legalBasis: "University Act / UGC norms" },
       { dataType: "Proctoring Video/Audio", minimumPeriod: "30 days post result declaration; 90 days if under dispute", legalBasis: "DPDP Act Sec 8(7), purpose limitation" },
       { dataType: "Attendance & Behavioural Logs", minimumPeriod: "Duration of enrollment + 1 academic year", legalBasis: "DPDP Act Sec 8(7)" },
-      { dataType: "Children's Personal Data", minimumPeriod: "Deleted upon withdrawal of consent or graduation from platform", legalBasis: "DPDP Act Sec 9, Rule 10" },
+      { dataType: "Children's Personal Data", minimumPeriod: "Deleted upon withdrawal of consent or graduation from platform", legalBasis: "DPDP Act Sec 8(7)" },
     ],
     breachOverlays: [
       { regulator: "CERT-In", timeline: "6 hours from detection", format: "Incident Report Form per CERT-In Directions 2022" },
       { regulator: "NCPCR (if children's data)", timeline: "24 hours from detection (advisory — best practice)", format: "Written intimation to NCPCR" },
-      { regulator: "DPBI", timeline: "72 hours per DPDP Act Sec 8(6), Rule 7", format: "Prescribed Form under Rule 7(2)" },
+      { regulator: "DPBI", timeline: "Without delay; detailed report within 72 hours of becoming aware [Sec 8(6), Rule 7(2)]", format: "Contents per Rule 7(2)(a)–(b); affected Data Principals without delay per Rule 7(1)" },
     ],
     riskFactors: [
       "Children's data exposure through inadequately secured learning platforms",
@@ -224,7 +230,7 @@ const SECTOR_OVERLAYS: Record<string, SectorOverlay> = {
     ],
     typicalProcessingBasis: [
       { activity: "Student Registration & Enrollment", lawfulBasis: "Consent (parental for minors)", dpdpSection: "Sec 6 + Sec 9" },
-      { activity: "Academic Record Keeping", lawfulBasis: "Legal Obligation (UGC/University Act)", dpdpSection: "Sec 7(b)" },
+      { activity: "Academic Record Keeping", lawfulBasis: "Retention required by law", dpdpSection: "Sec 8(7)" },
       { activity: "Online Examination & Proctoring", lawfulBasis: "Consent (explicit, purpose-limited)", dpdpSection: "Sec 6(1)" },
       { activity: "Learning Analytics", lawfulBasis: "Consent (optional, not condition of service)", dpdpSection: "Sec 6(3)" },
       { activity: "Marketing to Prospective Students", lawfulBasis: "Consent", dpdpSection: "Sec 6(1)" },

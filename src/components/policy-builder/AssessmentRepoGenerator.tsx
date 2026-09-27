@@ -63,7 +63,7 @@ function fillTemplate(
 
   // SDF Obligations
   const sdfBlock = ctx.sdfClassification === "sdf"
-    ? `\n\nSIGNIFICANT DATA FIDUCIARY — ENHANCED OBLIGATIONS\n${"═".repeat(60)}\nAs a Significant Data Fiduciary under the DPDP Act 2023, ${ctx.orgName || "the Organisation"} is subject to enhanced obligations including:\n• Rule 5: Appointment of Data Protection Officer (DPO) resident in India\n• Rule 6: Periodic Data Protection Impact Assessment (DPIA)\n• Rule 9: Enhanced consent management and record-keeping\n• Rule 10: Verification of age and parental consent for children's data\n• Rule 12: Periodic audit by independent data auditor\n• Publication of Data Protection Impact Assessment summary on website\n`
+    ? `\n\nSIGNIFICANT DATA FIDUCIARY — ENHANCED OBLIGATIONS\n${"═".repeat(60)}\nAs a Significant Data Fiduciary under the DPDP Act 2023, ${ctx.orgName || "the Organisation"} is subject to enhanced obligations including:\n• Section 10(2)(a): appoint a Data Protection Officer based in India, responsible to the Board of Directors, and the point of contact for grievance redressal; publish business contact details (Section 8(9), Rule 9)\n• Section 10(2)(b): appoint an independent data auditor to evaluate compliance\n• Section 10(2)(c), Rule 13(1): Data Protection Impact Assessment and audit once in every period of twelve months\n• Rule 13(2): the person carrying out the DPIA and audit furnishes a report of significant observations to the Data Protection Board\n• Rule 13(3): due diligence that technical measures, including algorithmic software, are not likely to pose a risk to the rights of Data Principals\n• Rule 13(4): personal data specified by the Central Government (on a committee's recommendation), and its traffic data, is not transferred outside India\n`
     : `\n\nAs a Data Fiduciary under the DPDP Act 2023, ${ctx.orgName || "the Organisation"} shall comply with all applicable obligations under Sections 4–17.\n`;
   filled = filled.replace(/\[SDF_OBLIGATIONS\]/g, sdfBlock);
 
@@ -78,10 +78,10 @@ function fillTemplate(
   const jurisdictionClause = ctx.geographies === "india-only"
     ? `This document applies within the jurisdiction of India under the DPDP Act 2023 and DPDP Rules 2025.`
     : ctx.geographies === "india-eu"
-    ? `This document applies under dual jurisdiction: India (DPDP Act 2023, DPDP Rules 2025) and European Union (GDPR, ePrivacy Directive). Standard Contractual Clauses (SCCs) shall govern cross-border transfers per DPDP Schedule 1.`
+    ? `This document applies under dual jurisdiction: India (DPDP Act 2023, DPDP Rules 2025) and European Union (GDPR, ePrivacy Directive). Transfers of EU-origin personal data are governed by GDPR Chapter V (e.g. SCCs). Transfers out of India are subject to any restriction notified under Section 16(1) of the DPDP Act and any stricter sectoral law preserved by Section 16(2).`
     : ctx.geographies === "india-us"
-    ? `This document applies under dual jurisdiction: India (DPDP Act 2023) and United States (CCPA/CPRA as applicable). Cross-border transfer mechanisms per DPDP Schedule 1 shall be implemented.`
-    : `This document applies under multi-jurisdictional scope: ${geoLabel}. Data transfer adequacy assessments per DPDP Schedule 1 are required for all cross-border transfers.`;
+    ? `This document applies under dual jurisdiction: India (DPDP Act 2023) and United States (CCPA/CPRA as applicable). Transfers out of India are subject to any restriction notified under Section 16(1) of the DPDP Act and any stricter sectoral law preserved by Section 16(2).`
+    : `This document applies under multi-jurisdictional scope: ${geoLabel}. Transfers out of India are subject to any restriction notified under Section 16(1) of the DPDP Act, any stricter sectoral law preserved by Section 16(2), and any requirement specified under Rule 15.`;
   filled = filled.replace(/\[JURISDICTION_CLAUSE\]/g, jurisdictionClause);
 
   // Sector-specific clause
@@ -89,7 +89,7 @@ function fillTemplate(
   if (ctx.industry?.includes("BFSI") || ctx.industry?.includes("Banking") || ctx.industry?.includes("Insurance")) {
     sectorClause = `\nSECTOR-SPECIFIC OVERLAY: BFSI\nThis policy incorporates requirements from RBI Master Directions on Information Technology Governance, Risk, Controls and Assurance Practices, SEBI Circular on Cyber Security & Cyber Resilience Framework, and IRDA Guidelines on Information and Cyber Security as applicable.\n`;
   } else if (ctx.industry?.includes("Health")) {
-    sectorClause = `\nSECTOR-SPECIFIC OVERLAY: HEALTHCARE\nThis policy incorporates requirements from the Digital Information Security in Healthcare Act (DISHA) framework, National Health Authority (NHA) Digital Health Guidelines, and Ayushman Bharat Digital Mission (ABDM) data sharing protocols.\n`;
+    sectorClause = `\nSECTOR-SPECIFIC OVERLAY: HEALTHCARE\nThis policy incorporates requirements from the draft Digital Information Security in Healthcare Act (DISHA — not enacted) as reference guidance, National Health Authority (NHA) Digital Health Guidelines, and Ayushman Bharat Digital Mission (ABDM) data sharing protocols.\n`;
   }
   filled = filled.replace(/\[SECTOR_SPECIFIC_CLAUSE\]/g, sectorClause);
 
@@ -98,14 +98,14 @@ function fillTemplate(
 
   // Children's data clause
   const childrenClause = ctx.processingActivities.includes("Children's Data (under 18)")
-    ? `\nCHILDREN'S DATA PROCESSING OBLIGATIONS\n${ctx.orgName || "The Organisation"} processes data of children (persons under 18 years of age) and is therefore subject to:\n• Section 9 of DPDP Act 2023: Verifiable consent from parent/lawful guardian before processing\n• Rule 10: Age verification mechanism proportionate to risk\n• Prohibition on tracking, behavioural monitoring, and targeted advertising directed at children\n• Data minimisation: only data reasonably necessary for the specific purpose\n`
+    ? `\nCHILDREN'S DATA PROCESSING OBLIGATIONS\n${ctx.orgName || "The Organisation"} processes data of children (persons under 18 years of age) and is therefore subject to:\n• Section 9(1), Rule 10: verifiable consent of the parent or lawful guardian before processing\n• Rule 10(1): due diligence that the individual identifying as parent is an identifiable adult\n• Section 9(3): no tracking, behavioural monitoring or targeted advertising directed at children (subject to Rule 12 and the Fourth Schedule exemptions)\n• Section 9(2): no processing likely to cause any detrimental effect on the well-being of a child\n• Data minimisation: only data necessary for the specified purpose (Section 6(1))\n`
     : `${ctx.orgName || "The Organisation"} does not currently process children's personal data. Should such processing commence, Section 9 and Rule 10 compliance shall be implemented prior to processing.`;
   filled = filled.replace(/\[CHILDREN_DATA_CLAUSE\]/g, childrenClause);
 
   // Cross-border clause
   const crossBorderClause = ctx.processingActivities.includes("Cross-border Data Transfers")
-    ? `\nCROSS-BORDER DATA TRANSFER PROVISIONS\nAll cross-border transfers of personal data shall comply with:\n• DPDP Act 2023 Section 16: Transfer only to countries/territories notified under Schedule 1\n• Adequacy assessment documentation maintained and reviewed annually\n• Standard Contractual Clauses (SCCs) executed with all foreign data recipients\n• Transfer Impact Assessment (TIA) conducted before initiating new transfer arrangements\n`
-    : `Cross-border data transfers are not currently within scope. Prior to any cross-border transfer, DPDP Section 16 and Schedule 1 compliance shall be established.`;
+    ? `\nCROSS-BORDER DATA TRANSFER PROVISIONS\nAll cross-border transfers of personal data shall comply with:\n• Section 16(1): no transfer to any country or territory restricted by Central Government notification\n• Section 16(2): compliance with any stricter sectoral law restricting transfer\n• Rule 15: compliance with any requirement specified by the Central Government on making personal data available to a foreign State or entities under its control\n• Contractual safeguards and transfer risk assessment with recipients (good practice; not prescribed by the DPDP Act)\n`
+    : `Cross-border data transfers are not currently within scope. Prior to any cross-border transfer, DPDP Section 16 and Rule 15 compliance shall be established.`;
   filled = filled.replace(/\[CROSS_BORDER_CLAUSE\]/g, crossBorderClause);
 
   // Org size scope
