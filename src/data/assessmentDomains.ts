@@ -17,7 +17,7 @@ export interface Domain {
 
 export const DOMAINS: Domain[] = [
   {
-    code: "A", name: "Notice & Transparency", section: "Sec 5, Rule 3–4", penalty: "₹50 Cr",
+    code: "A", name: "Notice & Transparency", section: "Sec 5, Rule 3", penalty: "₹50 Cr",
     items: [
       { id: "A.1", description: "Published standalone privacy notice — data categories, purposes, rights, DPO contact, processor disclosures, cross-border", risk: "critical", evidence: "Policy Document" },
       { id: "A.2", description: "Notice in English + Eighth Schedule language, version control, change log", risk: "high", evidence: "Policy Document" },
@@ -31,8 +31,8 @@ export const DOMAINS: Domain[] = [
       { id: "B.1", description: "Documented legal basis for EVERY processing stream", risk: "critical", evidence: "Register" },
       { id: "B.2", description: "Operational consent mechanism — granular, purpose-wise, affirmative, timestamped", risk: "critical", evidence: "System/Platform" },
       { id: "B.3", description: "Consent withdrawal with equal ease, triggering processing stop + processor notification", risk: "critical", evidence: "System/Platform" },
-      { id: "B.4", description: "No dark patterns — no pre-ticked boxes, forced bundling (Sec 6(3))", risk: "high", evidence: "UI/UX Review" },
-      { id: "B.5", description: "CM Board registration, token storage, log reconciliation, interoperability (Rule 5)", risk: "high", evidence: "System Config" },
+      { id: "B.4", description: "No dark patterns — no pre-ticked boxes, forced bundling (Sec 6(1))", risk: "high", evidence: "UI/UX Review" },
+      { id: "B.5", description: "CM Board registration, token storage, log reconciliation, interoperability (Rule 4, First Schedule)", risk: "high", evidence: "System Config" },
       { id: "B.6", description: "Re-consent mechanism for purpose changes", risk: "high", evidence: "SOP/Workflow" },
     ],
   },
@@ -52,20 +52,20 @@ export const DOMAINS: Domain[] = [
       { id: "D.1", description: "Complete data inventory mapping ALL PD stores, flows, access, systems", risk: "critical", evidence: "Register" },
       { id: "D.2", description: "Data minimisation per processing stream", risk: "high", evidence: "Assessment Record" },
       { id: "D.3", description: "Purpose-to-processing mapping with mission-creep controls", risk: "high", evidence: "Register" },
-      { id: "D.4", description: "Data accuracy: verification, correction workflows, quality checks (Sec 8(2)–(3))", risk: "standard", evidence: "SOP" },
+      { id: "D.4", description: "Data accuracy: verification, correction workflows, quality checks (Sec 8(3))", risk: "standard", evidence: "SOP" },
     ],
   },
   {
     code: "E", name: "Security Safeguards", section: "Sec 8(5), Rule 6", penalty: "₹250 Cr",
     items: [
-      { id: "E.1", description: "Encryption at rest and in transit (Rule 6(a))", risk: "critical", evidence: "System Config" },
-      { id: "E.2", description: "RBAC + periodic review + MFA (Rule 6(b)(c))", risk: "critical", evidence: "System Config" },
-      { id: "E.3", description: "Access/processing logs ≥1 year, tamper-resistant (Rule 6(e))", risk: "critical", evidence: "System Config" },
-      { id: "E.4", description: "Masking/tokenisation/anonymisation (Rule 6(a))", risk: "high", evidence: "System Config" },
-      { id: "E.5", description: "Backups with integrity + tested restoration (Rule 6(d))", risk: "high", evidence: "System Config" },
-      { id: "E.6", description: "Annual VAPT minimum (Rule 6(g))", risk: "high", evidence: "Report" },
-      { id: "E.7", description: "Approved Information Security Policy (Rule 6(f))", risk: "high", evidence: "Policy Document" },
-      { id: "E.8", description: "Continuous safeguard review (Rule 6(h))", risk: "high", evidence: "Report" },
+      { id: "E.1", description: "Encryption at rest and in transit (Rule 6(1)(a))", risk: "critical", evidence: "System Config" },
+      { id: "E.2", description: "RBAC + periodic review + MFA (Rule 6(1)(b)–(c))", risk: "critical", evidence: "System Config" },
+      { id: "E.3", description: "Access/processing logs ≥1 year, tamper-resistant (Rule 6(1)(e))", risk: "critical", evidence: "System Config" },
+      { id: "E.4", description: "Masking/tokenisation/anonymisation (Rule 6(1)(a))", risk: "high", evidence: "System Config" },
+      { id: "E.5", description: "Backups with integrity + tested restoration (Rule 6(1)(d))", risk: "high", evidence: "System Config" },
+      { id: "E.6", description: "Periodic VAPT (good practice supporting Rule 6(1)(g))", risk: "high", evidence: "Report" },
+      { id: "E.7", description: "Approved Information Security Policy (Rule 6(1)(g))", risk: "high", evidence: "Policy Document" },
+      { id: "E.8", description: "Continuous safeguard review (Sec 8(4), Rule 6(1)(g))", risk: "high", evidence: "Report" },
     ],
   },
   {
@@ -88,7 +88,7 @@ export const DOMAINS: Domain[] = [
     items: [
       { id: "G.1", description: "Published mechanism for access, correction, erasure, grievance (Rule 14(1))", risk: "critical", evidence: "System/Platform" },
       { id: "G.2", description: "Identity verification before acting (Rule 14(1)(b))", risk: "high", evidence: "SOP" },
-      { id: "G.3", description: "Grievance redress ≤90 days (Sec 13), tracking", risk: "critical", evidence: "System/Platform" },
+      { id: "G.3", description: "Grievance response within 90 days (Sec 13(2), Rule 14(3)), tracking", risk: "critical", evidence: "System/Platform" },
       { id: "G.4", description: "End-to-end rights request tracking", risk: "high", evidence: "System/Platform" },
       { id: "G.5", description: "Nomination for death/incapacity (Sec 14)", risk: "standard", evidence: "SOP" },
     ],
@@ -101,32 +101,32 @@ export const DOMAINS: Domain[] = [
       { id: "H.3", description: "Automated/scheduled retention enforcement", risk: "high", evidence: "System Config" },
       { id: "H.4", description: "Permanent irreversible erasure — production, backups, processors", risk: "high", evidence: "SOP" },
       { id: "H.5", description: "Third Schedule: 48-hr pre-erasure notice", risk: "high", evidence: "SOP" },
-      { id: "H.6", description: "Processing/retention logs ≥3 years (Rule 8(3))", risk: "critical", evidence: "System Config" },
+      { id: "H.6", description: "Personal data, traffic data and processing logs retained minimum 1 year (Rule 8(3))", risk: "critical", evidence: "System Config" },
     ],
   },
   {
     code: "I", name: "Children's Data", section: "Sec 9, Rule 10", penalty: "₹200 Cr",
     conditional: "children",
     items: [
-      { id: "I.1", description: "Age verification/age-gating (Rule 10)", risk: "critical", evidence: "System/Platform" },
+      { id: "I.1", description: "Verifiable parental consent; due diligence that parent is an identifiable adult (Rule 10(1))", risk: "critical", evidence: "System/Platform" },
       { id: "I.2", description: "Verifiable parental consent with records", risk: "critical", evidence: "System/Platform" },
-      { id: "I.3", description: "Tracking/profiling/targeting DISABLED for children (Sec 9(2))", risk: "critical", evidence: "System Config" },
+      { id: "I.3", description: "Tracking/profiling/targeting DISABLED for children (Sec 9(3))", risk: "critical", evidence: "System Config" },
       { id: "I.4", description: "Fourth Schedule exemption: documented justification", risk: "high", evidence: "Report" },
     ],
   },
   {
-    code: "J", name: "Processor & Cross-Border", section: "Sec 8(4–5), 16", penalty: "₹250 Cr",
+    code: "J", name: "Processor & Cross-Border", section: "Sec 8(2), 8(5), 16", penalty: "₹250 Cr",
     items: [
-      { id: "J.1", description: "Processor contracts with DPDP clauses (Sec 8(4))", risk: "critical", evidence: "Contract" },
+      { id: "J.1", description: "Processor contracts with DPDP clauses (Sec 8(2), Rule 6(1)(f))", risk: "critical", evidence: "Contract" },
       { id: "J.2", description: "Processor due diligence at onboarding + periodic", risk: "high", evidence: "Report" },
       { id: "J.3", description: "Processor register maintained", risk: "high", evidence: "Register" },
       { id: "J.4", description: "Sub-processing restricted without DF approval", risk: "high", evidence: "Contract" },
-      { id: "J.5", description: "Processor deletes/returns data on termination (Sec 8(8))", risk: "critical", evidence: "Contract" },
-      { id: "J.6", description: "Cross-border: flow map, restriction check (Sec 16(2))", risk: "high", evidence: "Register" },
+      { id: "J.5", description: "Processor deletes/returns data on termination (Sec 8(7)(b))", risk: "critical", evidence: "Contract" },
+      { id: "J.6", description: "Cross-border: flow map, restriction check (Sec 16, Rule 15)", risk: "high", evidence: "Register" },
     ],
   },
   {
-    code: "K", name: "Processor Obligations", section: "Sec 8(4)", penalty: "₹250 Cr",
+    code: "K", name: "Processor Obligations", section: "Sec 8(1), 8(2), 8(5)", penalty: "₹250 Cr",
     conditional: "processor",
     items: [
       { id: "K.1", description: "Written contract with each DF client", risk: "critical", evidence: "Contract" },
@@ -138,14 +138,14 @@ export const DOMAINS: Domain[] = [
     ],
   },
   {
-    code: "L", name: "Governance & Accountability", section: "Sec 8(9), 10, 26", penalty: "₹50 Cr",
+    code: "L", name: "Governance & Accountability", section: "Sec 8(9), 10, 32", penalty: "₹50 Cr",
     sdfOnly: ["L.7", "L.8", "L.9", "L.10"],
     items: [
       { id: "L.1", description: "DPO appointed, published contact (Sec 8(9), Rule 9)", risk: "critical", evidence: "Letter" },
       { id: "L.2", description: "RoPA covering all operations", risk: "critical", evidence: "Register" },
       { id: "L.3", description: "Privacy governance structure with Board accountability", risk: "high", evidence: "Report" },
       { id: "L.4", description: "Govt info request SOP (Sec 36, Rule 23)", risk: "high", evidence: "SOP" },
-      { id: "L.5", description: "Awareness of voluntary undertaking (Sec 26) + appellate (Sec 27–31)", risk: "standard", evidence: "Report" },
+      { id: "L.5", description: "Awareness of voluntary undertaking (Sec 32) + appeal (Sec 29) + mediation (Sec 31)", risk: "standard", evidence: "Report" },
       { id: "L.6", description: "Change management triggers privacy reassessment", risk: "high", evidence: "SOP" },
       { id: "L.7", description: "[SDF only] Annual DPIA by qualified auditor", risk: "critical", evidence: "Report" },
       { id: "L.8", description: "[SDF only] Independent DPDP audit annually", risk: "critical", evidence: "Report" },
@@ -154,11 +154,11 @@ export const DOMAINS: Domain[] = [
     ],
   },
   {
-    code: "M", name: "Consent Manager", section: "Sec 6(9), Rule 5", penalty: "₹50 Cr",
+    code: "M", name: "Consent Manager", section: "Sec 6(7)–(9), Rule 4", penalty: "₹50 Cr",
     conditional: "consentMgr",
     items: [
       { id: "M.1", description: "Registered with Board as CM", risk: "critical", evidence: "Certificate" },
-      { id: "M.2", description: "Interoperable platform across DFs (Rule 5)", risk: "critical", evidence: "System/Platform" },
+      { id: "M.2", description: "Interoperable platform across DFs (Rule 4, First Schedule)", risk: "critical", evidence: "System/Platform" },
       { id: "M.3", description: "Single point of contact for DPs", risk: "critical", evidence: "SOP" },
       { id: "M.4", description: "Consent artefacts with fiduciary-level security", risk: "high", evidence: "System Config" },
     ],
@@ -272,8 +272,8 @@ export const DEPT_CONTROLS = [
 
 export const SPECIAL_STATUS_OPTIONS = [
   { key: "sdf", label: "Significant Data Fiduciary (SDF)", hint: "DPIA, audit, DPO, data localisation (Sec 10, Rule 13)" },
-  { key: "consentMgr", label: "Consent Manager", hint: "Board registration, interoperability (Sec 6(9), Rule 5)" },
-  { key: "children", label: "Children's Data (under 18)", hint: "Parental consent, age verification (Sec 9, Rule 10)" },
+  { key: "consentMgr", label: "Consent Manager", hint: "Board registration, interoperability (Sec 6(7)–(9), Rule 4)" },
+  { key: "children", label: "Children's Data (under 18)", hint: "Verifiable parental consent (Sec 9, Rule 10)" },
   { key: "crossBorder", label: "Cross-Border Transfers", hint: "Transfer policy, restriction check (Sec 16, Rule 15)" },
   { key: "legacy", label: "Pre-Act (Legacy) Data", hint: "Fresh notice, consent revalidation required" },
   { key: "thirdSchedule", label: "Third Schedule Entity", hint: "48-hr pre-erasure notification (e-commerce, social media, gaming)" },
