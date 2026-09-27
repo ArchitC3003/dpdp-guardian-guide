@@ -32,11 +32,11 @@ RULE 6 — SIZE-APPROPRIATE GOVERNANCE: Scale governance expectations to the org
   - MNC: Global CPO structure, regional DPOs, privacy engineering team, SOC 2 Type II certification
 
 RULE 7 — SDF-AWARE OBLIGATIONS: If the organisation is classified as Significant Data Fiduciary (SDF):
-  - MUST include annual DPIA requirement (Rule 12, Sec 10(2))
-  - MUST include independent data auditor requirement (Rule 13)
-  - MUST include DPO with India residency requirement (Rule 9)
-  - MUST include algorithmic risk due diligence for automated processing (Rule 13(3))
-  - MUST include data localisation obligations (Rule 13(4))
+  - MUST include a DPO based in India, responsible to the Board of Directors, and point of contact for grievance redressal (Sec 10(2)(a)); DPO business contact published (Sec 8(9), Rule 9)
+  - MUST include appointment of an independent data auditor (Sec 10(2)(b))
+  - MUST include a DPIA and audit once in every period of twelve months (Sec 10(2)(c), Rule 13(1)), with a report of significant observations furnished to the Data Protection Board (Rule 13(2))
+  - MUST include due diligence that algorithmic software is not likely to pose a risk to Data Principals' rights (Rule 13(3))
+  - MUST include the restriction on transfer outside India of personal data specified by the Central Government (Rule 13(4))
   - MUST include Board-level accountability provisions
 
 RULE 8 — DOCUMENT STRUCTURE: Every document must include:
@@ -60,6 +60,13 @@ RULE 10 — PRACTICAL OPERABILITY: Every control statement must be implementable
   - WHEN it must be performed (frequency, trigger)
   - HOW compliance is evidenced (specific evidence artifact)
   Example: "The DPO shall conduct a quarterly review of the consent register to verify that all active processing activities have valid, unexpired consent records. Evidence: Signed quarterly consent audit report [REG-CON-001]."
+
+RULE 11 — LEGAL ACCURACY:
+  (a) DPDP Rules 2025 (G.S.R. 846(E), 13 November 2025) commence in phases: Rules 1, 2 and 17–21 on publication; Rule 4 one year after publication; Rules 3, 5–16, 22 and 23 eighteen months after publication. State the commencement date when citing a Rule not yet in force on the document's effective date.
+  (b) Processing grounds under DPDP are ONLY consent (Sec 6) or the closed list in Sec 7(a)–(i). Never cite "legitimate interest", "performance of contract", "vital interest" or a general "legal obligation" ground. Retention required by other law is justified under Sec 8(7).
+  (c) Cross-border: Sec 16(1) is a restriction-by-notification (negative list) mechanism; Sec 16(2) preserves stricter sectoral laws; Rule 15 applies. There is no DPDP adequacy list, Schedule 1 or SCC mechanism.
+  (d) Breach: Board intimation without delay plus a detailed report within 72 hours (Rule 7(2)); each affected Data Principal without delay (Rule 7(1)). No materiality threshold.
+  (e) Penalties: Sec 33 read with the Schedule — ₹250 crore (Sec 8(5)), ₹200 crore (Sec 8(6), Sec 9), ₹150 crore (Sec 10), ₹10,000 (Sec 15), ₹50 crore (other). Never write "per instance".
 
 Format output with clear numbered sections, sub-sections, and professional headings appropriate for an audit-ready compliance document.`;
 
@@ -139,6 +146,7 @@ function buildSectorOverlay(sector: string, industry: string): string {
   const lower = key.toLowerCase();
 
   if (lower.includes("bfsi") || lower.includes("banking") || lower.includes("financial") || lower.includes("nbfc") || lower.includes("payment")) {
+    // TODO(VERIFY): sectoral citations, retention periods (incl. PMLA) and regulator timelines not verified in the DPDP citation audit
     return `═══ SECTOR REGULATORY OVERLAY: BFSI / BANKING ═══
 CRITICAL — This document MUST incorporate and cite ALL of the following sector-specific regulations in addition to DPDP Act 2023:
 
@@ -168,7 +176,7 @@ BREACH NOTIFICATION TIMELINE (include ALL):
 • CERT-In: 6 hours from detection [CERT-In Directions 2022]
 • RBI CSITE: 6 hours for cyber incidents; 2-6 hours for payment fraud
 • SEBI: 6 hours for MIIs [CSCRF Annex-B]
-• DPBI: 72 hours [DPDP Act Sec 8(6), Rule 7]
+• Data Protection Board: without delay, with detailed report within 72 hours of becoming aware [Sec 8(6), Rule 7(2)]; affected Data Principals without delay [Rule 7(1)]
 
 SECTOR RISK FACTORS (address in risk assessment section):
 • Systemic risk from interconnected payment infrastructure
@@ -204,7 +212,7 @@ RETENTION SCHEDULE:
 BREACH NOTIFICATION:
 • CERT-In: 6 hours [CERT-In Directions 2022]
 • NHA (ABDM): 72 hours; affected patients within 7 days
-• DPBI: 72 hours [DPDP Act Sec 8(6), Rule 7]
+• Data Protection Board: without delay, with detailed report within 72 hours of becoming aware [Sec 8(6), Rule 7(2)]; affected Data Principals without delay [Rule 7(1)]
 
 SECTOR RISK FACTORS:
 • Patient data exposure through telemedicine platforms
@@ -225,7 +233,7 @@ REGULATORY INSTRUMENTS:
 • NCPCR Guidelines on Children's Digital Safety 2023
 
 SPECIAL DATA CATEGORIES:
-• Children's Data (under 18): Verifiable parental consent, no tracking/profiling/targeting, age-gating
+• Children's Data (under 18): Verifiable parental consent, no tracking/behavioural monitoring/targeted advertising (Sec 9(3)), verifiable parental consent (Rule 10)
 • Student Academic Records: Immutable audit trail, parent access for minors, portability per UGC
 • Proctoring Data: Examination-only collection, 30-day post-result deletion, alternative mode option
 • Learning Analytics: Aggregated only for platform improvement, no third-party advertiser sharing
@@ -238,16 +246,17 @@ RETENTION:
 
 CRITICAL: DPDP Act Sec 9 + Rule 10 — Children's data processing requires:
   (a) Verifiable parental/guardian consent BEFORE any processing
-  (b) Age verification mechanism proportionate to risk
-  (c) COMPLETE prohibition on behavioural monitoring and targeted advertising
-  (d) Purpose-limited to educational delivery only`;
+  (b) Due diligence that the individual identifying as parent is an identifiable adult (Rule 10(1))
+  (c) No tracking, behavioural monitoring or targeted advertising directed at children (Sec 9(3)), except as permitted for educational institutions under Rule 12 and Fourth Schedule Part A (educational activities or child safety)
+  (d) No processing likely to cause any detrimental effect on a child's well-being (Sec 9(2))`;
   }
 
   if (lower.includes("tech") || lower.includes("it ") || lower.includes("saas") || lower.includes("software")) {
     return `═══ SECTOR REGULATORY OVERLAY: TECHNOLOGY / IT SERVICES ═══
 
 REGULATORY INSTRUMENTS:
-• IT Act 2000 Sec 43A (Reasonable Security Practices) + IT Amendment 2008
+// TODO(VERIFY): commencement of DPDP Sec 44(2)
+• IT Act 2000 Sec 43A (omitted by DPDP Act Sec 44(2)(a) on commencement) + IT Amendment 2008
 • IT (Reasonable Security Practices) Rules 2011 — ISO 27001 equivalence
 • CERT-In Directions 2022 — 6-hour reporting, 180-day log retention, VPN/cloud obligations
 • IT Intermediary Guidelines 2021 (if intermediary)
@@ -258,9 +267,9 @@ SPECIAL DATA CATEGORIES:
 • Log Data (with user IDs): Pseudonymise where possible, 180-day retention (CERT-In), tamper-proof SIEM
 
 RETENTION:
-• System Logs: 180 days rolling [CERT-In Directions Para 4(vi)]
+• Personal data, traffic data and processing logs: minimum 1 year [DPDP Rules 6(1)(e), 8(3)]; ICT system logs: 180 days [CERT-In Directions 2022]
 • Employee HR Records: 8 years post-separation [PW Act, EPF Act]
-• Client Data (Processor): Per DPA; default delete/return within 30 days of termination
+• Client Data (Processor): erase or return per contract [Sec 8(7)(b)], subject to minimum 1-year retention of data and logs [Rule 8(3)]
 • Contracts/NDAs: Limitation period + 3 years (6 years)
 
 PROCESSOR-SPECIFIC (if applicable):
@@ -288,7 +297,7 @@ SPECIAL DATA CATEGORIES:
   // Default for unmatched sectors
   return `═══ SECTOR CONTEXT ═══
 Industry: ${key}
-Apply DPDP Act 2023, DPDP Rules 2025, CERT-In Directions 2022, and IT Act 2000 Sec 43A as primary regulatory framework. Include sector-appropriate controls based on the nature of personal data processed.`;
+Apply DPDP Act 2023, DPDP Rules 2025, CERT-In Directions 2022, and the IT Act 2000 (noting Sec 43A is omitted by DPDP Act Sec 44(2)(a) on commencement) as the regulatory framework. Include sector-appropriate controls based on the nature of personal data processed.`;
 }
 
 function buildMaturityCalibration(maturity: string): string {
@@ -376,24 +385,12 @@ function buildSdfOverlay(orgName: string, dpoName: string): string {
   return `═══ SDF-SPECIFIC REQUIREMENTS ═══
 ${orgName} is classified as a Significant Data Fiduciary. The following ENHANCED OBLIGATIONS must be addressed in EVERY relevant section:
 
-1. DPO APPOINTMENT [DPDP Act Sec 10(2)(a), Rule 9]:
-   ${dpoName} must be an Indian resident, with direct Board reporting line, independent budget, and no conflict of interest.
-
-2. ANNUAL DPIA [DPDP Act Sec 10(2)(b), Rule 12]:
-   Mandatory Data Protection Impact Assessment by qualified independent auditor. DPIA summary published on website.
-
-3. INDEPENDENT DATA AUDIT [Rule 13]:
-   Annual audit by independent data auditor. Audit report submitted to DPBI within 30 days of completion.
-
-4. ALGORITHMIC RISK ASSESSMENT [Rule 13(3)]:
-   Due diligence on all automated decision-making systems processing personal data. Bias and fairness audit.
-
-5. DATA LOCALISATION [Rule 13(4)]:
-   Critical personal data categories stored in India. Cross-border mirroring with adequacy documentation.
-
-6. BOARD ACCOUNTABILITY:
-   Board-level quarterly privacy risk reporting. Board approval for DPIA scope and findings.
-   Personal liability awareness under DPDP Act Sec 33.`;
+1. DPO [Sec 10(2)(a)]: ${dpoName} shall represent ${orgName}, be based in India, be responsible to the Board of Directors, and be the point of contact for grievance redressal. Business contact details published [Sec 8(9), Rule 9].
+2. INDEPENDENT DATA AUDITOR [Sec 10(2)(b)]: appointed to evaluate compliance with the Act.
+3. DPIA AND AUDIT [Sec 10(2)(c), Rule 13(1)]: once in every period of twelve months from the date of notification as SDF.
+4. REPORT TO THE BOARD [Rule 13(2)]: the person carrying out the DPIA and audit furnishes a report of significant observations to the Data Protection Board.
+5. ALGORITHMIC DUE DILIGENCE [Rule 13(3)]: verify that technical measures, including algorithmic software, are not likely to pose a risk to Data Principals' rights.
+6. TRANSFER RESTRICTION [Rule 13(4)]: personal data specified by the Central Government on a committee's recommendation, and its traffic data, is not transferred outside India.`;
 }
 
 // ── Structured Business Rules Builder ──────────────────
