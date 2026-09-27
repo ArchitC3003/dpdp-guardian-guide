@@ -222,7 +222,7 @@ ${ctx.extraRefs}
 
 6.1 Violations may result in disciplinary action up to and including termination.
 
-6.2 Intentional violations involving personal data may result in regulatory penalties under DPDP Act 2023 (up to ₹250 Crore) or GDPR (up to €20M / 4% annual turnover).
+6.2 Intentional violations involving personal data may result in regulatory penalties under DPDP Act 2023 (up to ₹250 crore for failure of security safeguards under Sec 8(5); caps vary by provision) or GDPR (up to €20M / 4% annual turnover).
 
 ## 7. Review & Approval
 
@@ -275,9 +275,7 @@ ${ctx.extraRefs}
 
 3.1 Personal data shall only be processed based on:
   a) **Consent** — Valid, informed, specific consent obtained from Data Principal [DPDP Act: Section 6]
-  b) **Legitimate Uses** — Processing necessary for stated purposes [DPDP Act: Section 7]
-  c) **Legal Obligation** — Processing required by applicable law
-  d) **Vital Interest** — Processing necessary to protect life or health
+  b) **Certain Legitimate Uses** — only the closed list in Section 7(a)–(i) [DPDP Act: Sections 4(1)(b), 7]
 
 **Control References:** [DPDP Act: Sections 6, 7] [GDPR: Article 6] [NIST Privacy: CT.PO-P1]
 
@@ -287,7 +285,7 @@ ${ctx.extraRefs}
 4.2 Data shall not be processed for purposes incompatible with the original collection purpose.
 4.3 Data retention shall not exceed the period necessary for the stated purpose.
 
-**Control References:** [DPDP Act: Section 8(4)] [GDPR: Article 5(1)(b)(c)] [ISO 27001: A.5.33]
+**Control References:** [DPDP Act: Sections 6(1), 8(7)] [GDPR: Article 5(1)(b)(c)] [ISO 27001: A.5.33]
 
 ## 5. Data Principal Rights
 
@@ -295,7 +293,7 @@ ${ctx.extraRefs}
   a) **Right to Access** — Data Principals may request confirmation and access to their personal data [DPDP Act: Section 11]
   b) **Right to Correction** — Right to correct inaccurate or incomplete personal data [DPDP Act: Section 12]
   c) **Right to Erasure** — Right to request deletion when data is no longer necessary [DPDP Act: Section 12(3)]
-  d) **Right to Grievance Redressal** — Data Principals may raise grievances with the Consent Manager or DPO [DPDP Act: Section 13]
+  d) **Right to Grievance Redressal** — Data Principals may raise grievances with the Data Fiduciary or Consent Manager [DPDP Act: Section 13]
   e) **Right to Portability** — Where applicable under GDPR [GDPR: Article 20]
 
 **Control References:** [DPDP Act: Sections 11, 12, 13] [GDPR: Articles 12-23] [NIST Privacy: CM.AW-P1]
@@ -356,7 +354,7 @@ ${ctx.extraRefs}
 ## 12. Enforcement
 
 12.1 Violations may result in disciplinary action up to termination.
-12.2 Penalties under DPDP Act 2023: up to ₹250 Crore. Under GDPR: up to €20M or 4% global turnover.
+12.2 Penalties under DPDP Act 2023: up to ₹250 crore (Sec 33 read with the Schedule; cap varies by provision). Under GDPR: up to €20M or 4% global turnover.
 
 ## 13. Review & Approval
 
