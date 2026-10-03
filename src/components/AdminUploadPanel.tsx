@@ -38,8 +38,11 @@ export function AdminUploadPanel({ onUploaded }: AdminUploadPanelProps) {
     if (!file) return toast.error("Please select a file.");
     if (!folder) return toast.error("Please select a folder.");
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return toast.error("Please sign in again before uploading.");
+
     setUploading(true);
-    const storagePath = `${folder}/${Date.now()}_${file.name}`;
+    const storagePath = `${user.id}/${folder}/${Date.now()}_${file.name}`;
 
     const { error: storageErr } = await supabase.storage
       .from("artefact-files")

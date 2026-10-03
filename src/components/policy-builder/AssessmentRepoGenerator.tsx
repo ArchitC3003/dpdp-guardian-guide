@@ -228,9 +228,15 @@ export default function AssessmentRepoGenerator() {
     setUploading(true);
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Please sign in again before uploading.");
+        setUploading(false);
+        return;
+      }
       const blob = new Blob([generatedContent], { type: "text/plain" });
       const fileName = `${selectedItem.templateTitle.replace(/[^a-zA-Z0-9]/g, "_")}_${Date.now()}.txt`;
-      const storagePath = `Policies/${fileName}`;
+      const storagePath = `${user.id}/Policies/${fileName}`;
 
       const { error: storageErr } = await supabase.storage
         .from("artefact-files")
