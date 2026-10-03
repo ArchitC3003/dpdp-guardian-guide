@@ -145,9 +145,9 @@ export function useArtefactContext() {
     [artefactFiles]
   );
 
-  const getDownloadUrl = useCallback((filePath: string) => {
-    const { data } = supabase.storage.from("artefact-files").getPublicUrl(filePath);
-    return data?.publicUrl || "";
+  const getDownloadUrl = useCallback(async (filePath: string) => {
+    const { data } = await supabase.storage.from("artefact-files").createSignedUrl(filePath, 60);
+    return data?.signedUrl || "";
   }, []);
 
   return {

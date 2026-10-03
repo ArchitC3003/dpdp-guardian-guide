@@ -131,6 +131,7 @@ export async function getKMContext(
       artefacts_used: artefacts.map((a) => a.id),
       sources_used: regulatorySources.map((s) => s.authority),
       generated_output_preview: (aiData?.subSectorInsights || "").substring(0, 200),
+      user_id: (await supabase.auth.getUser()).data.user?.id,
     })
     .then(() => {});
 

@@ -83,11 +83,15 @@ export function ArtefactDetailPanel({ file, open, onClose, isAdmin, onDownload, 
     onRefresh();
   };
 
-  const copyShareLink = () => {
+  const copyShareLink = async () => {
     if (!file) return;
-    const { data } = supabase.storage.from("artefact-files").getPublicUrl(file.file_path);
-    navigator.clipboard.writeText(data?.publicUrl || "");
-    toast.success("Link copied to clipboard");
+    const { data, error } = await supabase.storage.from("artefact-files").createSignedUrl(file.file_path, 60);
+    if (error || !data?.signedUrl) {
+      toast.error("Failed to create a secure link");
+      return;
+    }
+    await navigator.clipboard.writeText(data.signedUrl);
+    toast.success("Secure link copied (valid for 1 minute)");
   };
 
   if (!file) return null;
