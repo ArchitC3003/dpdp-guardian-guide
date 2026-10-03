@@ -10,7 +10,7 @@ interface ArtefactIndexPanelProps {
   artefactsByFolder: Record<string, ArtefactFile[]>;
   artefactCount: number;
   lastUpdated: Date | null;
-  getDownloadUrl: (path: string) => string;
+  getDownloadUrl: (path: string) => Promise<string>;
   onClose: () => void;
   onRefresh: () => void;
   loading: boolean;
@@ -67,14 +67,17 @@ export default function ArtefactIndexPanel({
                           <FileText className="h-3 w-3 text-muted-foreground shrink-0" />
                           <span className="truncate text-foreground">{file.file_name}</span>
                         </div>
-                        <a
-                          href={getDownloadUrl(file.file_path)}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          type="button"
                           className="text-primary hover:text-primary/80 shrink-0 ml-2"
+                          onClick={async () => {
+                            const url = await getDownloadUrl(file.file_path);
+                            if (url) window.open(url, "_blank", "noopener,noreferrer");
+                          }}
+                          aria-label={`Download ${file.file_name}`}
                         >
                           <Download className="h-3 w-3" />
-                        </a>
+                        </button>
                       </div>
                     ))}
                   </div>

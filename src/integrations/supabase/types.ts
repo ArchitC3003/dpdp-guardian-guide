@@ -197,6 +197,7 @@ export type Database = {
           parent_id: string | null
           tags: string[] | null
           uploaded_at: string
+          uploaded_by: string
           version_number: number | null
         }
         Insert: {
@@ -214,6 +215,7 @@ export type Database = {
           parent_id?: string | null
           tags?: string[] | null
           uploaded_at?: string
+          uploaded_by?: string
           version_number?: number | null
         }
         Update: {
@@ -231,6 +233,7 @@ export type Database = {
           parent_id?: string | null
           tags?: string[] | null
           uploaded_at?: string
+          uploaded_by?: string
           version_number?: number | null
         }
         Relationships: [

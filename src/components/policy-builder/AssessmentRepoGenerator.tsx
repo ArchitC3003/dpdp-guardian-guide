@@ -456,15 +456,18 @@ export default function AssessmentRepoGenerator() {
                                 </div>
                               </div>
                             </div>
-                            <a
-                              href={getDownloadUrl(match.file.file_path)}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                            <button
+                              type="button"
                               className="text-primary hover:text-primary/80 shrink-0"
-                              onClick={(e) => e.stopPropagation()}
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const url = await getDownloadUrl(match.file.file_path);
+                                if (url) window.open(url, "_blank", "noopener,noreferrer");
+                              }}
+                              aria-label={`Download ${match.file.file_name}`}
                             >
                               <Download className="h-3.5 w-3.5" />
-                            </a>
+                            </button>
                           </div>
                         ))}
                         {lastUpdated && (
