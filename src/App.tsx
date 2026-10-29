@@ -42,6 +42,12 @@ import NoticeManager from "./pages/admin/NoticeManager";
 import RightsDesk from "./pages/admin/RightsDesk";
 import GrievanceConsole from "./pages/admin/GrievanceConsole";
 import ConsentAuditLog from "./pages/admin/ConsentAuditLog";
+import LearnHub from "./pages/learn/LearnHub";
+import LearnArticle from "./pages/learn/LearnArticle";
+import LandingView from "./pages/learn/LandingView";
+import ContentStudio from "./pages/studio/ContentStudio";
+import ContentEditor from "./pages/studio/ContentEditor";
+import LeadsInbox from "./pages/studio/LeadsInbox";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -83,6 +89,10 @@ const App = () => (
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy-preferences" element={<PrivacyPreferences />} />
             <Route path="/unsubscribe" element={<Unsubscribe />} />
+            <Route path="/learn" element={<LearnHub />} />
+            <Route path="/learn/topic/:tag" element={<LearnHub />} />
+            <Route path="/learn/:slug" element={<LearnArticle />} />
+            <Route path="/lp/:slug" element={<LandingView />} />
             <Route element={<ProtectedRoutes />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/assessments" element={<Assessments />} />
@@ -116,6 +126,9 @@ const App = () => (
               <Route path="/assessment/:assessmentId/dept-questionnaire/:deptAssessmentId" element={<PhaseDeptQuestionnaireDetail />} />
               <Route path="/assessment/:assessmentId/file-references" element={<PhaseFileReferences />} />
               <Route path="/assessment/:assessmentId/dashboard" element={<PhaseDashboard />} />
+              <Route path="/studio/content" element={<ContentStudio />} />
+              <Route path="/studio/content/:id" element={<ContentEditor />} />
+              <Route path="/studio/leads" element={<LeadsInbox />} />
               <Route path="/execute" element={<ExecuteLanding />} />
               <Route path="/execute/select" element={<ExecuteSunburst />} />
               <Route path="/execute/profile" element={<ExecuteOrgProfile />} />
