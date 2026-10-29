@@ -765,6 +765,131 @@ export type Database = {
           },
         ]
       }
+      content_posts: {
+        Row: {
+          ai_summary: string | null
+          author_name: string | null
+          blocks: Json
+          body_md: string
+          canonical_url: string | null
+          category: string | null
+          content_type: string
+          cover_image_url: string | null
+          created_at: string
+          created_by: string | null
+          excerpt: string | null
+          faq: Json
+          featured: boolean
+          focus_keyword: string | null
+          id: string
+          noindex: boolean
+          og_image_url: string | null
+          published_at: string | null
+          reading_minutes: number
+          seo_description: string | null
+          seo_title: string | null
+          slug: string
+          status: string
+          tags: string[]
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          ai_summary?: string | null
+          author_name?: string | null
+          blocks?: Json
+          body_md?: string
+          canonical_url?: string | null
+          category?: string | null
+          content_type?: string
+          cover_image_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          excerpt?: string | null
+          faq?: Json
+          featured?: boolean
+          focus_keyword?: string | null
+          id?: string
+          noindex?: boolean
+          og_image_url?: string | null
+          published_at?: string | null
+          reading_minutes?: number
+          seo_description?: string | null
+          seo_title?: string | null
+          slug: string
+          status?: string
+          tags?: string[]
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          ai_summary?: string | null
+          author_name?: string | null
+          blocks?: Json
+          body_md?: string
+          canonical_url?: string | null
+          category?: string | null
+          content_type?: string
+          cover_image_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          excerpt?: string | null
+          faq?: Json
+          featured?: boolean
+          focus_keyword?: string | null
+          id?: string
+          noindex?: boolean
+          og_image_url?: string | null
+          published_at?: string | null
+          reading_minutes?: number
+          seo_description?: string | null
+          seo_title?: string | null
+          slug?: string
+          status?: string
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      content_versions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          post_id: string
+          snapshot: Json
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          post_id: string
+          snapshot: Json
+          status: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          post_id?: string
+          snapshot?: Json
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_versions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "content_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cross_framework_mappings: {
         Row: {
           created_at: string
@@ -1663,6 +1788,57 @@ export type Database = {
           sources_used?: string[] | null
           sub_sector?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      marketing_leads: {
+        Row: {
+          consent_at: string
+          consent_given: boolean
+          consent_text: string
+          created_at: string
+          email: string
+          id: string
+          ip_hash: string | null
+          lead_type: string
+          message: string | null
+          name: string | null
+          organisation: string | null
+          source_slug: string | null
+          status: string
+          user_agent: string | null
+        }
+        Insert: {
+          consent_at?: string
+          consent_given: boolean
+          consent_text: string
+          created_at?: string
+          email: string
+          id?: string
+          ip_hash?: string | null
+          lead_type?: string
+          message?: string | null
+          name?: string | null
+          organisation?: string | null
+          source_slug?: string | null
+          status?: string
+          user_agent?: string | null
+        }
+        Update: {
+          consent_at?: string
+          consent_given?: boolean
+          consent_text?: string
+          created_at?: string
+          email?: string
+          id?: string
+          ip_hash?: string | null
+          lead_type?: string
+          message?: string | null
+          name?: string | null
+          organisation?: string | null
+          source_slug?: string | null
+          status?: string
+          user_agent?: string | null
         }
         Relationships: []
       }
