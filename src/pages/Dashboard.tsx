@@ -63,10 +63,10 @@ const moduleTiles: Tile[] = [
   {
     key: "learn",
     title: "Learn",
-    description: "Access training modules for employees and stay updated with the latest regulatory changes in data privacy.",
+    description: "Publish SEO-ready blogs, guides and landing pages to the public site, and capture consented leads.",
     icon: GraduationCap,
-    cta: "Coming Soon",
-    comingSoon: true,
+    url: "/studio/content",
+    cta: "Open Content Studio",
   },
   {
     key: "ai",

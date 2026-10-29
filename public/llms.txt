@@ -4,8 +4,13 @@
 
 ## Pages
 
+- [Learn](https://privcybhub.com/learn): Articles and guides on DPDP Act 2023, global privacy law and cyber compliance.
+
 - [Home](/): Product overview and features for DPDP and global privacy compliance.
 - [Sign in](/auth): Account sign-in and registration.
 - [Privacy Policy](/privacy): How PrivcybHub collects, uses, and protects personal data.
 - [Terms of Service](/terms): Terms governing use of the PrivcybHub platform.
 - [Privacy Preferences](/privacy-preferences): Manage cookie and communication consent.
+## Optional
+
+- [Full article index](https://xuibhzkkomiucbiwpvin.supabase.co/functions/v1/content-feed?format=llms): Live list of every published article with summaries.
