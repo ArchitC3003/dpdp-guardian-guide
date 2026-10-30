@@ -15,6 +15,13 @@
       "when": 1793234144313,
       "tag": "0001_learn_content_hub",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793377230376,
+      "tag": "0002_learn_phase_a_upgrade",
+      "breakpoints": true
     }
   ]
 }
