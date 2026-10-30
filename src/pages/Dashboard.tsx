@@ -65,8 +65,8 @@ const moduleTiles: Tile[] = [
     title: "Learn",
     description: "Publish SEO-ready blogs, guides and landing pages to the public site, and capture consented leads.",
     icon: GraduationCap,
-    url: "/studio/content",
-    cta: "Open Content Studio",
+    url: "/learn",
+    cta: "Open Learn Hub",
   },
   {
     key: "ai",
