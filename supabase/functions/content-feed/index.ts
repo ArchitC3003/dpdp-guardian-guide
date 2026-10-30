@@ -10,15 +10,19 @@ Deno.serve(async (req) => {
   const format = new URL(req.url).searchParams.get("format") || "sitemap";
   const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!);
   const { data, error } = await db.from("content_posts")
-    .select("slug,title,excerpt,content_type,published_at,updated_at,ai_summary,noindex")
-    .order("published_at", { ascending: false }).limit(1000);
+    .select("slug,title,excerpt,content_type,status,published_at,scheduled_for,updated_at,ai_summary,noindex,author_name,category")
+    .in("status", ["published", "scheduled"]).limit(1000);
   if (error) return new Response("error", { status: 500, headers: corsHeaders });
-  const posts = (data || []).filter((p) => !p.noindex);
+  const now = Date.now();
+  const live = (p: any) => (p.status === "published" && (!p.published_at || new Date(p.published_at).getTime() <= now))
+    || (p.status === "scheduled" && !!p.scheduled_for && new Date(p.scheduled_for).getTime() <= now);
+  const when = (p: any) => (p.status === "scheduled" ? p.scheduled_for : p.published_at) || p.updated_at;
+  const posts = (data || []).filter((p) => !p.noindex && live(p)).sort((a, b) => new Date(when(b)).getTime() - new Date(when(a)).getTime());
 
   if (format === "rss") {
     const items = posts.filter((p) => p.content_type !== "landing").slice(0, 50).map((p) => `
   <item><title>${esc(p.title)}</title><link>${SITE}${pathFor(p)}</link><guid>${SITE}${pathFor(p)}</guid>
-  <pubDate>${new Date(p.published_at).toUTCString()}</pubDate><description>${esc(p.excerpt || "")}</description></item>`).join("");
+  <pubDate>${new Date(when(p)).toUTCString()}</pubDate>${p.author_name ? `<author>${esc(p.author_name)}</author>` : ""}${p.category ? `<category>${esc(p.category)}</category>` : ""}<description>${esc(p.excerpt || "")}</description></item>`).join("");
     return new Response(`<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0"><channel><title>PrivcybHub Learn</title><link>${SITE}/learn</link>
 <description>DPDP, privacy and cyber compliance insights from PrivcybHub.</description>${items}
