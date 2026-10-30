@@ -765,18 +765,105 @@ export type Database = {
           },
         ]
       }
+      content_authors: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          id: string
+          linkedin_url: string | null
+          name: string
+          title: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          id?: string
+          linkedin_url?: string | null
+          name: string
+          title?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          id?: string
+          linkedin_url?: string | null
+          name?: string
+          title?: string | null
+        }
+        Relationships: []
+      }
+      content_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
+      content_post_tags: {
+        Row: {
+          post_id: string
+          tag_id: string
+        }
+        Insert: {
+          post_id: string
+          tag_id: string
+        }
+        Update: {
+          post_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_post_tags_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "content_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_post_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "content_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_posts: {
         Row: {
           ai_summary: string | null
+          author_id: string | null
           author_name: string | null
           blocks: Json
           body_md: string
           canonical_url: string | null
           category: string | null
+          category_id: string | null
           content_type: string
           cover_image_url: string | null
           created_at: string
           created_by: string | null
+          current_version: number
           excerpt: string | null
           faq: Json
           featured: boolean
@@ -786,6 +873,7 @@ export type Database = {
           og_image_url: string | null
           published_at: string | null
           reading_minutes: number
+          scheduled_for: string | null
           seo_description: string | null
           seo_title: string | null
           slug: string
@@ -797,15 +885,18 @@ export type Database = {
         }
         Insert: {
           ai_summary?: string | null
+          author_id?: string | null
           author_name?: string | null
           blocks?: Json
           body_md?: string
           canonical_url?: string | null
           category?: string | null
+          category_id?: string | null
           content_type?: string
           cover_image_url?: string | null
           created_at?: string
           created_by?: string | null
+          current_version?: number
           excerpt?: string | null
           faq?: Json
           featured?: boolean
@@ -815,6 +906,7 @@ export type Database = {
           og_image_url?: string | null
           published_at?: string | null
           reading_minutes?: number
+          scheduled_for?: string | null
           seo_description?: string | null
           seo_title?: string | null
           slug: string
@@ -826,15 +918,18 @@ export type Database = {
         }
         Update: {
           ai_summary?: string | null
+          author_id?: string | null
           author_name?: string | null
           blocks?: Json
           body_md?: string
           canonical_url?: string | null
           category?: string | null
+          category_id?: string | null
           content_type?: string
           cover_image_url?: string | null
           created_at?: string
           created_by?: string | null
+          current_version?: number
           excerpt?: string | null
           faq?: Json
           featured?: boolean
@@ -844,6 +939,7 @@ export type Database = {
           og_image_url?: string | null
           published_at?: string | null
           reading_minutes?: number
+          scheduled_for?: string | null
           seo_description?: string | null
           seo_title?: string | null
           slug?: string
@@ -852,6 +948,42 @@ export type Database = {
           title?: string
           updated_at?: string
           updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "content_authors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_posts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "content_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_tags: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          slug?: string
         }
         Relationships: []
       }
@@ -863,6 +995,7 @@ export type Database = {
           post_id: string
           snapshot: Json
           status: string
+          version_number: number | null
         }
         Insert: {
           created_at?: string
@@ -871,6 +1004,7 @@ export type Database = {
           post_id: string
           snapshot: Json
           status: string
+          version_number?: number | null
         }
         Update: {
           created_at?: string
@@ -879,6 +1013,7 @@ export type Database = {
           post_id?: string
           snapshot?: Json
           status?: string
+          version_number?: number | null
         }
         Relationships: [
           {
@@ -2481,6 +2616,9 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_content_publisher: { Args: { _uid: string }; Returns: boolean }
+      is_content_staff: { Args: { _uid: string }; Returns: boolean }
+      is_content_writer: { Args: { _uid: string }; Returns: boolean }
       match_km_artefacts: {
         Args: {
           filter_industries?: string[]
@@ -2517,6 +2655,90 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      rpc_restore_content_version: {
+        Args: { version_id: string }
+        Returns: {
+          ai_summary: string | null
+          author_id: string | null
+          author_name: string | null
+          blocks: Json
+          body_md: string
+          canonical_url: string | null
+          category: string | null
+          category_id: string | null
+          content_type: string
+          cover_image_url: string | null
+          created_at: string
+          created_by: string | null
+          current_version: number
+          excerpt: string | null
+          faq: Json
+          featured: boolean
+          focus_keyword: string | null
+          id: string
+          noindex: boolean
+          og_image_url: string | null
+          published_at: string | null
+          reading_minutes: number
+          scheduled_for: string | null
+          seo_description: string | null
+          seo_title: string | null
+          slug: string
+          status: string
+          tags: string[]
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "content_posts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      rpc_save_content_post: {
+        Args: { payload: Json; tag_ids?: string[] }
+        Returns: {
+          ai_summary: string | null
+          author_id: string | null
+          author_name: string | null
+          blocks: Json
+          body_md: string
+          canonical_url: string | null
+          category: string | null
+          category_id: string | null
+          content_type: string
+          cover_image_url: string | null
+          created_at: string
+          created_by: string | null
+          current_version: number
+          excerpt: string | null
+          faq: Json
+          featured: boolean
+          focus_keyword: string | null
+          id: string
+          noindex: boolean
+          og_image_url: string | null
+          published_at: string | null
+          reading_minutes: number
+          scheduled_for: string | null
+          seo_description: string | null
+          seo_title: string | null
+          slug: string
+          status: string
+          tags: string[]
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "content_posts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
     }
     Enums: {

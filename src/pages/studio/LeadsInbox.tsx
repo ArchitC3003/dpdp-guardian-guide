@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { canEditContent } from "@/lib/content";
+import { canPublishContent } from "@/lib/content";
 import { ArrowLeft, Download } from "lucide-react";
 
 const STATUSES = ["new", "contacted", "qualified", "closed"];
@@ -19,7 +19,7 @@ export default function LeadsInbox() {
       .then(({ data }) => { setRows(data || []); setLoading(false); });
   }, []);
   if (permLoading) return <p className="p-8 text-muted-foreground">Loading…</p>;
-  if (!canEditContent(userRole)) return <p className="p-8 text-muted-foreground">Only Super Admins and GRC Managers can view leads.</p>;
+  if (!canPublishContent(userRole)) return <p className="p-8 text-muted-foreground">Only Super Admins and GRC Managers can view leads.</p>;
 
   const setStatus = async (id: string, status: string) => {
     setRows((r) => r.map((x) => (x.id === id ? { ...x, status } : x)));

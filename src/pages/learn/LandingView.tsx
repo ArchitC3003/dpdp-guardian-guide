@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PublicShell } from "@/components/learn/PublicShell";
 import { LeadForm } from "@/components/learn/LeadForm";
 import { Markdown } from "@/components/learn/Markdown";
-import { FONT_DISPLAY, SITE_URL, type LandingBlock } from "@/lib/content";
+import { FONT_DISPLAY, SITE_URL, type LandingBlock, isLive } from "@/lib/content";
 
 const lines = (s: string) => s.split("\n").map((l) => l.trim()).filter(Boolean);
 
@@ -15,7 +15,7 @@ export default function LandingView() {
   const [state, setState] = useState<"loading" | "ok" | "missing">("loading");
   useEffect(() => {
     supabase.from("content_posts").select("*").eq("slug", slug!).eq("content_type", "landing").maybeSingle().then(({ data }) => {
-      if (!data || !data.published_at || new Date(data.published_at) > new Date()) { setState("missing"); return; }
+      if (!data || !isLive(data)) { setState("missing"); return; }
       setPost(data); setState("ok");
     });
   }, [slug]);

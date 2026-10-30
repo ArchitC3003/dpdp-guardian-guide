@@ -31,7 +31,8 @@ type NavItem = { title: string; subtitle: string; url: string; icon: any };
 const overviewNav: NavItem[] = [
   { title: "Dashboard", subtitle: "Compliance overview & risk summary", url: "/dashboard", icon: LayoutDashboard },
   { title: "Execute", subtitle: "Bespoke DPDP programmes by industry", url: "/execute", icon: Sparkles },
-  { title: "Learn Studio", subtitle: "Blogs, guides & landing pages", url: "/studio/content", icon: BookOpen },
+  { title: "Learn Hub", subtitle: "Public articles & guides", url: "/learn", icon: BookMarked },
+  { title: "Content Studio", subtitle: "Blogs, guides & landing pages", url: "/studio/content", icon: BookOpen },
 ];
 
 const assessNav: NavItem[] = [
