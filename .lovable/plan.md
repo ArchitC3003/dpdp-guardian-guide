@@ -28,3 +28,10 @@ Frontend:
 - Sidebar: Content Studio visible to all four staff roles.
 - `content-feed`: filter on `published_at <= now()` (scheduled-aware). Add an author and category to RSS items.
 - Tests: role publish rules (Reviewer blocked from publishing, Auditor read-only) and the `isLive` scheduled rule.
+
+## Approved adjustments
+1. **Scheduled posts go live without a status flip.** The public read rule, `isLive`, and `content-feed` all use: `((status='published' AND COALESCE(published_at, now()) <= now()) OR (status='scheduled' AND scheduled_for IS NOT NULL AND scheduled_for <= now()))`. Test added.
+2. **Reviewer tag sync.** `content_post_tags` allows INSERT/UPDATE/DELETE for admin, moderator and user. Creating entries in `content_tags` and `content_categories` stays admin/moderator only.
+3. **Reviewer cover uploads.** In `content-media`, INSERT is allowed for admin/moderator/user. UPDATE/DELETE stay admin/moderator only.
+4. **Dashboard Learn card.** It's enabled, no longer "Coming Soon", and opens `/learn`.
+5. **Task list.** Record these tasks in roadmap.md at build start.
