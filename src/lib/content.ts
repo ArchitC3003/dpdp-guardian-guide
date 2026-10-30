@@ -32,20 +32,43 @@ export function publicPath(p: { content_type: string; slug: string }): string {
 }
 
 /** Mirrors the database rule for what anonymous visitors can see. */
-export function isLive(p: { status: string; published_at: string | null }, now = new Date()): boolean {
-  if (p.status !== "published" && p.status !== "scheduled") return false;
-  if (!p.published_at) return false;
-  return new Date(p.published_at).getTime() <= now.getTime();
+export function isLive(p: { status: string; published_at: string | null; scheduled_for?: string | null }, now = new Date()): boolean {
+  const t = now.getTime();
+  if (p.status === "published") return !p.published_at || new Date(p.published_at).getTime() <= t;
+  if (p.status === "scheduled") return !!p.scheduled_for && new Date(p.scheduled_for).getTime() <= t;
+  return false;
+}
+/** Date a live post went live (for display and feeds). */
+export function liveDate(p: { status: string; published_at: string | null; scheduled_for?: string | null; updated_at?: string }): string {
+  return (p.status === "scheduled" ? p.scheduled_for : p.published_at) || p.published_at || p.updated_at || new Date().toISOString();
 }
 
-/** Only Super Admin (admin) and GRC Manager (moderator) can create, edit and publish. */
+/** Super Admin, GRC Manager and Reviewer can write drafts. */
 export function canEditContent(role: string): boolean {
+  return role === "admin" || role === "moderator" || role === "user";
+}
+/** Only Super Admin and GRC Manager can schedule, publish or archive. */
+export function canPublishContent(role: string): boolean {
   return role === "admin" || role === "moderator";
 }
-/** Auditors can view the studio read-only; Reviewers cannot open it. */
+/** Statuses a role may save a post into. */
+export function allowedStatuses(role: string): ContentStatus[] {
+  if (canPublishContent(role)) return ["draft", "in_review", "scheduled", "published", "archived"];
+  if (canEditContent(role)) return ["draft", "in_review"];
+  return [];
+}
+/** Reviewers may only edit posts that are not yet scheduled, live or archived. */
+export function canEditPost(role: string, status: string): boolean {
+  if (canPublishContent(role)) return true;
+  return canEditContent(role) && (status === "draft" || status === "in_review");
+}
+/** All four staff roles can open the studio; Auditors read-only. */
 export function canViewStudio(role: string): boolean {
   return canEditContent(role) || role === "auditor";
 }
+export const TOPIC_PILLS = ["DPDP", "GDPR", "RBI", "SEBI", "CERT-In", "ISO 27701"];
+export const fmtIST = (iso: string | null | undefined, withTime = true) =>
+  iso ? new Date(iso).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", ...(withTime ? { timeStyle: "short" } : {}) }) + (withTime ? " IST" : "") : "—";
 
 export function headings(md: string): { id: string; text: string; level: number }[] {
   return md.split("\n").map((l) => /^(#{2,3})\s+(.+)$/.exec(l.trim())).filter(Boolean)
