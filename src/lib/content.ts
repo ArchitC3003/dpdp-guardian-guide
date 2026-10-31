@@ -81,7 +81,7 @@ export function seoChecks(p: { seo_title?: string | null; title: string; seo_des
   const k = (p.focus_keyword || "").toLowerCase().trim();
   return [
     { ok: t.length >= 30 && t.length <= 60, label: `Title length ${t.length}/60` },
-    { ok: d.length >= 120 && d.length <= 160, label: `Description length ${d.length}/160` },
+    { ok: d.length >= 120 && d.length <= 155, label: `Description length ${d.length}/155` },
     { ok: !!k && t.toLowerCase().includes(k), label: "Focus keyword in title" },
     { ok: !!k && p.body_md.toLowerCase().includes(k), label: "Focus keyword in body" },
     { ok: headings(p.body_md).length >= 2, label: "At least two section headings" },
