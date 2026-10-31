@@ -62,11 +62,18 @@ export default function ContentStudio() {
           </button>
         ))}
       </div>
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
         <Input placeholder="Search titles" value={q} onChange={(e) => setQ(e.target.value)} className="max-w-xs" />
         <Select value={status} onValueChange={setStatus}><SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
           <SelectContent><SelectItem value="all">All statuses</SelectItem>{(Object.keys(STATUS_LABELS) as ContentStatus[]).map((s) => <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>)}</SelectContent></Select>
+        <Select value={type} onValueChange={setType}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="all">All types</SelectItem>{(Object.keys(TYPE_LABELS) as ContentType[]).map((t) => <SelectItem key={t} value={t}>{TYPE_LABELS[t]}</SelectItem>)}</SelectContent></Select>
+        <Select value={cat} onValueChange={setCat}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="all">All categories</SelectItem>{cats.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select>
+        <Select value={author} onValueChange={setAuthor}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="all">All authors</SelectItem>{authors.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select>
       </div>
+      {loadError && <p className="text-sm text-destructive">Could not load content: {loadError}</p>}
       <div className="rounded-xl border border-border overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-muted/50 text-left"><tr><th className="p-3">Title</th><th className="p-3">Type</th><th className="p-3">Status</th><th className="p-3">Author</th><th className="p-3">Go-live / updated</th><th className="p-3"></th></tr></thead>
