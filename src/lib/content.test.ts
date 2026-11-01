@@ -42,3 +42,28 @@ describe("content publishing rules", () => {
     expect(publicPath({ content_type: "blog", slug: "x" })).toBe("/learn/x");
   });
 });
+
+import { validateMediaFile, videoEmbed } from "./content";
+const MB = 1024 * 1024;
+describe("presentation and video uploads", () => {
+  it("routes presentations and videos to /learn", () => {
+    expect(publicPath({ content_type: "presentation", slug: "a" })).toBe("/learn/a");
+    expect(publicPath({ content_type: "video", slug: "b" })).toBe("/learn/b");
+  });
+  it("accepts PDF and PPTX presentations up to 50 MB", () => {
+    expect(validateMediaFile("presentation", { name: "x.pptx", type: "", size: 50 * MB })).toEqual({ kind: "pptx" });
+    expect(validateMediaFile("presentation", { name: "x.pdf", type: "application/pdf", size: 1 })).toEqual({ kind: "pdf" });
+    expect("error" in validateMediaFile("presentation", { name: "x.pdf", type: "application/pdf", size: 50 * MB + 1 })).toBe(true);
+    expect("error" in validateMediaFile("presentation", { name: "x.docx", type: "", size: 1 })).toBe(true);
+  });
+  it("accepts MP4/WebM videos up to 200 MB", () => {
+    expect(validateMediaFile("video", { name: "v.mp4", type: "video/mp4", size: 200 * MB })).toEqual({ kind: "video_file" });
+    expect("error" in validateMediaFile("video", { name: "v.mp4", type: "video/mp4", size: 200 * MB + 1 })).toBe(true);
+    expect("error" in validateMediaFile("video", { name: "v.mov", type: "video/quicktime", size: 1 })).toBe(true);
+  });
+  it("builds privacy-enhanced embeds", () => {
+    expect(videoEmbed("https://youtu.be/dQw4w9WgXcQ")?.embed).toBe("https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ");
+    expect(videoEmbed("https://vimeo.com/123456")?.embed).toBe("https://player.vimeo.com/video/123456?dnt=1");
+    expect(videoEmbed("https://example.com")).toBeNull();
+  });
+});
