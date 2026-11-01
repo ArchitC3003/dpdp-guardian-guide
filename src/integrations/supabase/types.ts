@@ -852,6 +852,7 @@ export type Database = {
       content_posts: {
         Row: {
           ai_summary: string | null
+          allow_download: boolean
           author_id: string | null
           author_name: string | null
           blocks: Json
@@ -869,6 +870,11 @@ export type Database = {
           featured: boolean
           focus_keyword: string | null
           id: string
+          media_duration_seconds: number | null
+          media_kind: string | null
+          media_mime: string | null
+          media_size: number | null
+          media_url: string | null
           noindex: boolean
           og_image_url: string | null
           published_at: string | null
@@ -880,11 +886,13 @@ export type Database = {
           status: string
           tags: string[]
           title: string
+          transcript: string | null
           updated_at: string
           updated_by: string | null
         }
         Insert: {
           ai_summary?: string | null
+          allow_download?: boolean
           author_id?: string | null
           author_name?: string | null
           blocks?: Json
@@ -902,6 +910,11 @@ export type Database = {
           featured?: boolean
           focus_keyword?: string | null
           id?: string
+          media_duration_seconds?: number | null
+          media_kind?: string | null
+          media_mime?: string | null
+          media_size?: number | null
+          media_url?: string | null
           noindex?: boolean
           og_image_url?: string | null
           published_at?: string | null
@@ -913,11 +926,13 @@ export type Database = {
           status?: string
           tags?: string[]
           title: string
+          transcript?: string | null
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
           ai_summary?: string | null
+          allow_download?: boolean
           author_id?: string | null
           author_name?: string | null
           blocks?: Json
@@ -935,6 +950,11 @@ export type Database = {
           featured?: boolean
           focus_keyword?: string | null
           id?: string
+          media_duration_seconds?: number | null
+          media_kind?: string | null
+          media_mime?: string | null
+          media_size?: number | null
+          media_url?: string | null
           noindex?: boolean
           og_image_url?: string | null
           published_at?: string | null
@@ -946,6 +966,7 @@ export type Database = {
           status?: string
           tags?: string[]
           title?: string
+          transcript?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -2660,6 +2681,7 @@ export type Database = {
         Args: { version_id: string }
         Returns: {
           ai_summary: string | null
+          allow_download: boolean
           author_id: string | null
           author_name: string | null
           blocks: Json
@@ -2677,6 +2699,11 @@ export type Database = {
           featured: boolean
           focus_keyword: string | null
           id: string
+          media_duration_seconds: number | null
+          media_kind: string | null
+          media_mime: string | null
+          media_size: number | null
+          media_url: string | null
           noindex: boolean
           og_image_url: string | null
           published_at: string | null
@@ -2688,6 +2715,7 @@ export type Database = {
           status: string
           tags: string[]
           title: string
+          transcript: string | null
           updated_at: string
           updated_by: string | null
         }
@@ -2702,6 +2730,7 @@ export type Database = {
         Args: { payload: Json; tag_ids?: string[] }
         Returns: {
           ai_summary: string | null
+          allow_download: boolean
           author_id: string | null
           author_name: string | null
           blocks: Json
@@ -2719,6 +2748,11 @@ export type Database = {
           featured: boolean
           focus_keyword: string | null
           id: string
+          media_duration_seconds: number | null
+          media_kind: string | null
+          media_mime: string | null
+          media_size: number | null
+          media_url: string | null
           noindex: boolean
           og_image_url: string | null
           published_at: string | null
@@ -2730,6 +2764,7 @@ export type Database = {
           status: string
           tags: string[]
           title: string
+          transcript: string | null
           updated_at: string
           updated_by: string | null
         }

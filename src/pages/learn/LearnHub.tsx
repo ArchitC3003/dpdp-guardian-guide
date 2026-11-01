@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PublicShell } from "@/components/learn/PublicShell";
 import { LeadForm } from "@/components/learn/LeadForm";
 import { Input } from "@/components/ui/input";
-import { FONT_DISPLAY, SITE_URL, publicPath, isLive, liveDate, TOPIC_PILLS } from "@/lib/content";
+import { FONT_DISPLAY, SITE_URL, publicPath, isLive, liveDate, TOPIC_PILLS, TYPE_BADGES, type ContentType } from "@/lib/content";
 
 type Row = { id: string; slug: string; title: string; excerpt: string | null; content_type: string; category: string | null; tags: string[]; cover_image_url: string | null; published_at: string; scheduled_for: string | null; status: string; reading_minutes: number; featured: boolean };
 
@@ -14,6 +14,7 @@ export default function LearnHub() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
+  const [kind, setKind] = useState<"all" | "read" | "presentation" | "video">("all");
 
   useEffect(() => {
     let query = supabase.from("content_posts")
@@ -28,9 +29,9 @@ export default function LearnHub() {
     });
   }, [tag]);
 
-  const filtered = useMemo(() => rows.filter((r) => !q || (r.title + " " + (r.excerpt || "")).toLowerCase().includes(q.toLowerCase())), [rows, q]);
+  const filtered = useMemo(() => rows.filter((r) => (kind === "all" || (kind === "read" ? r.content_type === "blog" || r.content_type === "article" : r.content_type === kind)) && (!q || (r.title + " " + (r.excerpt || "")).toLowerCase().includes(q.toLowerCase()))), [rows, q, kind]);
   const allTags = useMemo(() => Array.from(new Set([...TOPIC_PILLS, ...rows.flatMap((r) => r.tags)])).slice(0, 16), [rows]);
-  const featured = !tag && !q ? filtered.find((r) => r.featured) || filtered[0] : undefined;
+  const featured = !tag && !q && kind === "all" ? filtered.find((r) => r.featured) || filtered[0] : undefined;
   const rest = filtered.filter((r) => r !== featured);
   const url = `${SITE_URL}/learn${tag ? `/topic/${tag}` : ""}`;
   const title = tag ? `${tag} — PrivcybHub Learn` : "Learn — DPDP & privacy compliance insights | PrivcybHub";
@@ -51,6 +52,8 @@ export default function LearnHub() {
         <h1 className="text-5xl md:text-6xl font-semibold mt-3 max-w-3xl" style={{ fontFamily: FONT_DISPLAY }}>{tag ? `Topic: ${tag}` : "Clear thinking on privacy, DPDP and cyber compliance"}</h1>
         <div className="mt-8 flex flex-wrap gap-3 items-center">
           <Input placeholder="Search articles" value={q} onChange={(e) => setQ(e.target.value)} className="max-w-xs" aria-label="Search articles" />
+          <div role="group" aria-label="Content type" className="flex gap-1">{([["all", "All"], ["read", "Articles"], ["presentation", "Slides"], ["video", "Videos"]] as const).map(([k, l]) => (
+            <button key={k} type="button" aria-pressed={kind === k} onClick={() => setKind(k)} className={`text-xs rounded-full px-3 py-1 border ${kind === k ? "border-primary bg-primary/10 text-primary" : "border-border"}`}>{l}</button>))}</div>
           {tag && <Link to="/learn" className="text-sm text-primary">All topics</Link>}
           {allTags.map((t) => <Link key={t} to={`/learn/topic/${encodeURIComponent(t)}`} aria-current={t === tag ? "page" : undefined} className={`text-xs border rounded-full px-3 py-1 hover:border-primary ${t === tag ? "border-primary text-primary" : "border-border"}`}>{t}</Link>)}
         </div>
@@ -77,10 +80,10 @@ export default function LearnHub() {
                 <Link key={r.id} to={publicPath(r)} className="border border-border rounded-xl overflow-hidden bg-card hover:border-primary transition-colors flex flex-col">
                   {r.cover_image_url ? <img src={r.cover_image_url} alt="" loading="lazy" className="h-44 w-full object-cover" /> : <div className="h-2 bg-primary/40" />}
                   <div className="p-5 flex-1 flex flex-col">
-                    <span className="font-mono text-[11px] text-primary uppercase">{r.category || (r.content_type === "article" ? "Guide" : "Blog")}</span>
+                    <span className="font-mono text-[11px] text-primary uppercase">{TYPE_BADGES[r.content_type as ContentType] || "Blog"}{r.category ? ` · ${r.category}` : ""}</span>
                     <h3 className="text-xl font-semibold mt-1" style={{ fontFamily: FONT_DISPLAY }}>{r.title}</h3>
                     <p className="text-sm text-muted-foreground mt-2 line-clamp-3 flex-1">{r.excerpt}</p>
-                    <span className="text-xs text-muted-foreground mt-4">{r.reading_minutes} min read</span>
+                    <span className="text-xs text-muted-foreground mt-4">{r.content_type === "video" ? "Watch" : r.content_type === "presentation" ? "View slides" : `${r.reading_minutes} min read`}</span>
                   </div>
                 </Link>
               ))}

@@ -1,4 +1,5 @@
-export type ContentType = "blog" | "article" | "landing";
+export type ContentType = "blog" | "article" | "landing" | "presentation" | "video";
+export type MediaKind = "pdf" | "pptx" | "video_file" | "youtube" | "vimeo";
 export type ContentStatus = "draft" | "in_review" | "scheduled" | "published" | "archived";
 
 export type LandingBlock = {
@@ -15,7 +16,34 @@ export const FONT_BODY = "'Syne', sans-serif";
 export const STATUS_LABELS: Record<ContentStatus, string> = {
   draft: "Draft", in_review: "In review", scheduled: "Scheduled", published: "Published", archived: "Archived",
 };
-export const TYPE_LABELS: Record<ContentType, string> = { blog: "Blog post", article: "Article / guide", landing: "Landing page" };
+export const TYPE_LABELS: Record<ContentType, string> = { blog: "Blog post", article: "Article / guide", landing: "Landing page", presentation: "Presentation", video: "Video" };
+export const TYPE_BADGES: Record<ContentType, string> = { blog: "Blog", article: "Guide", landing: "Page", presentation: "Slides", video: "Video" };
+
+const MB = 1024 * 1024;
+export const MEDIA_LIMITS = { presentation: 50 * MB, video: 200 * MB } as const;
+
+/** Checks an upload for a presentation or video post. Returns the media kind or an error message. */
+export function validateMediaFile(type: "presentation" | "video", f: { name: string; type: string; size: number }): { kind: MediaKind } | { error: string } {
+  const ext = f.name.split(".").pop()?.toLowerCase() || "";
+  if (type === "presentation") {
+    const kind: MediaKind | null = ext === "pdf" || f.type === "application/pdf" ? "pdf" : ext === "pptx" ? "pptx" : null;
+    if (!kind) return { error: "Choose a PDF or PowerPoint (.pptx) file" };
+    if (f.size > MEDIA_LIMITS.presentation) return { error: "Presentations must be 50 MB or smaller" };
+    return { kind };
+  }
+  if (!["mp4", "webm"].includes(ext) && !["video/mp4", "video/webm"].includes(f.type)) return { error: "Choose an MP4 or WebM video" };
+  if (f.size > MEDIA_LIMITS.video) return { error: "Videos must be 200 MB or smaller — use a YouTube or Vimeo link for larger files" };
+  return { kind: "video_file" };
+}
+
+/** Turns a YouTube or Vimeo link into a privacy-friendly embed URL. */
+export function videoEmbed(url: string): { kind: "youtube" | "vimeo"; embed: string } | null {
+  const yt = /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/.exec(url);
+  if (yt) return { kind: "youtube", embed: `https://www.youtube-nocookie.com/embed/${yt[1]}` };
+  const vm = /vimeo\.com\/(?:video\/)?(\d+)/.exec(url);
+  if (vm) return { kind: "vimeo", embed: `https://player.vimeo.com/video/${vm[1]}?dnt=1` };
+  return null;
+}
 
 export function slugify(input: string): string {
   return input.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "")

@@ -11,8 +11,9 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Markdown } from "@/components/learn/Markdown";
+import { MediaViewer } from "@/components/learn/MediaViewer";
 import {
-  STATUS_LABELS, TYPE_LABELS, SITE_URL, canEditContent, canEditPost, canPublishContent, allowedStatuses, fmtIST, canViewStudio, publicPath, readingMinutes, seoChecks, slugify,
+  STATUS_LABELS, TYPE_LABELS, SITE_URL, canEditContent, canEditPost, canPublishContent, allowedStatuses, fmtIST, canViewStudio, publicPath, readingMinutes, seoChecks, slugify, validateMediaFile, videoEmbed,
   type ContentStatus, type ContentType, type FaqItem, type LandingBlock,
 } from "@/lib/content";
 import { ArrowLeft, Check, X, Sparkles, Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
@@ -22,6 +23,7 @@ const EMPTY = {
   blocks: [] as LandingBlock[], faq: [] as FaqItem[], ai_summary: "", category: "", tags: [] as string[], cover_image_url: "",
   author_name: "", author_id: "" as string, category_id: "" as string, scheduled_for: null as string | null, current_version: 1, seo_title: "", seo_description: "", focus_keyword: "", canonical_url: "", og_image_url: "",
   noindex: false, featured: false, published_at: null as string | null,
+  media_url: "", media_kind: "" as string, media_mime: "", media_size: null as number | null, media_duration_seconds: null as number | null, transcript: "", allow_download: true,
 };
 const toLocalInput = (iso: string | null) => {
   if (!iso) return "";
@@ -45,6 +47,7 @@ export default function ContentEditor() {
   const [tagIds, setTagIds] = useState<string[]>([]);
   const [lookups, setLookups] = useState<{ authors: any[]; cats: any[]; tags: any[] }>({ authors: [], cats: [], tags: [] });
   const [uploading, setUploading] = useState(false);
+  const [mediaUploading, setMediaUploading] = useState(false);
   const [restoring, setRestoring] = useState<string | null>(null);
 
   const loadVersions = (pid: string) => supabase.from("content_versions").select("id,status,created_at,version_number").eq("post_id", pid)
@@ -85,6 +88,8 @@ export default function ContentEditor() {
     if (status === "published" && !published_at) published_at = new Date().toISOString();
     if (status === "scheduled" && (!scheduled_for || new Date(scheduled_for) <= new Date())) return toast({ title: "Pick a future go-live time (IST) to schedule", variant: "destructive" });
     if (status === "scheduled") published_at = scheduled_for;
+    if ((p.content_type === "presentation" || p.content_type === "video") && (status === "published" || status === "scheduled") && !p.media_url)
+      return toast({ title: p.content_type === "video" ? "Add a video before publishing" : "Add a presentation file before publishing", variant: "destructive" });
     setSaving(true);
     const payload = {
       ...p, id: isNew ? null : id, status, slug, published_at, scheduled_for,
@@ -130,6 +135,28 @@ export default function ContentEditor() {
     if (signed.error || !signed.data?.signedUrl) return toast({ title: "Upload saved but link failed", description: signed.error?.message, variant: "destructive" });
     set("cover_image_url", signed.data.signedUrl);
     toast({ title: "Cover image added — save to keep it" });
+  };
+
+  const uploadMedia = async (file: File) => {
+    const t = p.content_type as "presentation" | "video";
+    const v = validateMediaFile(t, file);
+    if ("error" in v) return toast({ title: v.error, variant: "destructive" });
+    setMediaUploading(true);
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    const path = `${t === "video" ? "videos" : "presentations"}/${Date.now()}-${slugify(file.name.replace(/\.[^.]+$/, "")) || "file"}.${ext}`;
+    const up = await supabase.storage.from("content-media").upload(path, file, { contentType: file.type || undefined, upsert: false });
+    if (up.error) { setMediaUploading(false); return toast({ title: "Upload failed", description: up.error.message, variant: "destructive" }); }
+    const signed = await supabase.storage.from("content-media").createSignedUrl(path, 60 * 60 * 24 * 365 * 5);
+    setMediaUploading(false);
+    if (signed.error || !signed.data?.signedUrl) return toast({ title: "Upload saved but link failed", description: signed.error?.message, variant: "destructive" });
+    let duration: number | null = null;
+    if (v.kind === "video_file") duration = await new Promise((res) => { const el = document.createElement("video"); el.preload = "metadata"; el.onloadedmetadata = () => res(Math.round(el.duration) || null); el.onerror = () => res(null); el.src = URL.createObjectURL(file); });
+    setP((o) => ({ ...o, media_url: signed.data!.signedUrl, media_kind: v.kind, media_mime: file.type, media_size: file.size, media_duration_seconds: duration }));
+    toast({ title: "File added — save to keep it" });
+  };
+  const setVideoLink = (url: string) => {
+    const e = videoEmbed(url);
+    setP((o) => ({ ...o, media_url: url, media_kind: e ? e.kind : url ? o.media_kind : "", media_mime: "", media_size: null }));
   };
 
   const addLookup = async (table: "content_authors" | "content_categories" | "content_tags") => {
@@ -203,6 +230,21 @@ export default function ContentEditor() {
           </div>
           <Textarea placeholder="Short excerpt shown on cards and in search results" rows={2} maxLength={300} value={p.excerpt} onChange={(e) => set("excerpt", e.target.value)} />
 
+          {(p.content_type === "presentation" || p.content_type === "video") && (
+            <div className="border border-border rounded-lg p-4 space-y-3 bg-card">
+              <h3 className="font-semibold text-sm">{p.content_type === "video" ? "Video" : "Presentation file"}</h3>
+              <Input type="file" disabled={mediaUploading} accept={p.content_type === "video" ? "video/mp4,video/webm,.mp4,.webm" : "application/pdf,.pdf,.pptx"}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadMedia(f); e.target.value = ""; }} />
+              <p className="text-[11px] text-muted-foreground">{p.content_type === "video" ? "MP4 or WebM, up to 200 MB." : "PDF or PowerPoint (.pptx), up to 50 MB."}{mediaUploading ? " Uploading…" : ""}</p>
+              {p.content_type === "video" && <Input placeholder="or paste a YouTube / Vimeo link" value={p.media_kind === "youtube" || p.media_kind === "vimeo" ? p.media_url : ""} onChange={(e) => setVideoLink(e.target.value)} />}
+              {p.media_url && p.media_kind && <MediaViewer post={p} />}
+              {p.media_url && <div className="flex items-center justify-between text-xs text-muted-foreground"><span>{p.media_kind}{p.media_size ? ` · ${(p.media_size / 1048576).toFixed(1)} MB` : ""}</span>
+                <Button type="button" size="sm" variant="ghost" onClick={() => setP((o) => ({ ...o, media_url: "", media_kind: "", media_mime: "", media_size: null, media_duration_seconds: null }))}>Remove</Button></div>}
+              {p.content_type === "presentation" && <label className="flex items-center justify-between text-sm">Let visitors download the file<Switch checked={p.allow_download} onCheckedChange={(v) => set("allow_download", v)} /></label>}
+              {p.content_type === "video" && <div><Label className="text-xs">Transcript (helps search engines and AI tools)</Label><Textarea rows={5} value={p.transcript} onChange={(e) => set("transcript", e.target.value)} /></div>}
+            </div>
+          )}
+
           {p.content_type === "landing" ? (
             <div className="space-y-3">
               <div className="flex flex-wrap gap-2">
@@ -229,6 +271,7 @@ export default function ContentEditor() {
             </div>
           ) : (
             <Tabs defaultValue="write">
+              {(p.content_type === "presentation" || p.content_type === "video") && <p className="text-xs text-muted-foreground mb-1">Notes shown below the {p.content_type === "video" ? "video" : "slides"} (optional)</p>}
               <TabsList><TabsTrigger value="write">Write</TabsTrigger><TabsTrigger value="preview">Preview</TabsTrigger></TabsList>
               <TabsContent value="write">
                 <Textarea className="font-mono text-sm min-h-[520px]" value={p.body_md} onChange={(e) => set("body_md", e.target.value)}
