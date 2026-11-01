@@ -5,7 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { PublicShell } from "@/components/learn/PublicShell";
 import { LeadForm } from "@/components/learn/LeadForm";
 import { Markdown } from "@/components/learn/Markdown";
-import { FONT_DISPLAY, SITE_URL, headings, publicPath, isLive, liveDate, type FaqItem } from "@/lib/content";
+import { MediaViewer } from "@/components/learn/MediaViewer";
+import { videoEmbed, FONT_DISPLAY, SITE_URL, headings, publicPath, isLive, liveDate, type FaqItem } from "@/lib/content";
 
 export default function LearnArticle() {
   const { slug } = useParams();
@@ -53,6 +54,15 @@ export default function LearnArticle() {
       ...(post.category ? [{ "@type": "ListItem", position: 2, name: post.category, item: `${SITE_URL}/learn` }] : []),
       { "@type": "ListItem", position: post.category ? 3 : 2, name: post.title, item: url }] },
   ];
+  const isMedia = post.content_type === "video" || post.content_type === "presentation";
+  if (post.content_type === "video" && post.media_url) {
+    const e = videoEmbed(post.media_url);
+    ld.push({ "@context": "https://schema.org", "@type": "VideoObject", name: post.title, description: desc || post.title, uploadDate: pub,
+      thumbnailUrl: post.cover_image_url || post.og_image_url || undefined, ...(e ? { embedUrl: e.embed } : { contentUrl: post.media_url }),
+      ...(post.media_duration_seconds ? { duration: `PT${post.media_duration_seconds}S` } : {}), transcript: post.transcript || undefined });
+  }
+  if (post.content_type === "presentation") ld.push({ "@context": "https://schema.org", "@type": "PresentationDigitalDocument", name: post.title, description: desc, datePublished: pub,
+    encodingFormat: post.media_kind === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.presentationml.presentation" });
   if (faq.length) ld.push({ "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faq.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })) });
 
   return (
@@ -73,14 +83,15 @@ export default function LearnArticle() {
           <nav aria-label="Breadcrumb" className="text-xs text-muted-foreground"><Link to="/learn">Learn</Link> / {post.category || "Article"}</nav>
           <h1 className="text-4xl md:text-5xl font-semibold mt-4 leading-tight" style={{ fontFamily: FONT_DISPLAY }}>{post.title}</h1>
           {post.excerpt && <p className="text-lg text-muted-foreground mt-4">{post.excerpt}</p>}
-          <p className="text-sm text-muted-foreground mt-4">{post.author_name || "PrivcybHub"} · <time dateTime={pub}>{date}</time> · {post.reading_minutes} min read</p>
-          {post.cover_image_url && <img src={post.cover_image_url} alt="" className="rounded-xl mt-8 w-full max-h-[420px] object-cover" />}
+          <p className="text-sm text-muted-foreground mt-4">{post.author_name || "PrivcybHub"} · <time dateTime={pub}>{date}</time> {!isMedia && <> · {post.reading_minutes} min read</>}</p>
+          {isMedia ? <div className="mt-8"><MediaViewer post={post} /></div> : post.cover_image_url && <img src={post.cover_image_url} alt="" className="rounded-xl mt-8 w-full max-h-[420px] object-cover" />}
           {post.ai_summary && (
             <aside className="mt-8 rounded-xl border border-primary/30 bg-primary/5 p-5" aria-label="Summary">
               <p className="font-mono text-xs uppercase text-primary mb-1">AI summary · Key regulatory takeaways</p><p className="text-sm">{post.ai_summary}</p>
             </aside>
           )}
           <div className="mt-6"><Markdown>{post.body_md}</Markdown></div>
+          {post.content_type === "video" && post.transcript && <details className="mt-8 border border-border rounded-xl p-5 bg-card"><summary className="font-medium cursor-pointer">Transcript</summary><p className="text-sm text-muted-foreground mt-3 whitespace-pre-line">{post.transcript}</p></details>}
           {faq.length > 0 && (
             <section className="mt-12"><h2 className="text-3xl font-semibold mb-4" style={{ fontFamily: FONT_DISPLAY }}>Frequently asked questions</h2>
               {faq.map((f, i) => <details key={i} className="border-b border-border py-4"><summary className="font-medium cursor-pointer">{f.q}</summary><p className="text-muted-foreground mt-2">{f.a}</p></details>)}
