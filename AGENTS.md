@@ -8,3 +8,4 @@
 - `content-media` is a private bucket (public buckets are blocked in this workspace); cover images are stored as long-lived signed links.
 - Public lead forms write only through the `submit-lead` function (validation, honeypot, hourly rate limit, consent text stored); never grant anon insert on `marketing_leads`.
 - Sitemap/RSS/llms entries for posts are generated live by the `content-feed` function so publishing never needs a rebuild.
+- Presentation/video posts store their file in `content_posts.media_*` (private `content-media` signed links); upload limits live in `validateMediaFile` in `src/lib/content.ts` so editor and tests share one rule.
