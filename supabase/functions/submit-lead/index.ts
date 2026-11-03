@@ -41,7 +41,6 @@ Deno.serve(async (req) => {
       if ((count ?? 0) >= 3) return json({ error: "Too many submissions. Please try again later." }, 429);
       const tok = Array.from(crypto.getRandomValues(new Uint8Array(24))).map((b) => b.toString(16).padStart(2, "0")).join("");
       // Newsletter form: store only email + consent record. No name, organisation, IP or user agent.
-      await admin.from("suppressed_emails").delete().eq("email", email).eq("reason", "unsubscribe");
       const { error } = await admin.from("marketing_leads").insert({
         lead_type: "newsletter", email, consent_given: true, consent_text: d.consent_text,
         consent_version: d.consent_version || "v1.0", purpose: "dpdp_newsletter",

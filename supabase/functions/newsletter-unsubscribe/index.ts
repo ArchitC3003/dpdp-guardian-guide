@@ -19,7 +19,6 @@ Deno.serve(async (req) => {
   const now = new Date().toISOString();
   await admin.from("marketing_leads").update({ status: "withdrawn", withdrawn_at: now })
     .eq("email", row.email).eq("purpose", "dpdp_newsletter").neq("status", "withdrawn");
-  // Stop all further sends to this address.
-  await admin.from("suppressed_emails").upsert({ email: row.email, reason: "unsubscribe", metadata: { purpose: "dpdp_newsletter" } }, { onConflict: "email", ignoreDuplicates: true });
+  // Newsletter sends must only target rows with status = 'subscribed', so this stops all further sends.
   return json({ ok: true });
 });
