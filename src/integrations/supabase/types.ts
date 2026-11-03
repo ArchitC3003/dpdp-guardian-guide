@@ -1952,6 +1952,7 @@ export type Database = {
           consent_at: string
           consent_given: boolean
           consent_text: string
+          consent_version: string | null
           created_at: string
           email: string
           id: string
@@ -1960,14 +1961,19 @@ export type Database = {
           message: string | null
           name: string | null
           organisation: string | null
+          purpose: string | null
+          source: string | null
           source_slug: string | null
           status: string
+          unsubscribe_token: string | null
           user_agent: string | null
+          withdrawn_at: string | null
         }
         Insert: {
           consent_at?: string
           consent_given: boolean
           consent_text: string
+          consent_version?: string | null
           created_at?: string
           email: string
           id?: string
@@ -1976,14 +1982,19 @@ export type Database = {
           message?: string | null
           name?: string | null
           organisation?: string | null
+          purpose?: string | null
+          source?: string | null
           source_slug?: string | null
           status?: string
+          unsubscribe_token?: string | null
           user_agent?: string | null
+          withdrawn_at?: string | null
         }
         Update: {
           consent_at?: string
           consent_given?: boolean
           consent_text?: string
+          consent_version?: string | null
           created_at?: string
           email?: string
           id?: string
@@ -1992,9 +2003,13 @@ export type Database = {
           message?: string | null
           name?: string | null
           organisation?: string | null
+          purpose?: string | null
+          source?: string | null
           source_slug?: string | null
           status?: string
+          unsubscribe_token?: string | null
           user_agent?: string | null
+          withdrawn_at?: string | null
         }
         Relationships: []
       }
