@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 
 const CONTACT_CONSENT_TEXT =
-  "I consent to PrivcybHub processing my name, email and organisation to respond to this request and send related updates. I can withdraw consent at any time via the unsubscribe link.";
+  "I consent to PrivcybHub processing my name, email and organisation to respond to this request and send related updates. I can withdraw consent at any time via the unsubscribe link or privacy preferences.";
 export const NEWSLETTER_CONSENT_TEXT =
   "I consent to PrivcybHub processing my email address to send me the DPDP insights newsletter. I can withdraw consent at any time via the unsubscribe link in every email. See our privacy policy.";
 export const NEWSLETTER_CONSENT_VERSION = "v1.0";
