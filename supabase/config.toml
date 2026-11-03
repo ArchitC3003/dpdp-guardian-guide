@@ -21,3 +21,6 @@ project_id = "xuibhzkkomiucbiwpvin"
     verify_jwt = false
   [functions.handle-email-suppression]
     verify_jwt = false
+
+[functions.newsletter-unsubscribe]
+  verify_jwt = false

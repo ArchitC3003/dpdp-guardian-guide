@@ -116,3 +116,19 @@ export function seoChecks(p: { seo_title?: string | null; title: string; seo_des
     { ok: p.body_md.split(/\s+/).length >= 300, label: "300+ words" },
   ];
 }
+
+/** Learn link in the public top nav is hidden until at least this many items are live. /learn stays reachable directly. */
+export const LEARN_NAV_MIN_ITEMS = 5;
+export const FORMAT_FILTERS = [["all", "All"], ["read", "Articles"], ["presentation", "Slides"], ["video", "Videos"]] as const;
+export const FRAMEWORK_FILTERS = ["All", "DPDP", "GDPR", "RBI", "SEBI", "CERT-In", "ISO 27001", "ISO 27701", "ISO 42001"] as const;
+export type FormatFilter = typeof FORMAT_FILTERS[number][0];
+type Filterable = { content_type: string; title: string; excerpt: string | null; tags: string[] | null; category?: string | null };
+/** Format AND framework AND search (title, summary, tags). */
+export function matchesLearnFilters(r: Filterable, format: FormatFilter, framework: string, q: string): boolean {
+  const fmtOk = format === "all" || (format === "read" ? r.content_type === "blog" || r.content_type === "article" : r.content_type === format);
+  const norm = (x: string) => x.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const fwOk = framework === "All" || [...(r.tags || []), r.category || ""].some((t) => norm(t).includes(norm(framework)));
+  const needle = q.trim().toLowerCase();
+  const qOk = !needle || [r.title, r.excerpt || "", ...(r.tags || [])].join(" ").toLowerCase().includes(needle);
+  return fmtOk && fwOk && qOk;
+}
