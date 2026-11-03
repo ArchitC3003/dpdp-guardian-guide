@@ -11,6 +11,7 @@ const Body = z.object({
   source_slug: z.string().trim().max(160).optional().default(""),
   consent_given: z.literal(true),
   consent_text: z.string().trim().min(10).max(600),
+  consent_version: z.string().trim().max(20).optional(),
   website: z.string().optional().default(""), // honeypot
 });
 
@@ -30,6 +31,25 @@ Deno.serve(async (req) => {
     if (!parsed.success) return json({ error: "Please check the form fields and consent box." }, 400);
     const d = parsed.data;
     if (d.website) return json({ ok: true }); // bot: silently accept
+
+    if (d.lead_type === "newsletter") {
+      const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      const email = d.email.toLowerCase();
+      const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      const { count } = await admin.from("marketing_leads").select("id", { count: "exact", head: true })
+        .eq("email", email).gte("created_at", since);
+      if ((count ?? 0) >= 3) return json({ error: "Too many submissions. Please try again later." }, 429);
+      const tok = Array.from(crypto.getRandomValues(new Uint8Array(24))).map((b) => b.toString(16).padStart(2, "0")).join("");
+      // Newsletter form: store only email + consent record. No name, organisation, IP or user agent.
+      await admin.from("suppressed_emails").delete().eq("email", email).eq("reason", "unsubscribe");
+      const { error } = await admin.from("marketing_leads").insert({
+        lead_type: "newsletter", email, consent_given: true, consent_text: d.consent_text,
+        consent_version: d.consent_version || "v1.0", purpose: "dpdp_newsletter",
+        consent_at: new Date().toISOString(), source: "learn_page", status: "subscribed", unsubscribe_token: tok,
+      });
+      if (error) throw error;
+      return json({ ok: true });
+    }
 
     const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "unknown";
     const ip_hash = await sha256(ip + "|privcybhub-leads");
