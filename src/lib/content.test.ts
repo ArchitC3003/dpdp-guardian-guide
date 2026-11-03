@@ -67,3 +67,17 @@ describe("presentation and video uploads", () => {
     expect(videoEmbed("https://example.com")).toBeNull();
   });
 });
+
+import { matchesLearnFilters, LEARN_NAV_MIN_ITEMS } from "./content";
+describe("Learn filters", () => {
+  const slide = { content_type: "presentation", title: "Agritech order", excerpt: "Summary", tags: ["DPDP"] };
+  it("requires both format and framework (AND)", () => {
+    expect(matchesLearnFilters(slide, "presentation", "DPDP", "")).toBe(true);
+    expect(matchesLearnFilters(slide, "presentation", "GDPR", "")).toBe(false);
+    expect(matchesLearnFilters(slide, "video", "DPDP", "")).toBe(false);
+  });
+  it("search covers tags across formats", () => {
+    expect(matchesLearnFilters(slide, "all", "All", "dpdp")).toBe(true);
+  });
+  it("nav threshold is 5", () => expect(LEARN_NAV_MIN_ITEMS).toBe(5));
+});

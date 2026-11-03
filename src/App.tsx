@@ -37,6 +37,7 @@ import ExecuteOrgProfile from "./pages/execute/ExecuteOrgProfile";
 import ExecuteWorkspace from "./pages/execute/ExecuteWorkspace";
 import PrivacyPreferences from "./pages/PrivacyPreferences";
 import Unsubscribe from "./pages/Unsubscribe";
+import NewsletterUnsubscribe from "./pages/learn/NewsletterUnsubscribe";
 import ConsentLedger from "./pages/admin/ConsentLedger";
 import NoticeManager from "./pages/admin/NoticeManager";
 import RightsDesk from "./pages/admin/RightsDesk";
@@ -89,6 +90,7 @@ const App = () => (
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy-preferences" element={<PrivacyPreferences />} />
             <Route path="/unsubscribe" element={<Unsubscribe />} />
+            <Route path="/learn/unsubscribe" element={<NewsletterUnsubscribe />} />
             <Route path="/learn" element={<LearnHub />} />
             <Route path="/learn/topic/:tag" element={<LearnHub />} />
             <Route path="/learn/:slug" element={<LearnArticle />} />
