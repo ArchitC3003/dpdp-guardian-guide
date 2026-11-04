@@ -33,7 +33,7 @@ export function LeadForm({ sourceSlug, type = "contact", heading = "Talk to a pr
 
   if (state === "done") return (
     <div className="rounded-xl border border-primary/30 bg-primary/5 p-6">
-      <p className="font-semibold">Thank you — we'll be in touch.</p>
+      <p className="font-semibold">{type === "newsletter" ? "Thanks. Check your inbox if this is a new subscription." : "Thank you — we'll be in touch."}</p>
       <p className="text-sm text-muted-foreground mt-1">Your consent was recorded with a timestamp.</p>
     </div>
   );
