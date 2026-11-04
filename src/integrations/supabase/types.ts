@@ -819,6 +819,30 @@ export type Database = {
         }
         Relationships: []
       }
+      content_frameworks: {
+        Row: {
+          code: string
+          created_at: string
+          display_order: number
+          is_active: boolean
+          label: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          display_order?: number
+          is_active?: boolean
+          label: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          display_order?: number
+          is_active?: boolean
+          label?: string
+        }
+        Relationships: []
+      }
       content_post_tags: {
         Row: {
           post_id: string
@@ -869,6 +893,7 @@ export type Database = {
           faq: Json
           featured: boolean
           focus_keyword: string | null
+          frameworks: string[]
           id: string
           media_duration_seconds: number | null
           media_kind: string | null
@@ -909,6 +934,7 @@ export type Database = {
           faq?: Json
           featured?: boolean
           focus_keyword?: string | null
+          frameworks?: string[]
           id?: string
           media_duration_seconds?: number | null
           media_kind?: string | null
@@ -949,6 +975,7 @@ export type Database = {
           faq?: Json
           featured?: boolean
           focus_keyword?: string | null
+          frameworks?: string[]
           id?: string
           media_duration_seconds?: number | null
           media_kind?: string | null
@@ -1966,6 +1993,7 @@ export type Database = {
           source_slug: string | null
           status: string
           unsubscribe_token: string | null
+          unsubscribe_token_hash: string | null
           user_agent: string | null
           withdrawn_at: string | null
         }
@@ -1987,6 +2015,7 @@ export type Database = {
           source_slug?: string | null
           status?: string
           unsubscribe_token?: string | null
+          unsubscribe_token_hash?: string | null
           user_agent?: string | null
           withdrawn_at?: string | null
         }
@@ -2008,6 +2037,7 @@ export type Database = {
           source_slug?: string | null
           status?: string
           unsubscribe_token?: string | null
+          unsubscribe_token_hash?: string | null
           user_agent?: string | null
           withdrawn_at?: string | null
         }
@@ -2713,6 +2743,7 @@ export type Database = {
           faq: Json
           featured: boolean
           focus_keyword: string | null
+          frameworks: string[]
           id: string
           media_duration_seconds: number | null
           media_kind: string | null
@@ -2762,6 +2793,7 @@ export type Database = {
           faq: Json
           featured: boolean
           focus_keyword: string | null
+          frameworks: string[]
           id: string
           media_duration_seconds: number | null
           media_kind: string | null
@@ -2789,6 +2821,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      rpc_set_content_frameworks: {
+        Args: { codes: string[]; post_id: string }
+        Returns: undefined
       }
     }
     Enums: {
