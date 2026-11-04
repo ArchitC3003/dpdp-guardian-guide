@@ -68,13 +68,33 @@ describe("presentation and video uploads", () => {
   });
 });
 
-import { matchesLearnFilters, LEARN_NAV_MIN_ITEMS } from "./content";
+import { matchesLearnFilters, LEARN_NAV_MIN_ITEMS, unknownFrameworks, DEFAULT_FRAMEWORKS } from "./content";
 describe("Learn filters", () => {
-  const slide = { content_type: "presentation", title: "Agritech order", excerpt: "Summary", tags: ["DPDP"] };
+  const slide = { content_type: "presentation", title: "Agritech order", excerpt: "Summary", tags: ["DPDP"], frameworks: ["DPDP"] };
+  const base = { content_type: "article", title: "T", excerpt: null, tags: [] };
   it("requires both format and framework (AND)", () => {
     expect(matchesLearnFilters(slide, "presentation", "DPDP", "")).toBe(true);
     expect(matchesLearnFilters(slide, "presentation", "GDPR", "")).toBe(false);
     expect(matchesLearnFilters(slide, "video", "DPDP", "")).toBe(false);
+  });
+  it("UK GDPR does not match GDPR", () => {
+    expect(matchesLearnFilters({ ...base, frameworks: ["UK GDPR"] }, "all", "GDPR", "")).toBe(false);
+  });
+  it("ISO 27001:2013 does not match ISO 27001", () => {
+    expect(matchesLearnFilters({ ...base, frameworks: ["ISO 27001:2013"] }, "all", "ISO 27001", "")).toBe(false);
+  });
+  it("[DPDP, ISO 27001] matches both chips", () => {
+    const r = { ...base, frameworks: ["DPDP", "ISO 27001"] };
+    expect(matchesLearnFilters(r, "all", "DPDP", "")).toBe(true);
+    expect(matchesLearnFilters(r, "all", "ISO 27001", "")).toBe(true);
+  });
+  it("starts with the 8 agreed frameworks and rejects unknown values", () => {
+    expect(DEFAULT_FRAMEWORKS).toEqual(["DPDP", "GDPR", "RBI", "SEBI", "CERT-In", "ISO 27001", "ISO 27701", "ISO 42001"]);
+    expect(unknownFrameworks(["DPDP", "UK GDPR"])).toEqual(["UK GDPR"]);
+  });
+  it("frameworks added to the vocabulary are accepted and matched exactly", () => {
+    expect(unknownFrameworks(["HIPAA"], [...DEFAULT_FRAMEWORKS, "HIPAA"])).toEqual([]);
+    expect(matchesLearnFilters({ ...base, frameworks: ["HIPAA"] }, "all", "HIPAA", "")).toBe(true);
   });
   it("search covers tags across formats", () => {
     expect(matchesLearnFilters(slide, "all", "All", "dpdp")).toBe(true);

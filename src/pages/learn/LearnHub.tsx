@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FONT_DISPLAY, SITE_URL, publicPath, isLive, liveDate, TOPIC_PILLS, TYPE_BADGES, type ContentType, FORMAT_FILTERS, FRAMEWORK_FILTERS, matchesLearnFilters, type FormatFilter } from "@/lib/content";
 
-type Row = { id: string; slug: string; title: string; excerpt: string | null; content_type: string; category: string | null; tags: string[]; cover_image_url: string | null; published_at: string; scheduled_for: string | null; status: string; reading_minutes: number; featured: boolean };
+type Row = { id: string; slug: string; title: string; excerpt: string | null; content_type: string; category: string | null; tags: string[]; frameworks: string[]; cover_image_url: string | null; published_at: string; scheduled_for: string | null; status: string; reading_minutes: number; featured: boolean };
 
 export default function LearnHub() {
   const { tag } = useParams();
@@ -17,10 +17,16 @@ export default function LearnHub() {
   const [q, setQ] = useState("");
   const [kind, setKind] = useState<FormatFilter>("all");
   const [fw, setFw] = useState<string>("All");
+  const [fwChips, setFwChips] = useState<string[]>(FRAMEWORK_FILTERS);
+
+  useEffect(() => {
+    supabase.from("content_frameworks").select("code").eq("is_active", true).order("display_order")
+      .then(({ data }) => { if (data?.length) setFwChips(["All", ...data.map((d) => d.code)]); });
+  }, []);
 
   useEffect(() => {
     let query = supabase.from("content_posts")
-      .select("id,slug,title,excerpt,content_type,category,tags,cover_image_url,published_at,scheduled_for,status,reading_minutes,featured")
+      .select("id,slug,title,excerpt,content_type,category,tags,frameworks,cover_image_url,published_at,scheduled_for,status,reading_minutes,featured")
       .in("status", ["published", "scheduled"]).neq("content_type", "landing")
       .order("updated_at", { ascending: false }).limit(200);
     if (tag) query = query.contains("tags", [tag]);
