@@ -15,6 +15,7 @@ import { MediaViewer } from "@/components/learn/MediaViewer";
 import {
   STATUS_LABELS, TYPE_LABELS, SITE_URL, canEditContent, canEditPost, canPublishContent, allowedStatuses, fmtIST, canViewStudio, publicPath, readingMinutes, seoChecks, slugify, validateMediaFile, videoEmbed,
   type ContentStatus, type ContentType, type FaqItem, type LandingBlock,
+  DEFAULT_FRAMEWORKS, unknownFrameworks,
 } from "@/lib/content";
 import { ArrowLeft, Check, X, Sparkles, Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 
