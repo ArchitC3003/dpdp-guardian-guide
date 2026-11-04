@@ -45,6 +45,10 @@ export default function ContentEditor() {
   const [versions, setVersions] = useState<any[]>([]);
   const [loaded, setLoaded] = useState(isNew);
   const [tagIds, setTagIds] = useState<string[]>([]);
+  const [fwSel, setFwSel] = useState<string[]>([]);
+  const [fwVocab, setFwVocab] = useState<string[]>(DEFAULT_FRAMEWORKS);
+  const loadFw = () => supabase.from("content_frameworks").select("code").eq("is_active", true).order("display_order")
+    .then(({ data }) => { if (data?.length) setFwVocab(data.map((d) => d.code)); });
   const [lookups, setLookups] = useState<{ authors: any[]; cats: any[]; tags: any[] }>({ authors: [], cats: [], tags: [] });
   const [uploading, setUploading] = useState(false);
   const [mediaUploading, setMediaUploading] = useState(false);
@@ -57,12 +61,13 @@ export default function ContentEditor() {
     supabase.from("content_categories").select("id,name").order("name"),
     supabase.from("content_tags").select("id,name").order("name"),
   ]).then(([a, c, t]) => setLookups({ authors: a.data || [], cats: c.data || [], tags: t.data || [] }));
-  useEffect(() => { loadLookups(); }, []);
+  useEffect(() => { loadLookups(); loadFw(); }, []);
 
   useEffect(() => {
     if (isNew) return;
     supabase.from("content_posts").select("*").eq("id", id!).maybeSingle().then(({ data, error }) => {
       if (error) toast({ title: "Could not load post", description: error.message, variant: "destructive" });
+      if (data) setFwSel((data as any).frameworks || []);
       if (data) setP({ ...EMPTY, ...Object.fromEntries(Object.entries(data).map(([k, v]) => [k, v ?? (EMPTY as any)[k]])) } as any);
       setLoaded(true);
     });
@@ -90,6 +95,8 @@ export default function ContentEditor() {
     if (status === "scheduled") published_at = scheduled_for;
     if ((p.content_type === "presentation" || p.content_type === "video") && (status === "published" || status === "scheduled") && !p.media_url)
       return toast({ title: p.content_type === "video" ? "Add a video before publishing" : "Add a presentation file before publishing", variant: "destructive" });
+    const bad = unknownFrameworks(fwSel, fwVocab);
+    if (bad.length) return toast({ title: `Unknown framework: ${bad.join(", ")}`, variant: "destructive" });
     setSaving(true);
     const payload = {
       ...p, id: isNew ? null : id, status, slug, published_at, scheduled_for,
@@ -97,6 +104,10 @@ export default function ContentEditor() {
       author_id: p.author_id || null, category_id: p.category_id || null,
     };
     const { data, error } = await supabase.rpc("rpc_save_content_post", { payload: payload as any, tag_ids: tagIds });
+    if (!error && data) {
+      const fr = await supabase.rpc("rpc_set_content_frameworks", { post_id: (data as any).id, codes: fwSel });
+      if (fr.error) { setSaving(false); return toast({ title: "Saved, but frameworks were rejected", description: fr.error.message, variant: "destructive" }); }
+    }
     setSaving(false);
     if (error || !data) {
       const msg = error?.message || "No data returned";
@@ -322,6 +333,15 @@ export default function ContentEditor() {
               <div className="flex flex-wrap gap-1 mt-1">{lookups.tags.map((t) => { const on = tagIds.includes(t.id); return (
                 <button key={t.id} type="button" aria-pressed={on} onClick={() => setTagIds((x) => on ? x.filter((y) => y !== t.id) : [...x, t.id].slice(0, 12))}
                   className={`text-[11px] rounded-full border px-2 py-0.5 ${on ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>{t.name}</button>); })}</div></div>
+            <div><div className="flex justify-between items-center"><Label className="text-xs">Frameworks</Label>{canPublish && <button type="button" className="text-[11px] text-primary" onClick={async () => {
+                const code = window.prompt("New framework (exact label, e.g. HIPAA)")?.trim();
+                if (!code) return;
+                const { error } = await supabase.from("content_frameworks").insert({ code, label: code });
+                if (error) toast({ title: "Could not add framework", description: error.message, variant: "destructive" }); else loadFw();
+              }}>+ New</button>}</div>
+              <div className="flex flex-wrap gap-1 mt-1">{fwVocab.map((c) => { const on = fwSel.includes(c); return (
+                <button key={c} type="button" aria-pressed={on} onClick={() => setFwSel((x) => on ? x.filter((y) => y !== c) : [...x, c])}
+                  className={`text-[11px] rounded-full border px-2 py-0.5 ${on ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>{c}</button>); })}</div></div>
             <div><Label className="text-xs">Cover image</Label>
               {p.cover_image_url && <img src={p.cover_image_url} alt="" className="rounded-md mt-1 h-28 w-full object-cover" />}
               <Input type="file" accept="image/*" disabled={uploading} className="mt-1" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadCover(f); e.target.value = ""; }} />
