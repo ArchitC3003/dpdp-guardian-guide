@@ -73,10 +73,11 @@ function petalGeometry(len: number, width: number) {
   return g;
 }
 
-function Petal({ seg, angle, width, hovered, selected, dim, onOver, onOut, onPick }: {
-  seg: DonutSegment; angle: number; width: number; hovered: boolean; selected: boolean; dim: boolean;
-  onOver: () => void; onOut: () => void; onPick: (additive: boolean) => void;
+function Petal({ seg, angle, width, hovered, picked, dim, onOver, onOut, onPick }: {
+  seg: DonutSegment; angle: number; width: number; hovered: boolean; picked: number; dim: boolean;
+  onOver: () => void; onOut: () => void; onPick: () => void;
 }) {
+  const selected = picked > 0;
   const len = BASE_LEN + seg.share * LEN_GAIN;
   const geom = useMemo(() => petalGeometry(len, width), [len, width]);
   useEffect(() => () => geom.dispose(), [geom]);
@@ -86,15 +87,18 @@ function Petal({ seg, angle, width, hovered, selected, dim, onOver, onOut, onPic
 
   useFrame((_, dt) => {
     const k = 1 - Math.exp(-10 * Math.min(dt, 0.05));
-    if (slide.current) slide.current.position.z += ((hovered ? LIFT : 0) - slide.current.position.z) * k;
+    if (slide.current) {
+      const out = hovered ? LIFT : selected ? LIFT * 0.6 : 0;
+      slide.current.position.z += (out - slide.current.position.z) * k;
+    }
     if (tilt.current) {
-      const target = -(OPEN + (hovered ? BLOOM : selected ? 0.15 : 0));
+      const target = -(OPEN + (hovered ? BLOOM : selected ? 0.25 : 0));
       tilt.current.rotation.x += (target - tilt.current.rotation.x) * k;
     }
     if (mat.current) {
-      const e = hovered ? 0.7 : selected ? 0.45 : dim ? 0.02 : 0.12;
+      const e = hovered ? 0.7 : selected ? 0.6 : dim ? 0.02 : 0.12;
       mat.current.emissiveIntensity += (e - mat.current.emissiveIntensity) * k;
-      const o = dim ? 0.45 : 1;
+      const o = dim && !selected ? 0.35 : 1;
       mat.current.opacity += (o - mat.current.opacity) * k;
     }
   });
@@ -109,7 +113,7 @@ function Petal({ seg, angle, width, hovered, selected, dim, onOver, onOut, onPic
             castShadow
             onPointerOver={(e) => { e.stopPropagation(); onOver(); }}
             onPointerOut={(e) => { e.stopPropagation(); onOut(); }}
-            onClick={(e) => { e.stopPropagation(); onPick(e.nativeEvent.metaKey || e.nativeEvent.ctrlKey); }}
+            onClick={(e) => { e.stopPropagation(); onPick(); }}
           >
             <meshPhysicalMaterial
               ref={mat}
@@ -129,22 +133,32 @@ function Petal({ seg, angle, width, hovered, selected, dim, onOver, onOut, onPic
           </mesh>
           {selected && (
             <mesh position={[0, tip, 0.12]}>
-              <sphereGeometry args={[0.07, 16, 16]} />
+              <sphereGeometry args={[0.09, 16, 16]} />
               <meshBasicMaterial color="#5eead4" toneMapped={false} />
             </mesh>
           )}
+          {selected && !hovered && (
+            <Html position={[0, tip, 0.3]} center pointerEvents="none" zIndexRange={[10, 0]}>
+              <div className="whitespace-nowrap rounded-full border border-primary/50 bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground shadow-lg">
+                ✓ {picked}/{seg.count}
+              </div>
+            </Html>
+          )}
           {hovered && (
-            <Html position={[0, tip, 0.3]} center style={{ pointerEvents: "none" }} zIndexRange={[20, 0]}>
+            <Html position={[0, tip, 0.3]} center pointerEvents="none" zIndexRange={[20, 0]}>
               <div className="min-w-[180px] rounded-xl border border-primary/40 bg-popover/90 px-3.5 py-2.5 text-xs text-popover-foreground shadow-2xl backdrop-blur-md">
                 <p className="text-[10px] font-mono uppercase tracking-widest text-primary">Sector</p>
                 <p className="text-sm font-semibold leading-tight">{seg.name}</p>
                 <div className="mt-2 flex items-center justify-between gap-3 font-mono">
-                  <span className="text-muted-foreground">{(seg.share * 100).toFixed(1)}% · {seg.count} sub</span>
+                  <span className="text-muted-foreground">{seg.count} sub-sectors{selected ? ` · ${picked} picked` : ""}</span>
                   <span className="flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full" style={{ background: seg.color, boxShadow: `0 0 8px ${seg.color}` }} />
                     {seg.exposure}
                   </span>
                 </div>
+                <p className="mt-2 border-t border-border/60 pt-1.5 text-[10px] text-muted-foreground">
+                  Click to {picked === seg.count ? "remove" : "add"}
+                </p>
               </div>
             </Html>
           )}
@@ -180,13 +194,15 @@ function Core({ pulse }: { pulse: boolean }) {
   );
 }
 
-function Lotus({ segments, selectedIds, onSelect, hover, setHover }: {
+function Lotus({ segments, selectedIds, onSelect, hover, setHover, paused, highlightClusters }: {
   segments: DonutSegment[]; selectedIds: Set<string>; onSelect: (n: SunburstNode, additive: boolean) => void;
   hover: number | null; setHover: (fn: (h: number | null) => number | null) => void;
+  paused: boolean; highlightClusters: Set<string> | null;
 }) {
   const group = useRef<THREE.Group>(null);
+  // Spin only while nobody is pointing at the scene, so petals hold still to be clicked.
   useFrame((_, dt) => {
-    if (group.current && hover === null) group.current.rotation.y += Math.min(dt, 0.05) * SPIN;
+    if (group.current && !paused && hover === null) group.current.rotation.y += Math.min(dt, 0.05) * SPIN;
   });
   useEffect(() => {
     document.body.style.cursor = hover !== null ? "pointer" : "";
@@ -200,6 +216,7 @@ function Lotus({ segments, selectedIds, onSelect, hover, setHover }: {
       <Core pulse={hover !== null} />
       {segments.map((seg, i) => {
         const ids = seg.node.leafIds ?? [];
+        const matched = !highlightClusters || highlightClusters.has(seg.name);
         return (
           <Petal
             key={seg.name}
@@ -207,11 +224,11 @@ function Lotus({ segments, selectedIds, onSelect, hover, setHover }: {
             angle={(i / n) * Math.PI * 2}
             width={width}
             hovered={hover === i}
-            dim={hover !== null && hover !== i}
-            selected={ids.some((id) => selectedIds.has(id))}
+            dim={hover !== null ? hover !== i : !matched}
+            picked={ids.filter((id) => selectedIds.has(id)).length}
             onOver={() => setHover(() => i)}
             onOut={() => setHover((h) => (h === i ? null : h))}
-            onPick={(add) => onSelect(seg.node, add)}
+            onPick={() => onSelect(seg.node, true)}
           />
         );
       })}
@@ -222,10 +239,18 @@ function Lotus({ segments, selectedIds, onSelect, hover, setHover }: {
 const TILT = (32 * Math.PI) / 180;
 const DIST = 8.5;
 
-export function IndustryDonut3D({ segments, selectedIds, onSelect }: {
+export function IndustryDonut3D({ segments, selectedIds, onSelect, onHover, highlightClusters = null }: {
   segments: DonutSegment[]; selectedIds: Set<string>; onSelect: (n: SunburstNode, additive: boolean) => void;
+  onHover?: (node: SunburstNode | null, breadcrumb: string[]) => void;
+  highlightClusters?: Set<string> | null;
 }) {
   const [hover, setHover] = useState<number | null>(null);
+  const [pointerIn, setPointerIn] = useState(false);
+  useEffect(() => {
+    if (!onHover) return;
+    const seg = hover !== null ? segments[hover] : null;
+    onHover(seg ? seg.node : null, seg ? [seg.name] : []);
+  }, [hover, segments, onHover]);
   const counts = useMemo(() => {
     const c: Record<ExposureLevel, number> = { High: 0, Medium: 0, Low: 0 };
     segments.forEach((s) => c[s.exposure]++);
@@ -241,6 +266,8 @@ export function IndustryDonut3D({ segments, selectedIds, onSelect }: {
           "radial-gradient(ellipse at 50% 55%, hsl(var(--primary) / 0.18), transparent 60%), radial-gradient(ellipse at 50% 120%, hsl(var(--accent) / 0.25), transparent 55%), hsl(var(--background))",
       }}
       data-scene-ready
+      onPointerEnter={() => setPointerIn(true)}
+      onPointerLeave={() => setPointerIn(false)}
     >
       {/* grid backdrop */}
       <div
@@ -263,9 +290,17 @@ export function IndustryDonut3D({ segments, selectedIds, onSelect }: {
         </Environment>
         <Sparkles count={70} scale={[10, 4, 10]} size={2.2} speed={0.3} color="#5eead4" opacity={0.6} />
         <Suspense fallback={null}>
-          <Float speed={1.2} rotationIntensity={0.08} floatIntensity={0.25}>
+          <Float speed={1.2} rotationIntensity={0} floatIntensity={0.15}>
             <group position={[0, -0.6, 0]}>
-              <Lotus segments={segments} selectedIds={selectedIds} onSelect={onSelect} hover={hover} setHover={setHover} />
+              <Lotus
+                segments={segments}
+                selectedIds={selectedIds}
+                onSelect={onSelect}
+                hover={hover}
+                setHover={setHover}
+                paused={pointerIn}
+                highlightClusters={highlightClusters}
+              />
             </group>
           </Float>
         </Suspense>
@@ -289,7 +324,7 @@ export function IndustryDonut3D({ segments, selectedIds, onSelect }: {
         ))}
       </div>
       <p className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-        Click a petal to select · ⌘/Ctrl for multi-select
+        Click petals to add or remove · pick as many as apply
       </p>
     </div>
   );
