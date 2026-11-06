@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { SunburstChart } from "@/components/execute/SunburstChart";
+import { IndustryChart } from "@/components/execute/IndustryChart";
 import {
   buildIndustryTree,
   nodeRequiresDisambiguation,
@@ -89,12 +89,11 @@ export default function ExecuteSunburst() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
           <Card>
             <CardContent className="p-4">
-              <SunburstChart
+              <IndustryChart
                 tree={tree}
                 selectedIds={selected}
                 onHover={(ind, crumb) => setHover({ ind, crumb })}
                 onClick={handleClick}
-                size={640}
               />
             </CardContent>
           </Card>
