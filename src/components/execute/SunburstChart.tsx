@@ -1,12 +1,12 @@
 import { useEffect, useRef } from "react";
 import * as d3 from "d3";
-import type { SunburstNode, ExecuteIndustry } from "@/types/execute";
+import type { SunburstNode } from "@/types/execute";
 import { CLUSTER_COLORS } from "@/data/privcybhubIndustries";
 
 interface Props {
   tree: SunburstNode;
   selectedIds: Set<string>;
-  onHover: (industry: ExecuteIndustry | null, breadcrumb: string[]) => void;
+  onHover: (node: SunburstNode | null, breadcrumb: string[]) => void;
   onClick: (node: SunburstNode, additive: boolean) => void;
   size?: number;
 }
@@ -65,15 +65,14 @@ export function SunburstChart({ tree, selectedIds, onHover, onClick, size = 640 
           crumbs.unshift(cur.data.name);
           cur = cur.parent;
         }
-        const ind = d.data.industry ?? null;
-        onHover(ind, crumbs);
+        onHover(d.data, crumbs);
       })
       .on("mouseleave", function (_event, d) {
         d3.select(this).attr("fill-opacity", 1 - (d.depth - 1) * 0.15);
         onHover(null, []);
       })
       .on("click", (event: MouseEvent, d) => {
-        onClick(d.data, event.metaKey || event.ctrlKey);
+        onClick(d.data, true);
       });
 
     // ring labels for cluster ring (depth 1) only — keep it readable

@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
-import type { ExecuteIndustry, SunburstNode } from "@/types/execute";
+import type { SunburstNode } from "@/types/execute";
 import { SunburstChart } from "./SunburstChart";
 import { buildDonutSegments } from "./IndustryDonut3D";
 
@@ -17,12 +17,14 @@ function hasWebGL() {
 interface Props {
   tree: SunburstNode;
   selectedIds: Set<string>;
-  onHover: (industry: ExecuteIndustry | null, breadcrumb: string[]) => void;
+  onHover: (node: SunburstNode | null, breadcrumb: string[]) => void;
   onClick: (node: SunburstNode, additive: boolean) => void;
+  /** Cluster names to keep lit (e.g. search matches); null = no highlight. */
+  highlightClusters?: Set<string> | null;
 }
 
 /** 3D donut on capable desktops; falls back to the 2D sunburst when WebGL is missing or width < 768px. */
-export function IndustryChart({ tree, selectedIds, onHover, onClick }: Props) {
+export function IndustryChart({ tree, selectedIds, onHover, onClick, highlightClusters = null }: Props) {
   const segments = useMemo(() => buildDonutSegments(tree), [tree]);
   const [use3D, setUse3D] = useState(false);
 
@@ -41,7 +43,13 @@ export function IndustryChart({ tree, selectedIds, onHover, onClick }: Props) {
     <div className="space-y-4">
       {use3D ? (
         <Suspense fallback={fallback}>
-          <IndustryDonut3D segments={segments} selectedIds={selectedIds} onSelect={onClick} />
+          <IndustryDonut3D
+            segments={segments}
+            selectedIds={selectedIds}
+            onSelect={onClick}
+            onHover={onHover}
+            highlightClusters={highlightClusters}
+          />
         </Suspense>
       ) : (
         <div className="overflow-x-auto">{fallback}</div>
