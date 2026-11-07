@@ -1,18 +1,9 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { SunburstNode } from "@/types/execute";
 import { SunburstChart } from "./SunburstChart";
 import { buildDonutSegments } from "./IndustryDonut3D";
 
-const IndustryDonut3D = lazy(() => import("./IndustryDonut3D").then((m) => ({ default: m.IndustryDonut3D })));
-
-function hasWebGL() {
-  try {
-    const c = document.createElement("canvas");
-    return !!(window.WebGLRenderingContext && (c.getContext("webgl2") || c.getContext("webgl")));
-  } catch {
-    return false;
-  }
-}
+import { IndustryLotus2D } from "./IndustryLotus2D";
 
 interface Props {
   tree: SunburstNode;
@@ -29,9 +20,8 @@ export function IndustryChart({ tree, selectedIds, onHover, onClick, highlightCl
   const [use3D, setUse3D] = useState(false);
 
   useEffect(() => {
-    const gl = hasWebGL();
-    const mq = window.matchMedia("(min-width: 768px)");
-    const update = () => setUse3D(gl && mq.matches);
+        const mq = window.matchMedia("(min-width: 768px)");
+    const update = () => setUse3D(mq.matches);
     update();
     mq.addEventListener("change", update);
     return () => mq.removeEventListener("change", update);
@@ -42,15 +32,13 @@ export function IndustryChart({ tree, selectedIds, onHover, onClick, highlightCl
   return (
     <div className="space-y-4">
       {use3D ? (
-        <Suspense fallback={fallback}>
-          <IndustryDonut3D
+          <IndustryLotus2D
             segments={segments}
             selectedIds={selectedIds}
             onSelect={onClick}
             onHover={onHover}
             highlightClusters={highlightClusters}
           />
-        </Suspense>
       ) : (
         <div className="overflow-x-auto">{fallback}</div>
       )}
