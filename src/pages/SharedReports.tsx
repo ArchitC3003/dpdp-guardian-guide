@@ -32,13 +32,7 @@ export default function SharedReports() {
   const loadReport = async () => {
     if (!code.trim()) return;
     setLoading(true);
-    const { data, error } = await supabase
-      .from("shared_reports")
-      .select("*, assessments(*)")
-      .eq("share_code", code.trim().toUpperCase())
-      .eq("is_active", true)
-      .single();
-
+    const { data, error } = await supabase.rpc("get_shared_report", { p_code: code.trim() });
     if (error || !data) {
       toast.error("Invalid or expired share code");
       setReportData(null);
@@ -83,9 +77,9 @@ export default function SharedReports() {
             <Input
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
-              placeholder="Enter 8-character code"
+              placeholder="Enter share code"
               className="font-mono tracking-widest max-w-xs"
-              maxLength={8}
+              maxLength={12}
             />
             <Button onClick={loadReport} disabled={loading} className="gradient-primary">
               <Search className="h-4 w-4 mr-2" /> Load Report
@@ -97,9 +91,9 @@ export default function SharedReports() {
       {reportData && (
         <Card className="border-border bg-card">
           <CardContent className="pt-6">
-            <h3 className="text-lg font-bold mb-2">{(reportData.assessments as any)?.org_name || "Assessment"}</h3>
+            <h3 className="text-lg font-bold mb-2">{reportData.org_name || "Assessment"}</h3>
             <p className="text-sm text-muted-foreground">
-              Shared on {new Date(reportData.shared_at).toLocaleDateString()} · Status: {(reportData.assessments as any)?.status}
+              Shared on {new Date(reportData.shared_at).toLocaleDateString()} · Status: {reportData.status}
             </p>
             <p className="text-xs text-muted-foreground mt-2">
               Full read-only dashboard view coming soon. For now, you can see the assessment was shared successfully.
@@ -128,10 +122,10 @@ export default function SharedReports() {
                   <div key={r.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
                     <div className="min-w-0">
                       <p className="font-medium text-sm truncate">
-                        {(r.assessments as any)?.org_name || "Untitled"} — <span className="font-mono text-xs text-primary">{r.share_code}</span>
+                        {(r.assessments as any)?.org_name || "Untitled"}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(r.shared_at).toLocaleDateString()} · {r.is_active ? "Active" : "Inactive"}
+                        {new Date(r.shared_at).toLocaleDateString()} · {r.is_active ? "Active" : "Inactive"}{r.expires_at ? ` · Expires ${new Date(r.expires_at).toLocaleDateString()}` : ""}
                       </p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">

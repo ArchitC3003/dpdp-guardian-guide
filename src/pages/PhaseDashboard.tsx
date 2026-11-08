@@ -41,14 +41,13 @@ export default function PhaseDashboard() {
       supabase.from("policy_items").select("*").eq("assessment_id", assessmentId),
       supabase.from("dept_grid").select("*").eq("assessment_id", assessmentId),
       supabase.from("assessment_versions").select("*").eq("assessment_id", assessmentId).order("version_number", { ascending: false }),
-      supabase.from("shared_reports").select("share_code").eq("assessment_id", assessmentId).eq("is_active", true).limit(1),
+      Promise.resolve({ data: [] as any[] }),
     ]).then(([a, c, p, d, v, s]) => {
       setAssessment(a.data);
       setChecks(c.data || []);
       setPolicyItems(p.data || []);
       setDeptGrid(d.data || []);
       setVersions(v.data || []);
-      if (s.data && s.data.length > 0) setShareCode(s.data[0].share_code);
       setLoading(false);
     });
   }, [assessmentId]);
@@ -155,14 +154,9 @@ export default function PhaseDashboard() {
 
   const shareReport = async () => {
     if (!assessmentId || !user) return;
-    const code = Array.from({ length: 8 }, () => "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"[Math.floor(Math.random() * 36)]).join("");
-    const { error } = await supabase.from("shared_reports").insert({
-      assessment_id: assessmentId,
-      share_code: code,
-      shared_by: user.id,
-    });
-    if (error) { toast.error("Failed to share"); return; }
-    setShareCode(code);
+    const { data: code, error } = await supabase.rpc("create_shared_report", { p_assessment_id: assessmentId });
+    if (error || !code) { toast.error("Failed to share"); return; }
+    setShareCode(code as string);
     toast.success("Report shared!");
   };
 

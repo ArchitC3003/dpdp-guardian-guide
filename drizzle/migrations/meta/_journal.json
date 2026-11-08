@@ -43,6 +43,13 @@
       "when": 1793772432481,
       "tag": "0005_content_frameworks_and_unsub_hash",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794167188251,
+      "tag": "0006_p0_shared_reports_hardening",
+      "breakpoints": true
     }
   ]
 }

@@ -60,13 +60,13 @@ export function usePermissions(): Permissions {
     const checkRoles = async () => {
       setLoading(true);
       // Check admin first, then moderator, then auditor — default is 'user' (Reviewer)
-      const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
+      const { data: isAdmin } = await supabase.rpc("current_user_has_role", { _role: "admin" });
       if (isAdmin) { setRole("admin"); setLoading(false); return; }
 
-      const { data: isMod } = await supabase.rpc("has_role", { _user_id: user.id, _role: "moderator" });
+      const { data: isMod } = await supabase.rpc("current_user_has_role", { _role: "moderator" });
       if (isMod) { setRole("moderator"); setLoading(false); return; }
 
-      const { data: isAuditor } = await supabase.rpc("has_role", { _user_id: user.id, _role: "auditor" });
+      const { data: isAuditor } = await supabase.rpc("current_user_has_role", { _role: "auditor" });
       if (isAuditor) { setRole("auditor"); setLoading(false); return; }
 
       setRole("user");
