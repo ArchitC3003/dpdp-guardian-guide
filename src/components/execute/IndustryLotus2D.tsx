@@ -31,9 +31,11 @@ interface Props {
   onSelect: (n: SunburstNode, additive: boolean) => void;
   onHover?: (node: SunburstNode | null, breadcrumb: string[]) => void;
   highlightClusters?: Set<string> | null;
+  /** Touch layout: square stage, no side card. */
+  compact?: boolean;
 }
 
-export function IndustryLotus2D({ segments, selectedIds, onSelect, onHover, highlightClusters = null }: Props) {
+export function IndustryLotus2D({ segments, selectedIds, onSelect, onHover, highlightClusters = null, compact = false }: Props) {
   const stage = useRef<HTMLDivElement>(null);
   const tilt = useRef({ x: 0, y: 0, tx: 0, ty: 0, px: 0.5, py: 0.5, tpx: 0.5, tpy: 0.5 });
   const [, force] = useState(0);
@@ -132,7 +134,7 @@ export function IndustryLotus2D({ segments, selectedIds, onSelect, onHover, high
       ref={stage}
       onPointerMove={onMove}
       onPointerLeave={onLeave}
-      className="lotus-stage relative mx-auto aspect-[16/10] w-full overflow-hidden rounded-2xl border border-border bg-background"
+      className={`lotus-stage relative mx-auto ${compact ? "aspect-square touch-manipulation" : "aspect-[16/10]"} w-full overflow-hidden rounded-2xl border border-border bg-background`}
       style={{ ["--aura" as string]: aura, ["--rx" as string]: "8deg", ["--ry" as string]: "0deg", ["--px" as string]: 0.5, ["--py" as string]: 0.5 }}
     >
       {/* Background camera: aura, horizon grid, particles */}
@@ -163,7 +165,7 @@ export function IndustryLotus2D({ segments, selectedIds, onSelect, onHover, high
           </span>
         ))}
       </div>
-      {focusSeg && (
+      {focusSeg && !compact && (
         <div className="pointer-events-none absolute right-4 top-4 z-20 max-w-[16rem] rounded-xl border border-border bg-card/70 p-3 text-right backdrop-blur">
           <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{hover !== null ? "Exploring" : "Selected"}</p>
           <p className="text-sm font-semibold text-foreground">{focusSeg.name}</p>
