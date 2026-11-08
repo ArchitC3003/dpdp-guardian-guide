@@ -19,10 +19,21 @@ function leafIds(n: SunburstNode, out: string[] = []) {
   return out;
 }
 
-/** Organic cupped petal pointing up (-y) from origin. */
-function petalPath(len: number, w: number) {
-  return `M0,0 C${w * 1.05},${-len * 0.28} ${w * 0.95},${-len * 0.78} 0,${-len}
-          C${-w * 0.95},${-len * 0.78} ${-w * 1.05},${-len * 0.28} 0,0Z`;
+/** Distinct hue per petal (jewel tones), cycled if more petals than hues. */
+const PETAL_HUES = [168, 280, 350, 42, 192, 318, 145, 222, 12, 88, 262, 205, 335, 158, 28, 245];
+const petalColor = (i: number) => `hsl(${PETAL_HUES[i % PETAL_HUES.length]}, 82%, 58%)`;
+
+/** Deterministic per-petal variation in [-1, 1]. */
+const jitter = (i: number, k: number) => Math.sin(i * 12.9898 + k * 78.233) * 0.5 + Math.cos(i * 4.1 + k) * 0.5;
+
+/** Organic asymmetric petal pointing up (-y): uneven flanks and a swept tip. */
+function petalPath(len: number, w: number, i = 0) {
+  const lw = w * (1 + jitter(i, 1) * 0.18);
+  const rw = w * (1 - jitter(i, 1) * 0.18);
+  const tip = w * 0.22 * jitter(i, 2);
+  const tl = -len * (1 + jitter(i, 3) * 0.04);
+  return `M0,0 C${rw * 1.15},${-len * 0.22} ${rw * 0.9},${-len * (0.72 + jitter(i, 4) * 0.06)} ${tip},${tl}
+          C${-lw * 0.85},${-len * (0.8 + jitter(i, 5) * 0.06)} ${-lw * 1.1},${-len * 0.32} 0,0Z`;
 }
 
 interface Props {
@@ -126,7 +137,8 @@ export function IndustryLotus2D({ segments, selectedIds, onSelect, onHover, high
     const w = Math.min(62, (Math.PI * 2 * 95) / n * 0.62);
     const lit = !highlightClusters || highlightClusters.has(s.name);
     const active = hover === i || selectedIdx.has(i);
-    return { s, i, ang, len, w, lit, active };
+    const color = petalColor(i);
+    return { s, i, ang: ang + jitter(i, 6) * 4, len, w, lit, active, color };
   });
 
   return (
@@ -183,7 +195,7 @@ export function IndustryLotus2D({ segments, selectedIds, onSelect, onHover, high
           <svg viewBox={`0 0 ${VB} ${VB}`} className="absolute inset-0 h-full w-full" style={{ transform: "translateZ(-40px)" }} aria-hidden>
             <g transform={`translate(${C} ${C})`}><g className={reduced ? "" : "lotus-spin-slow"}>
               {petals.map(({ i, ang, len, w }) => (
-                <path key={i} d={petalPath(len * 0.82, w * 0.8)} transform={`rotate(${ang + 180 / n})`}
+                <path key={i} d={petalPath(len * 0.82, w * 0.8, i + 7)} transform={`rotate(${ang + 180 / n})`}
                   className="fill-primary/10 stroke-primary/25" strokeWidth={1} />
               ))}
             </g></g>
@@ -192,11 +204,11 @@ export function IndustryLotus2D({ segments, selectedIds, onSelect, onHover, high
           {/* Main plane: interactive petals */}
           <svg viewBox={`0 0 ${VB} ${VB}`} className="absolute inset-0 h-full w-full overflow-visible" style={{ transform: "translateZ(0px)" }}>
             <defs>
-              {petals.map(({ s, i }) => (
+              {petals.map(({ i, color }) => (
                 <linearGradient key={i} id={`lp-${i}`} x1="0" y1="1" x2="0" y2="0">
-                  <stop offset="0%" stopColor={s.color} stopOpacity={0.25} />
-                  <stop offset="55%" stopColor={s.color} stopOpacity={0.75} />
-                  <stop offset="100%" stopColor={s.color} stopOpacity={1} />
+                  <stop offset="0%" stopColor={color} stopOpacity={0.25} />
+                  <stop offset="55%" stopColor={color} stopOpacity={0.75} />
+                  <stop offset="100%" stopColor={color} stopOpacity={1} />
                 </linearGradient>
               ))}
               <filter id="lp-glow" x="-50%" y="-50%" width="200%" height="200%">
@@ -205,7 +217,7 @@ export function IndustryLotus2D({ segments, selectedIds, onSelect, onHover, high
               </filter>
             </defs>
             <g transform={`translate(${C} ${C})`}>
-              {petals.map(({ s, i, ang, len, w, lit, active }) => (
+              {petals.map(({ s, i, ang, len, w, lit, active, color }) => (
                 <g key={s.name} transform={`rotate(${ang})`}>
                   <g
                     role="button"
@@ -227,12 +239,12 @@ export function IndustryLotus2D({ segments, selectedIds, onSelect, onHover, high
                       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(s.node, e.shiftKey); }
                     }}
                   >
-                    <path d={petalPath(len, w)} fill={`url(#lp-${i})`} stroke={s.color} strokeOpacity={active ? 1 : 0.6} strokeWidth={active ? 2 : 1} />
+                    <path d={petalPath(len, w, i)} fill={`url(#lp-${i})`} stroke={color} strokeOpacity={active ? 1 : 0.6} strokeWidth={active ? 2 : 1} />
                     {/* veins */}
-                    <path d={`M0,-14 Q${w * 0.12},${-len * 0.5} 0,${-len * 0.93}`} fill="none" className="stroke-foreground/30" strokeWidth={1} />
+                    <path d={`M0,-14 Q${w * 0.12 + w * 0.1 * jitter(i, 2)},${-len * 0.5} ${w * 0.2 * jitter(i, 2)},${-len * 0.93}`} fill="none" className="stroke-foreground/30" strokeWidth={1} />
                     <path d={`M0,-30 Q${w * 0.55},${-len * 0.45} ${w * 0.35},${-len * 0.78}`} fill="none" className="stroke-foreground/15" strokeWidth={0.8} />
                     <path d={`M0,-30 Q${-w * 0.55},${-len * 0.45} ${-w * 0.35},${-len * 0.78}`} fill="none" className="stroke-foreground/15" strokeWidth={0.8} />
-                    {selectedIdx.has(i) && <circle cy={-len - 12} r={4} fill={s.color} className="lotus-pulse" />}
+                    {selectedIdx.has(i) && <circle cx={w * 0.22 * jitter(i, 2)} cy={-len - 12} r={4} fill={color} className="lotus-pulse" />}
                   </g>
                 </g>
               ))}
