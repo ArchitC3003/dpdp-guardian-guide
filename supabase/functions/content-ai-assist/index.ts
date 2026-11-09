@@ -36,8 +36,8 @@ Deno.serve(async (req) => {
     const { data: { user } } = await userClient.auth.getUser();
     if (!user) return json({ error: "Unauthorized" }, 401);
     const [{ data: a }, { data: m }] = await Promise.all([
-      userClient.rpc("has_role", { _user_id: user.id, _role: "admin" }),
-      userClient.rpc("has_role", { _user_id: user.id, _role: "moderator" }),
+      userClient.rpc("current_user_has_role", { _role: "admin" }),
+      userClient.rpc("current_user_has_role", { _role: "moderator" }),
     ]);
     if (!a && !m) return json({ error: "Forbidden" }, 403);
 

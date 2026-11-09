@@ -33,8 +33,9 @@ export default function SharedReports() {
     if (!code.trim()) return;
     setLoading(true);
     const { data, error } = await supabase.rpc("get_shared_report", { p_code: code.trim() });
-    if (error || !data) {
-      toast.error("Invalid or expired share code");
+    const err = (data as { error?: string } | null)?.error;
+    if (error || !data || err) {
+      toast.error(err === "rate_limited" ? "Too many attempts. Try again in 15 minutes." : "Invalid or expired share code");
       setReportData(null);
     } else {
       setReportData(data);

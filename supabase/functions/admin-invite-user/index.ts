@@ -31,8 +31,7 @@ serve(async (req) => {
     }
 
     // Check admin role
-    const { data: isAdmin } = await callerClient.rpc("has_role", {
-      _user_id: caller.id,
+    const { data: isAdmin } = await callerClient.rpc("current_user_has_role", {
       _role: "admin",
     });
     if (!isAdmin) {
