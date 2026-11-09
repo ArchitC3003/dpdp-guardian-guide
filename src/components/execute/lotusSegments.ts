@@ -71,3 +71,7 @@ export function buildLeafSegments(cluster: SunburstNode): DonutSegment[] {
   });
   return colorize(raw).map((r) => ({ ...r, share: 1 / (leaves.length || 1) }));
 }
+
+/** Distinct hue per petal (jewel tones), cycled if more petals than hues. */
+const PETAL_HUES = [168, 280, 350, 42, 192, 318, 145, 222, 12, 88, 262, 205, 335, 158, 28, 245];
+export const petalColor = (i: number) => `hsl(${PETAL_HUES[i % PETAL_HUES.length]}, 82%, 58%)`;

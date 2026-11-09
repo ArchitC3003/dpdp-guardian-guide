@@ -2536,13 +2536,46 @@ export type Database = {
         }
         Relationships: []
       }
+      shared_report_access_log: {
+        Row: {
+          accessed_at: string
+          id: string
+          ip_hash: string | null
+          shared_report_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          accessed_at?: string
+          id?: string
+          ip_hash?: string | null
+          shared_report_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          accessed_at?: string
+          id?: string
+          ip_hash?: string | null
+          shared_report_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_report_access_log_shared_report_id_fkey"
+            columns: ["shared_report_id"]
+            isOneToOne: false
+            referencedRelation: "shared_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shared_reports: {
         Row: {
           assessment_id: string
           expires_at: string | null
           id: string
           is_active: boolean
-          share_code: string
+          share_code: string | null
+          share_code_hash: string | null
           shared_at: string
           shared_by: string | null
         }
@@ -2551,7 +2584,8 @@ export type Database = {
           expires_at?: string | null
           id?: string
           is_active?: boolean
-          share_code: string
+          share_code?: string | null
+          share_code_hash?: string | null
           shared_at?: string
           shared_by?: string | null
         }
@@ -2560,7 +2594,8 @@ export type Database = {
           expires_at?: string | null
           id?: string
           is_active?: boolean
-          share_code?: string
+          share_code?: string | null
+          share_code_hash?: string | null
           shared_at?: string
           shared_by?: string | null
         }
@@ -2666,6 +2701,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_shared_report: {
+        Args: { p_assessment_id: string; p_expires_at?: string }
+        Returns: string
+      }
+      current_user_has_role: {
+        Args: { _role: Database["public"]["Enums"]["app_role"] }
+        Returns: boolean
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -2675,6 +2718,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      get_shared_report: { Args: { p_code: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

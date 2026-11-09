@@ -163,3 +163,46 @@
     box-shadow: 0 0 20px -5px hsl(158 64% 51% / 0.4);
   }
 }
+/* Execute: 2.5D lotus industry visualiser */
+.lotus-aura {
+  background:
+    radial-gradient(circle at calc(var(--px) * 100%) calc(var(--py) * 100%), hsl(var(--aura) / 0.35), transparent 45%),
+    radial-gradient(ellipse at 50% 110%, hsl(var(--primary) / 0.18), transparent 60%);
+  transition: background 0.6s ease;
+}
+.lotus-grid {
+  background-image:
+    linear-gradient(hsl(var(--aura) / 0.22) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--aura) / 0.22) 1px, transparent 1px);
+  background-size: 44px 44px;
+  transform-origin: 50% 0;
+  transform: rotateX(62deg) translateX(calc((var(--px) - 0.5) * -120px)) rotateZ(calc((var(--px) - 0.5) * -12deg));
+  mask-image: linear-gradient(to bottom, transparent, black 40%);
+  animation: lotus-grid-flow 6s linear infinite;
+}
+@keyframes lotus-grid-flow { to { background-position: 0 44px, 0 44px; } }
+.lotus-dust {
+  background: hsl(var(--aura) / 0.7);
+  box-shadow: 0 0 8px hsl(var(--aura) / 0.8);
+  translate: calc((var(--px) - 0.5) * var(--depth) * -18px) calc((var(--py) - 0.5) * var(--depth) * -18px);
+  animation-name: lotus-float; animation-iteration-count: infinite; animation-timing-function: ease-in-out;
+}
+@keyframes lotus-float { 0%,100% { transform: translateY(0); opacity: .25 } 50% { transform: translateY(-24px); opacity: .9 } }
+.lotus-petal { transition: transform .45s cubic-bezier(.2,.9,.3,1.3), opacity .3s, filter .3s; transform-box: view-box; transform-origin: 0 0; }
+.lotus-petal:focus-visible path:first-child { stroke: hsl(var(--ring)); stroke-width: 3; }
+.lotus-spin-slow { animation: lotus-spin 90s linear infinite; transform-origin: 0 0; }
+@keyframes lotus-spin { to { rotate: 360deg; } }
+.lotus-core {
+  background: radial-gradient(circle, hsl(var(--card)) 40%, hsl(var(--aura) / 0.35));
+  box-shadow: 0 0 40px hsl(var(--aura) / 0.55), inset 0 0 20px hsl(var(--aura) / 0.4);
+  border: 1px solid hsl(var(--aura) / 0.6);
+  transition: box-shadow .6s, border-color .6s;
+}
+.lotus-pulse { animation: lotus-pulse 1.6s ease-in-out infinite; }
+/* Petals open from the centre, one after another, whenever a lotus (or a sector's sub-sectors) appears. */
+.lotus-bloom { animation: lotus-bloom .7s cubic-bezier(.2,.9,.3,1.25) both; transform-box: view-box; transform-origin: 0 0; }
+@keyframes lotus-bloom { from { transform: scale(.15) rotate(-20deg); opacity: 0; } }
+@keyframes lotus-pulse { 50% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) {
+  .lotus-grid, .lotus-dust, .lotus-spin-slow, .lotus-pulse, .lotus-bloom { animation: none; }
+}
