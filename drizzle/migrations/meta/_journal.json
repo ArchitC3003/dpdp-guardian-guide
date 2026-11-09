@@ -50,6 +50,13 @@
       "when": 1794167188251,
       "tag": "0006_p0_shared_reports_hardening",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794256200000,
+      "tag": "0007_content_domains_and_topics",
+      "breakpoints": true
     }
   ]
 }

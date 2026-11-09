@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { BrandLogo } from "@/components/BrandLogo";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -146,34 +147,7 @@ export default function LandingPage() {
           transition: "box-shadow .25s ease",
         }}
       >
-        <Link to="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", color: C.text }}>
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M12 2 L21 7 V17 L12 22 L3 17 V7 Z"
-              fill={C.accent}
-              fillOpacity={0.12}
-              stroke={C.accent}
-              strokeWidth={1.5}
-              strokeLinejoin="round"
-            />
-          </svg>
-          <span style={{ fontFamily: FONT_BODY, fontWeight: 700, fontSize: 15, letterSpacing: "-0.01em" }}>
-            PrivcybHub
-          </span>
-          <span
-            style={{
-              fontFamily: FONT_BODY,
-              fontSize: 10,
-              fontWeight: 700,
-              color: C.accent,
-              background: C.accentLight,
-              borderRadius: 99,
-              padding: "2px 8px",
-            }}
-          >
-            v3.0
-          </span>
-        </Link>
+        <BrandLogo />
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <button
             onClick={() => navigate("/auth")}

@@ -15,8 +15,10 @@ import { MediaViewer } from "@/components/learn/MediaViewer";
 import {
   STATUS_LABELS, TYPE_LABELS, SITE_URL, canEditContent, canEditPost, canPublishContent, allowedStatuses, fmtIST, canViewStudio, publicPath, readingMinutes, seoChecks, slugify, validateMediaFile, videoEmbed,
   type ContentStatus, type ContentType, type FaqItem, type LandingBlock,
-  DEFAULT_FRAMEWORKS, unknownFrameworks,
+  DEFAULT_FRAMEWORKS, unknownFrameworks, EMPTY_FILING, filingError, toggleTopic, type TopicFiling,
 } from "@/lib/content";
+import { TopicPicker } from "@/components/studio/TopicPicker";
+import { loadPostFiling, useContentTaxonomy } from "@/hooks/useContentTaxonomy";
 import { ArrowLeft, Check, X, Sparkles, Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 
 const EMPTY = {
@@ -47,6 +49,9 @@ export default function ContentEditor() {
   const [loaded, setLoaded] = useState(isNew);
   const [tagIds, setTagIds] = useState<string[]>([]);
   const [fwSel, setFwSel] = useState<string[]>([]);
+  const [filing, setFiling] = useState<TopicFiling>(EMPTY_FILING);
+  const taxonomy = useContentTaxonomy();
+  const loadFiling = (pid: string) => loadPostFiling(pid).then((f) => { if (f) setFiling(f); });
   const [fwVocab, setFwVocab] = useState<string[]>(DEFAULT_FRAMEWORKS);
   const loadFw = () => supabase.from("content_frameworks").select("code").eq("is_active", true).order("display_order")
     .then(({ data }) => { if (data?.length) setFwVocab(data.map((d) => d.code)); });
@@ -74,6 +79,7 @@ export default function ContentEditor() {
     });
     supabase.from("content_post_tags").select("tag_id").eq("post_id", id!).then(({ data, error }) => { if (!error) setTagIds((data || []).map((x) => x.tag_id)); });
     loadVersions(id!);
+    loadFiling(id!);
   }, [id, isNew]);
 
   const set = <K extends keyof typeof EMPTY>(k: K, v: (typeof EMPTY)[K]) => setP((o) => ({ ...o, [k]: v }));
@@ -96,6 +102,8 @@ export default function ContentEditor() {
     if (status === "scheduled") published_at = scheduled_for;
     if ((p.content_type === "presentation" || p.content_type === "video") && (status === "published" || status === "scheduled") && !p.media_url)
       return toast({ title: p.content_type === "video" ? "Add a video before publishing" : "Add a presentation file before publishing", variant: "destructive" });
+    const unfiled = taxonomy.available ? filingError(p.content_type, status, filing) : null;
+    if (unfiled) return toast({ title: unfiled, variant: "destructive" });
     const bad = unknownFrameworks(fwSel, fwVocab);
     if (bad.length) return toast({ title: `Unknown framework: ${bad.join(", ")}`, variant: "destructive" });
     setSaving(true);
@@ -103,6 +111,8 @@ export default function ContentEditor() {
       ...p, id: isNew ? null : id, status, slug, published_at, scheduled_for,
       reading_minutes: readingMinutes(p.body_md + " " + p.blocks.map((b) => b.body).join(" ")),
       author_id: p.author_id || null, category_id: p.category_id || null,
+      // Sent only when the repository tables exist, so the save still works before the migration is applied.
+      ...(taxonomy.available ? { topic_ids: filing.topicIds, primary_topic_id: filing.primaryId } : {}),
     };
     const { data, error } = await supabase.rpc("rpc_save_content_post", { payload: payload as any, tag_ids: tagIds });
     if (!error && data) {
@@ -131,6 +141,7 @@ export default function ContentEditor() {
     setP({ ...EMPTY, ...Object.fromEntries(Object.entries(d).map(([k, v]) => [k, v ?? (EMPTY as any)[k]])) } as any);
     const { data: t, error: te } = await supabase.from("content_post_tags").select("tag_id").eq("post_id", d.id);
     if (!te) setTagIds((t || []).map((x) => x.tag_id));
+    loadFiling(d.id);
     loadVersions(d.id);
     toast({ title: "Version restored" });
   };
@@ -182,6 +193,15 @@ export default function ContentEditor() {
     else if (table === "content_categories") set("category_id", data.id);
     else setTagIds((t) => [...t, data.id]);
     toast({ title: "Added" });
+  };
+
+  const addTopic = async (domainCode: string) => {
+    const name = prompt("New topic name")?.trim();
+    if (!name) return;
+    const res = await taxonomy.addTopic(domainCode, name, slugify(name));
+    if (res.error || !res.id) return toast({ title: "Could not add topic", description: res.error?.includes("duplicate") ? "That topic already exists in this domain." : res.error, variant: "destructive" });
+    setFiling((f) => toggleTopic(f, res.id!));
+    toast({ title: "Topic added" });
   };
 
   const del = async () => {
@@ -317,6 +337,15 @@ export default function ContentEditor() {
             </div>
             <p className="text-[11px] text-muted-foreground">Suggestions are inserted as editable text. Nothing is published automatically.</p>
           </div>
+
+          {p.content_type !== "landing" && (
+            <div className="border border-border rounded-lg p-4 space-y-3 bg-card">
+              <h3 className="font-semibold text-sm">Domains and topics</h3>
+              {taxonomy.loading ? <p className="text-xs text-muted-foreground">Loading…</p>
+                : !taxonomy.available ? <p className="text-xs text-muted-foreground">The domain and topic lists are not in the database yet. Posts can be saved, and filed here once the update is applied.</p>
+                : <TopicPicker domains={taxonomy.domains} filing={filing} onChange={setFiling} onAddTopic={canPublish ? addTopic : undefined} />}
+            </div>
+          )}
 
           <div className="border border-border rounded-lg p-4 space-y-3 bg-card">
             <h3 className="font-semibold text-sm">Publishing</h3>
