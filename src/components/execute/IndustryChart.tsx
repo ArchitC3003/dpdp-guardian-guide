@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import type { SunburstNode } from "@/types/execute";
 import { SunburstChart } from "./SunburstChart";
-import { buildDonutSegments } from "./IndustryDonut3D";
+import { buildDonutSegments } from "./lotusSegments";
 
 const IndustryDonut3D = lazy(() => import("./IndustryDonut3D").then((m) => ({ default: m.IndustryDonut3D })));
 
@@ -19,12 +19,14 @@ interface Props {
   selectedIds: Set<string>;
   onHover: (node: SunburstNode | null, breadcrumb: string[]) => void;
   onClick: (node: SunburstNode, additive: boolean) => void;
-  /** Cluster names to keep lit (e.g. search matches); null = no highlight. */
-  highlightClusters?: Set<string> | null;
+  /** Add or remove every sub-sector under a node. */
+  onToggleAll: (node: SunburstNode) => void;
+  /** Sector ids to keep lit (e.g. search matches); null = no highlight. */
+  highlightIds?: Set<string> | null;
 }
 
-/** 3D donut on capable desktops; falls back to the 2D sunburst when WebGL is missing or width < 768px. */
-export function IndustryChart({ tree, selectedIds, onHover, onClick, highlightClusters = null }: Props) {
+/** 3D lotus on capable desktops; falls back to the 2D sunburst when WebGL is missing or width < 768px. */
+export function IndustryChart({ tree, selectedIds, onHover, onClick, onToggleAll, highlightIds = null }: Props) {
   const segments = useMemo(() => buildDonutSegments(tree), [tree]);
   const [use3D, setUse3D] = useState(false);
 
@@ -47,8 +49,9 @@ export function IndustryChart({ tree, selectedIds, onHover, onClick, highlightCl
             segments={segments}
             selectedIds={selectedIds}
             onSelect={onClick}
+            onToggleAll={onToggleAll}
             onHover={onHover}
-            highlightClusters={highlightClusters}
+            highlightIds={highlightIds}
           />
         </Suspense>
       ) : (
@@ -68,16 +71,15 @@ export function IndustryChart({ tree, selectedIds, onHover, onClick, highlightCl
       )}
 
       <table className="sr-only">
-        <caption>Industry sectors by share of sub-sectors and DPDP exposure</caption>
+        <caption>Industry sectors by number of sub-sectors and DPDP exposure</caption>
         <thead>
-          <tr><th scope="col">Sector</th><th scope="col">Sub-sectors</th><th scope="col">Share</th><th scope="col">DPDP exposure</th></tr>
+          <tr><th scope="col">Sector</th><th scope="col">Sub-sectors</th><th scope="col">DPDP exposure</th></tr>
         </thead>
         <tbody>
           {segments.map((s) => (
             <tr key={s.name}>
               <th scope="row">{s.name}</th>
               <td>{s.count}</td>
-              <td>{(s.share * 100).toFixed(1)}%</td>
               <td>{s.exposure}</td>
             </tr>
           ))}

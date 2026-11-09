@@ -1,5 +1,10 @@
-import { PRIVCYBHUB_INDUSTRIES, getIndustryById } from "@/data/privcybhubIndustries";
-import type { ExecuteIndustry, ExposureLevel, SunburstNode } from "@/types/execute";
+import {
+  PRIVCYBHUB_INDUSTRIES,
+  getIndustryById,
+  computeTriggeredFlags,
+  computeCrosswalk,
+} from "@/data/privcybhubIndustries";
+import type { ExecuteIndustry, ExposureLevel, SunburstNode, TriggeredFlags } from "@/types/execute";
 
 const RANK: Record<ExposureLevel, number> = { Low: 0, Medium: 1, High: 2 };
 
@@ -79,4 +84,77 @@ export function searchIndustries(query: string, limit = 8): ExecuteIndustry[] {
     .sort((a, b) => b.score - a.score || a.ind.PrivCybHub_Sector_ID.localeCompare(b.ind.PrivCybHub_Sector_ID))
     .slice(0, limit)
     .map((s) => s.ind);
+}
+
+export type LawStatus = "Applies" | "Likely" | "Check in step 2" | "Not indicated";
+
+export interface SelectionImpact {
+  count: number;
+  /** Highest DPDP exposure among the picks; null when nothing is picked. */
+  exposure: ExposureLevel | null;
+  exposureCounts: Record<ExposureLevel, number>;
+  /** Indicative 0–100 index: mean exposure of the picks (all Low = 0, all High = 100). */
+  index: number;
+  flags: Omit<TriggeredFlags, "cross_border" | "sectoral_overlay">;
+  laws: { name: string; status: LawStatus; why: string }[];
+  regulators: string[];
+}
+
+const WEIGHT: Record<ExposureLevel, number> = { Low: 0, Medium: 0.5, High: 1 };
+
+/**
+ * What the current picks mean before the organisation profile is filled in.
+ * Uses the same rules as the workspace (computeTriggeredFlags / computeCrosswalk);
+ * anything that depends on footprint is reported as "Check in step 2".
+ */
+export function computeImpact(selectedIds: string[]): SelectionImpact {
+  const picks = selectedIds.map(getIndustryById).filter((x): x is ExecuteIndustry => !!x);
+  const exposureCounts: Record<ExposureLevel, number> = { High: 0, Medium: 0, Low: 0 };
+  let exposure: ExposureLevel | null = null;
+  const regulators = new Set<string>();
+  for (const p of picks) {
+    exposureCounts[p.DPDP_Exposure]++;
+    if (!exposure || RANK[p.DPDP_Exposure] > RANK[exposure]) exposure = p.DPDP_Exposure;
+    p.Sectoral_Regulator.split(";").map((r) => r.trim()).filter(Boolean).forEach((r) => regulators.add(r));
+  }
+  const index = picks.length
+    ? Math.round((picks.reduce((s, p) => s + WEIGHT[p.DPDP_Exposure], 0) / picks.length) * 100)
+    : 0;
+  const { sdf_likelihood, children_data, health_data, financial_data } = computeTriggeredFlags(selectedIds, []);
+  const cw = computeCrosswalk(selectedIds, []);
+  const ccpaSector = picks.some((p) => p.CCPA_Applicability === "Applies");
+  const gdprHeightened = picks.some((p) => p.GDPR_Applicability !== "Universal");
+
+  const laws: SelectionImpact["laws"] = picks.length
+    ? [
+        { name: "DPDP Act 2023", status: "Applies", why: "Digital personal data of individuals in India." },
+        {
+          name: "GDPR",
+          status: gdprHeightened ? "Likely" : "Check in step 2",
+          why: gdprHeightened
+            ? "Picked sectors carry heightened or sector-triggered GDPR exposure."
+            : "Applies if you offer goods/services to, or monitor, people in the EU.",
+        },
+        {
+          name: "CCPA / CPRA",
+          status: ccpaSector ? "Check in step 2" : "Not indicated",
+          why: ccpaSector ? "Picked sectors are CCPA-relevant; depends on a California footprint." : "No CCPA-relevant sectors picked.",
+        },
+        {
+          name: "HIPAA",
+          status: cw.hipaa.status === "Out of Scope" ? "Not indicated" : "Likely",
+          why: cw.hipaa.rationale,
+        },
+      ]
+    : [];
+
+  return {
+    count: picks.length,
+    exposure,
+    exposureCounts,
+    index,
+    flags: { sdf_likelihood, children_data, health_data, financial_data },
+    laws,
+    regulators: Array.from(regulators),
+  };
 }

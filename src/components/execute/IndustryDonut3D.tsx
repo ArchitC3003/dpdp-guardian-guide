@@ -2,57 +2,18 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { ContactShadows, Environment, Html, Lightformer, Sparkles, Float } from "@react-three/drei";
 import * as THREE from "three";
+import { ArrowLeft } from "lucide-react";
 import type { ExposureLevel, SunburstNode } from "@/types/execute";
-
-export interface DonutSegment {
-  node: SunburstNode;
-  name: string;
-  count: number;
-  share: number;
-  exposure: ExposureLevel;
-  color: string;
-}
-
-const RANK: Record<ExposureLevel, number> = { Low: 0, Medium: 1, High: 2 };
-// Base HSL per DPDP exposure band (cyber palette); shades vary per sector within a band.
-const BAND: Record<ExposureLevel, [number, number]> = { High: [350, 82], Medium: [36, 95], Low: [162, 72] };
-
-function collectLeaves(n: SunburstNode, out: SunburstNode[] = []) {
-  if (n.industry) out.push(n);
-  (n.children ?? []).forEach((c) => collectLeaves(c, out));
-  return out;
-}
-
-export function buildDonutSegments(tree: SunburstNode): DonutSegment[] {
-  const clusters = tree.children ?? [];
-  const raw = clusters.map((c) => {
-    const leaves = collectLeaves(c);
-    const exposure = leaves.reduce<ExposureLevel>(
-      (m, l) => (RANK[l.industry!.DPDP_Exposure] > RANK[m] ? l.industry!.DPDP_Exposure : m),
-      "Low",
-    );
-    return { node: c, name: c.name, count: leaves.length, exposure };
-  });
-  const total = raw.reduce((s, r) => s + r.count, 0) || 1;
-  const bandIdx: Record<ExposureLevel, number> = { Low: 0, Medium: 0, High: 0 };
-  const bandSize: Record<ExposureLevel, number> = { Low: 0, Medium: 0, High: 0 };
-  raw.forEach((r) => bandSize[r.exposure]++);
-  return raw.map((r) => {
-    const [h, s] = BAND[r.exposure];
-    const i = bandIdx[r.exposure]++;
-    const n = Math.max(bandSize[r.exposure] - 1, 1);
-    const l = 42 + (i / n) * 22;
-    return { ...r, share: r.count / total, color: `hsl(${h}, ${s}%, ${l.toFixed(0)}%)` };
-  });
-}
+import { BAND, buildLeafSegments, type DonutSegment } from "./lotusSegments";
 
 /* ---------- Lotus feel constants ---------- */
-const BASE_LEN = 1.5;      // shortest petal
-const LEN_GAIN = 9;        // extra length per unit share
+const BASE_LEN = 1.2;      // shortest petal
+const LEN_GAIN = 1.6;      // extra length per unit of risk (0.3–1)
 const OPEN = 1.05;         // resting tilt from vertical (rad)
 const BLOOM = 0.35;        // extra opening on hover
 const LIFT = 0.18;         // outward slide on hover
 const SPIN = 0.09;         // auto-rotate rad/s
+const BUD = 0.15;          // tilt a petal starts from, so each lotus opens like a bud
 
 function petalGeometry(len: number, width: number) {
   const s = new THREE.Shape();
@@ -73,20 +34,24 @@ function petalGeometry(len: number, width: number) {
   return g;
 }
 
-function Petal({ seg, angle, width, hovered, picked, dim, onOver, onOut, onPick }: {
-  seg: DonutSegment; angle: number; width: number; hovered: boolean; picked: number; dim: boolean;
-  onOver: () => void; onOut: () => void; onPick: () => void;
+function Petal({ seg, angle, width, delay, hovered, picked, dim, drillable, onOver, onOut, onPick }: {
+  seg: DonutSegment; angle: number; width: number; delay: number; hovered: boolean; picked: number; dim: boolean;
+  drillable: boolean; onOver: () => void; onOut: () => void; onPick: () => void;
 }) {
   const selected = picked > 0;
-  const len = BASE_LEN + seg.share * LEN_GAIN;
+  const len = BASE_LEN + seg.risk * LEN_GAIN;
   const geom = useMemo(() => petalGeometry(len, width), [len, width]);
   useEffect(() => () => geom.dispose(), [geom]);
   const slide = useRef<THREE.Group>(null);
   const tilt = useRef<THREE.Group>(null);
   const mat = useRef<THREE.MeshPhysicalMaterial>(null);
+  const age = useRef(0);
 
   useFrame((_, dt) => {
-    const k = 1 - Math.exp(-10 * Math.min(dt, 0.05));
+    const step = Math.min(dt, 0.05);
+    age.current += step;
+    // Staggered bloom: each petal waits its turn, then opens from the bud.
+    const k = age.current < delay ? 0 : 1 - Math.exp(-(age.current < delay + 0.6 ? 6 : 10) * step);
     if (slide.current) {
       const out = hovered ? LIFT : selected ? LIFT * 0.6 : 0;
       slide.current.position.z += (out - slide.current.position.z) * k;
@@ -104,10 +69,11 @@ function Petal({ seg, angle, width, hovered, picked, dim, onOver, onOut, onPick 
   });
 
   const tip = len * 0.9;
+  const whole = seg.count === 1;
   return (
     <group rotation={[0, angle, 0]}>
       <group ref={slide}>
-        <group ref={tilt} position={[0, 0, 0.35]} rotation={[-OPEN, 0, 0]}>
+        <group ref={tilt} position={[0, 0, 0.35]} rotation={[-BUD, 0, 0]}>
           <mesh
             geometry={geom}
             castShadow
@@ -140,24 +106,27 @@ function Petal({ seg, angle, width, hovered, picked, dim, onOver, onOut, onPick 
           {selected && !hovered && (
             <Html position={[0, tip, 0.3]} center pointerEvents="none" zIndexRange={[10, 0]}>
               <div className="whitespace-nowrap rounded-full border border-primary/50 bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground shadow-lg">
-                ✓ {picked}/{seg.count}
+                {whole ? "✓" : `✓ ${picked}/${seg.count}`}
               </div>
             </Html>
           )}
           {hovered && (
             <Html position={[0, tip, 0.3]} center pointerEvents="none" zIndexRange={[20, 0]}>
-              <div className="min-w-[180px] rounded-xl border border-primary/40 bg-popover/90 px-3.5 py-2.5 text-xs text-popover-foreground shadow-2xl backdrop-blur-md">
-                <p className="text-[10px] font-mono uppercase tracking-widest text-primary">Sector</p>
+              <div className="min-w-[180px] max-w-[240px] rounded-xl border border-primary/40 bg-popover/90 px-3.5 py-2.5 text-xs text-popover-foreground shadow-2xl backdrop-blur-md">
+                <p className="text-[10px] font-mono uppercase tracking-widest text-primary">{whole ? "Sub-sector" : "Sector"}</p>
                 <p className="text-sm font-semibold leading-tight">{seg.name}</p>
+                {seg.subtitle && <p className="mt-0.5 text-[11px] text-muted-foreground">{seg.subtitle}</p>}
                 <div className="mt-2 flex items-center justify-between gap-3 font-mono">
-                  <span className="text-muted-foreground">{seg.count} sub-sectors{selected ? ` · ${picked} picked` : ""}</span>
+                  <span className="text-muted-foreground">
+                    {whole ? "DPDP exposure" : `${seg.count} sub-sectors${selected ? ` · ${picked} picked` : ""}`}
+                  </span>
                   <span className="flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full" style={{ background: seg.color, boxShadow: `0 0 8px ${seg.color}` }} />
                     {seg.exposure}
                   </span>
                 </div>
                 <p className="mt-2 border-t border-border/60 pt-1.5 text-[10px] text-muted-foreground">
-                  Click to {picked === seg.count ? "remove" : "add"}
+                  {drillable ? "Click to open its sub-sectors" : `Click to ${selected ? "remove" : "add"}`}
                 </p>
               </div>
             </Html>
@@ -194,10 +163,10 @@ function Core({ pulse }: { pulse: boolean }) {
   );
 }
 
-function Lotus({ segments, selectedIds, onSelect, hover, setHover, paused, highlightClusters }: {
-  segments: DonutSegment[]; selectedIds: Set<string>; onSelect: (n: SunburstNode, additive: boolean) => void;
+function Lotus({ segments, selectedIds, highlightIds, drillable, hover, setHover, paused, onPick }: {
+  segments: DonutSegment[]; selectedIds: Set<string>; highlightIds: Set<string> | null; drillable: boolean;
   hover: number | null; setHover: (fn: (h: number | null) => number | null) => void;
-  paused: boolean; highlightClusters: Set<string> | null;
+  paused: boolean; onPick: (seg: DonutSegment) => void;
 }) {
   const group = useRef<THREE.Group>(null);
   // Spin only while nobody is pointing at the scene, so petals hold still to be clicked.
@@ -216,19 +185,21 @@ function Lotus({ segments, selectedIds, onSelect, hover, setHover, paused, highl
       <Core pulse={hover !== null} />
       {segments.map((seg, i) => {
         const ids = seg.node.leafIds ?? [];
-        const matched = !highlightClusters || highlightClusters.has(seg.name);
+        const matched = !highlightIds || ids.some((id) => highlightIds.has(id));
         return (
           <Petal
-            key={seg.name}
+            key={seg.name + i}
             seg={seg}
             angle={(i / n) * Math.PI * 2}
             width={width}
+            delay={i * (0.5 / n)}
             hovered={hover === i}
             dim={hover !== null ? hover !== i : !matched}
+            drillable={drillable}
             picked={ids.filter((id) => selectedIds.has(id)).length}
             onOver={() => setHover(() => i)}
             onOut={() => setHover((h) => (h === i ? null : h))}
-            onPick={() => onSelect(seg.node, true)}
+            onPick={() => onPick(seg)}
           />
         );
       })}
@@ -239,24 +210,51 @@ function Lotus({ segments, selectedIds, onSelect, hover, setHover, paused, highl
 const TILT = (32 * Math.PI) / 180;
 const DIST = 8.5;
 
-export function IndustryDonut3D({ segments, selectedIds, onSelect, onHover, highlightClusters = null }: {
-  segments: DonutSegment[]; selectedIds: Set<string>; onSelect: (n: SunburstNode, additive: boolean) => void;
+export function IndustryDonut3D({ segments, selectedIds, onSelect, onToggleAll, onHover, highlightIds = null }: {
+  segments: DonutSegment[]; selectedIds: Set<string>;
+  /** A sub-sector petal was clicked. */
+  onSelect: (n: SunburstNode, additive: boolean) => void;
+  /** Add or remove every sub-sector of the open cluster. */
+  onToggleAll: (n: SunburstNode) => void;
   onHover?: (node: SunburstNode | null, breadcrumb: string[]) => void;
-  highlightClusters?: Set<string> | null;
+  highlightIds?: Set<string> | null;
 }) {
   const [hover, setHover] = useState<number | null>(null);
   const [pointerIn, setPointerIn] = useState(false);
+  // The cluster whose sub-sectors are bloomed open; null = all sectors.
+  const [focus, setFocus] = useState<SunburstNode | null>(null);
+  const shown = useMemo(() => (focus ? buildLeafSegments(focus) : segments), [focus, segments]);
+
   useEffect(() => {
     if (!onHover) return;
-    const seg = hover !== null ? segments[hover] : null;
-    onHover(seg ? seg.node : null, seg ? [seg.name] : []);
-  }, [hover, segments, onHover]);
+    const seg = hover !== null ? shown[hover] : null;
+    if (!seg) { onHover(null, []); return; }
+    const crumb = focus ? [focus.name, seg.node.industry?.Sector_Group ?? ""].filter(Boolean) : [seg.name];
+    onHover(seg.node, crumb);
+  }, [hover, shown, focus, onHover]);
+
+  const openCluster = (node: SunburstNode | null) => {
+    setHover(null);
+    setFocus(node);
+    if (node && onHover) onHover(node, [node.name]);
+  };
+
+  useEffect(() => {
+    if (!focus) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") openCluster(null); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus]);
+
   const counts = useMemo(() => {
     const c: Record<ExposureLevel, number> = { High: 0, Medium: 0, Low: 0 };
-    segments.forEach((s) => c[s.exposure]++);
+    shown.forEach((s) => c[s.exposure]++);
     return c;
-  }, [segments]);
-  const active = hover !== null ? segments[hover] : null;
+  }, [shown]);
+  const active = hover !== null ? shown[hover] : null;
+  const focusIds = focus?.leafIds ?? [];
+  const focusPicked = focusIds.filter((id) => selectedIds.has(id)).length;
 
   return (
     <div
@@ -293,13 +291,15 @@ export function IndustryDonut3D({ segments, selectedIds, onSelect, onHover, high
           <Float speed={1.2} rotationIntensity={0} floatIntensity={0.15}>
             <group position={[0, -0.6, 0]}>
               <Lotus
-                segments={segments}
+                key={focus?.name ?? "__all"}
+                segments={shown}
                 selectedIds={selectedIds}
-                onSelect={onSelect}
+                highlightIds={highlightIds}
+                drillable={!focus}
                 hover={hover}
                 setHover={setHover}
                 paused={pointerIn}
-                highlightClusters={highlightClusters}
+                onPick={(seg) => (focus ? onSelect(seg.node, true) : openCluster(seg.node))}
               />
             </group>
           </Float>
@@ -308,12 +308,35 @@ export function IndustryDonut3D({ segments, selectedIds, onSelect, onHover, high
       </Canvas>
 
       {/* HUD */}
-      <div className="pointer-events-none absolute left-4 top-4 space-y-1">
-        <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-primary">Sector Lotus</p>
-        <p className="text-xl font-bold leading-none">{active ? active.name : `${segments.length} sectors`}</p>
-        <p className="text-[11px] font-mono text-muted-foreground">
-          {active ? `${(active.share * 100).toFixed(1)}% share · ${active.exposure} DPDP exposure` : "Petal length = share of sub-sectors"}
+      <div className="absolute left-4 top-4 space-y-1">
+        {focus ? (
+          <button
+            onClick={() => openCluster(null)}
+            className="mb-1 inline-flex items-center gap-1 rounded-full border border-primary/40 bg-card/70 px-2.5 py-1 text-[11px] font-medium text-primary backdrop-blur hover:bg-card"
+          >
+            <ArrowLeft className="h-3 w-3" /> All sectors
+          </button>
+        ) : (
+          <p className="pointer-events-none text-[10px] font-mono uppercase tracking-[0.25em] text-primary">Sector Lotus</p>
+        )}
+        <p className="pointer-events-none text-xl font-bold leading-none">
+          {active ? active.name : focus ? focus.name : `${segments.length} sectors`}
         </p>
+        <p className="pointer-events-none text-[11px] font-mono text-muted-foreground">
+          {active
+            ? `${active.exposure} DPDP exposure`
+            : focus
+              ? `${focusIds.length} sub-sectors · ${focusPicked} picked`
+              : "Petal length = data-protection risk"}
+        </p>
+        {focus && (
+          <button
+            onClick={() => onToggleAll(focus)}
+            className="mt-1 rounded-full bg-primary px-3 py-1 text-[11px] font-semibold text-primary-foreground shadow hover:bg-primary/90"
+          >
+            {focusPicked === focusIds.length ? `Remove all of ${focus.name}` : `Add all ${focusIds.length}`}
+          </button>
+        )}
       </div>
       <div className="pointer-events-none absolute right-4 top-4 flex gap-2">
         {(["High", "Medium", "Low"] as ExposureLevel[]).map((lvl) => (
@@ -324,7 +347,7 @@ export function IndustryDonut3D({ segments, selectedIds, onSelect, onHover, high
         ))}
       </div>
       <p className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-        Click petals to add or remove · pick as many as apply
+        {focus ? "Click sub-sectors to add or remove · Esc to go back" : "Click a sector to open it · pick as many as apply"}
       </p>
     </div>
   );
