@@ -1,6 +1,8 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { IndustryChart } from "@/components/execute/IndustryChart";
+import { SectorList } from "@/components/execute/SectorList";
+import { ImpactPanel } from "@/components/execute/ImpactPanel";
 import {
   buildIndustryTree,
   nodeRequiresDisambiguation,
@@ -11,12 +13,34 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ArrowRight, X, Info, Search, Check, Plus } from "lucide-react";
+import { ArrowRight, X, Info, Search, Check, Plus, Flower2, List } from "lucide-react";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
 
 interface LeafRef { node: SunburstNode; crumb: string[] }
+type View = "lotus" | "list";
+
+const DRAFT_KEY = "execute.draftSectors";
+const VIEW_KEY = "execute.selectView";
+
+function readDraft(): string[] {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    const ids = raw ? JSON.parse(raw) : [];
+    return Array.isArray(ids) ? ids.filter((x) => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function initialView(): View {
+  try {
+    const v = localStorage.getItem(VIEW_KEY);
+    if (v === "lotus" || v === "list") return v;
+  } catch { /* storage unavailable */ }
+  return typeof window !== "undefined" && window.matchMedia?.("(max-width: 767px)").matches ? "list" : "lotus";
+}
 
 export default function ExecuteSunburst() {
   const navigate = useNavigate();
@@ -32,16 +56,29 @@ export default function ExecuteSunburst() {
     return map;
   }, [tree]);
 
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Set<string>>(
+    () => new Set(readDraft().filter((id) => leaves.has(id))),
+  );
+  const [restored, setRestored] = useState(() => selected.size);
+  const [view, setView] = useState<View>(initialView);
   const [hover, setHover] = useState<{ node: SunburstNode | null; crumb: string[] }>({ node: null, crumb: [] });
   const [disambig, setDisambig] = useState<SunburstNode | null>(null);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const [announce, setAnnounce] = useState("");
 
+  // Keep picks across refreshes on this browser until a workspace is created.
+  useEffect(() => {
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(Array.from(selected))); } catch { /* storage unavailable */ }
+  }, [selected]);
+  const changeView = (v: View) => {
+    setView(v);
+    try { localStorage.setItem(VIEW_KEY, v); } catch { /* storage unavailable */ }
+  };
+
   const results = useMemo(() => searchIndustries(query), [query]);
-  const highlightClusters = useMemo(
-    () => (query.trim() ? new Set(results.map((r) => r.Cluster)) : null),
+  const highlightIds = useMemo(
+    () => (query.trim() ? new Set(results.map((r) => r.PrivCybHub_Sector_ID)) : null),
     [query, results],
   );
 
@@ -52,24 +89,26 @@ export default function ExecuteSunburst() {
   }, []);
 
   const toggleId = (id: string) => {
+    const name = leaves.get(id)?.node.industry?.Sub_Sector ?? id;
+    const removing = selected.has(id);
     setSelected((prev) => {
       const next = new Set(prev);
-      const name = leaves.get(id)?.node.industry?.Sub_Sector ?? id;
-      if (next.has(id)) { next.delete(id); setAnnounce(`Removed ${name}`); }
-      else { next.add(id); setAnnounce(`Added ${name}`); }
+      if (removing) next.delete(id);
+      else next.add(id);
       return next;
     });
+    setAnnounce(`${removing ? "Removed" : "Added"} ${name}`);
   };
   const toggleMany = (node: SunburstNode) => {
     const ids = node.leafIds ?? [];
+    const allIn = ids.every((i) => selected.has(i));
     setSelected((prev) => {
       const next = new Set(prev);
-      const allIn = ids.every((i) => next.has(i));
       if (allIn) ids.forEach((i) => next.delete(i));
       else ids.forEach((i) => next.add(i));
-      setAnnounce(`${allIn ? "Removed" : "Added"} ${node.name}`);
       return next;
     });
+    setAnnounce(`${allIn ? "Removed" : "Added"} ${node.name}`);
   };
 
   const handleClick = (node: SunburstNode) => {
@@ -136,7 +175,7 @@ export default function ExecuteSunburst() {
             <p className="text-xs font-mono text-muted-foreground">STEP 1 OF 3</p>
             <h1 className="text-2xl font-bold">Pick your industry petals</h1>
             <p className="text-sm text-muted-foreground">
-              Click petals to add or remove them — pick every sector you operate in. Hover to preview the regulatory crosswalk.
+              Open a sector and pick every sub-sector you operate in. Your regulatory exposure updates as you go.
             </p>
           </div>
           <Button onClick={proceed} disabled={selected.size === 0}>
@@ -144,38 +183,64 @@ export default function ExecuteSunburst() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+        {restored > 0 && (
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2 text-sm">
+            <span>Welcome back — we kept your {restored} pick{restored === 1 ? "" : "s"} from last time.</span>
+            <span className="flex gap-2">
+              <Button size="sm" variant="ghost" onClick={() => setRestored(0)}>Keep</Button>
+              <Button size="sm" variant="outline" onClick={() => { setSelected(new Set()); setRestored(0); }}>Start over</Button>
+            </span>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
           <Card>
             <CardContent className="p-4 space-y-3">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={query}
-                  onChange={(e) => { setQuery(e.target.value); setActive(0); }}
-                  onKeyDown={onSearchKey}
-                  placeholder="Search your business — e.g. lending, hospital, edtech, SaaS"
-                  className="pl-9 pr-9"
-                  role="combobox"
-                  aria-expanded={!!query.trim()}
-                  aria-controls="sector-search-results"
-                  aria-label="Search sectors"
-                />
-                {query && (
-                  <button
-                    onClick={() => setQuery("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground"
-                    aria-label="Clear search"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={query}
+                    onChange={(e) => { setQuery(e.target.value); setActive(0); }}
+                    onKeyDown={onSearchKey}
+                    placeholder="Search your business — e.g. lending, hospital, edtech, SaaS"
+                    className="pl-9 pr-9"
+                    role="combobox"
+                    aria-expanded={!!query.trim()}
+                    aria-controls="sector-search-results"
+                    aria-label="Search sectors"
+                  />
+                  {query && (
+                    <button
+                      onClick={() => setQuery("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground"
+                      aria-label="Clear search"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                <div className="flex rounded-md border p-0.5" role="group" aria-label="View">
+                  {([["lotus", Flower2, "Lotus"], ["list", List, "List"]] as const).map(([v, Icon, label]) => (
+                    <button
+                      key={v}
+                      onClick={() => changeView(v)}
+                      aria-pressed={view === v}
+                      className={`flex items-center gap-1.5 rounded px-2.5 text-xs font-medium transition-colors ${
+                        view === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Icon className="h-3.5 w-3.5" /> {label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {query.trim() && (
                 <div id="sector-search-results" role="listbox" className="rounded-lg border bg-card">
                   {results.length === 0 ? (
                     <p className="p-3 text-sm text-muted-foreground">
-                      No sub-sector matches “{query.trim()}”. Try a broader word, or pick from the lotus below.
+                      No sub-sector matches “{query.trim()}”. Try a broader word, or browse the sectors below.
                     </p>
                   ) : (
                     <ul className="divide-y">
@@ -218,17 +283,28 @@ export default function ExecuteSunburst() {
                 </div>
               )}
 
-              <IndustryChart
-                tree={tree}
-                selectedIds={selected}
-                onHover={onHover}
-                onClick={handleClick}
-                highlightClusters={highlightClusters}
-              />
+              {view === "lotus" ? (
+                <IndustryChart
+                  tree={tree}
+                  selectedIds={selected}
+                  onHover={onHover}
+                  onClick={handleClick}
+                  onToggleAll={toggleMany}
+                  highlightIds={highlightIds}
+                />
+              ) : (
+                <SectorList
+                  tree={tree}
+                  selectedIds={selected}
+                  onToggle={toggleId}
+                  onToggleAll={toggleMany}
+                  onHover={onHover}
+                />
+              )}
             </CardContent>
           </Card>
 
-          <div className="space-y-4">
+          <div className="space-y-4 lg:sticky lg:top-4 lg:self-start">
             <Card>
               <CardContent className="p-4 space-y-2">
                 <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
@@ -257,7 +333,6 @@ export default function ExecuteSunburst() {
                   </div>
                 ) : hovered && summary ? (
                   <div className="space-y-2">
-                    <p className="text-xs text-muted-foreground">{hover.crumb.join(" › ")}</p>
                     <h3 className="font-semibold">{hovered.name}</h3>
                     <div className="text-xs text-muted-foreground">
                       {summary.total} sub-sectors · highest DPDP exposure <Badge variant="outline">{summary.exposure}</Badge>
@@ -270,11 +345,6 @@ export default function ExecuteSunburst() {
                     <p className="text-[11px] text-muted-foreground">
                       {summary.exposureCounts.High} high · {summary.exposureCounts.Medium} medium · {summary.exposureCounts.Low} low
                     </p>
-                    <div className="grid grid-cols-1 gap-1 text-[11px] pt-1">
-                      <div><span className="text-muted-foreground">GDPR heightened / sector-triggered:</span> {summary.gdprHeightened} of {summary.total}</div>
-                      <div><span className="text-muted-foreground">CCPA applies:</span> {summary.ccpaApplies} of {summary.total}</div>
-                      <div><span className="text-muted-foreground">HIPAA covered / adjacent:</span> {summary.hipaaInScope} of {summary.total}</div>
-                    </div>
                     {summary.regulators.length > 0 && (
                       <div className="flex flex-wrap gap-1 pt-1">
                         {summary.regulators.slice(0, 6).map((r) => (
@@ -289,49 +359,23 @@ export default function ExecuteSunburst() {
                       size="sm"
                       variant={hoveredPicked === hoveredIds.length ? "outline" : "default"}
                       className="w-full"
-                      onClick={() => handleClick(hovered)}
+                      onClick={() => toggleMany(hovered)}
                     >
-                      {nodeRequiresDisambiguation(hovered)
-                        ? `Choose activities in ${hovered.name}`
-                        : hoveredPicked === hoveredIds.length
-                          ? `Remove ${hovered.name}`
-                          : `Add all of ${hovered.name}`}
+                      {hoveredPicked === hoveredIds.length ? `Remove all of ${hovered.name}` : `Add all ${hoveredIds.length} sub-sectors`}
                     </Button>
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">Hover a petal or search to preview regulators and the GDPR/CCPA/HIPAA crosswalk.</p>
+                  <p className="text-sm text-muted-foreground">Hover or open a sector to preview its regulators and GDPR/CCPA/HIPAA crosswalk.</p>
                 )}
               </CardContent>
             </Card>
 
-            <Card>
-              <CardContent className="p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono text-muted-foreground">SELECTED · {selected.size}</span>
-                  {selected.size > 0 && (
-                    <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>Clear</Button>
-                  )}
-                </div>
-                {selectedList.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">No petals selected yet.</p>
-                ) : (
-                  <div className="space-y-1 max-h-72 overflow-auto">
-                    {selectedList.map((s) => (
-                      <div key={s.id} className="flex items-center justify-between gap-2 text-xs bg-muted/40 rounded px-2 py-1">
-                        <span className="truncate">{s.label}</span>
-                        <button
-                          onClick={() => toggleId(s.id)}
-                          className="text-muted-foreground hover:text-destructive"
-                          aria-label={`Remove ${s.label}`}
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <ImpactPanel
+              selectedIds={Array.from(selected)}
+              selectedList={selectedList}
+              onRemove={toggleId}
+              onClear={() => setSelected(new Set())}
+            />
           </div>
         </div>
       </div>

@@ -199,7 +199,10 @@
   transition: box-shadow .6s, border-color .6s;
 }
 .lotus-pulse { animation: lotus-pulse 1.6s ease-in-out infinite; }
+/* Petals open from the centre, one after another, whenever a lotus (or a sector's sub-sectors) appears. */
+.lotus-bloom { animation: lotus-bloom .7s cubic-bezier(.2,.9,.3,1.25) both; transform-box: view-box; transform-origin: 0 0; }
+@keyframes lotus-bloom { from { transform: scale(.15) rotate(-20deg); opacity: 0; } }
 @keyframes lotus-pulse { 50% { opacity: .3; } }
 @media (prefers-reduced-motion: reduce) {
-  .lotus-grid, .lotus-dust, .lotus-spin-slow, .lotus-pulse { animation: none; }
+  .lotus-grid, .lotus-dust, .lotus-spin-slow, .lotus-pulse, .lotus-bloom { animation: none; }
 }

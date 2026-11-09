@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { buildIndustryTree } from "@/data/privcybhubIndustries";
-import { searchIndustries, summarizeNode } from "./executeSelect";
+import { computeImpact, searchIndustries, summarizeNode } from "./executeSelect";
+import { buildDonutSegments, buildLeafSegments, riskScore } from "@/components/execute/lotusSegments";
+import { PRIVCYBHUB_INDUSTRIES } from "@/data/privcybhubIndustries";
 
 describe("searchIndustries", () => {
   it("returns nothing for a blank query", () => {
@@ -41,5 +43,54 @@ describe("summarizeNode", () => {
     expect(s.exposure).toBe("High");
     expect(new Set(s.regulators).size).toBe(s.regulators.length);
     expect(s.regulators.length).toBeGreaterThan(0);
+  });
+});
+
+describe("computeImpact", () => {
+  const idOf = (sub: string) => PRIVCYBHUB_INDUSTRIES.find((i) => i.Sub_Sector === sub)!.PrivCybHub_Sector_ID;
+
+  it("is empty when nothing is picked", () => {
+    const r = computeImpact([]);
+    expect(r).toMatchObject({ count: 0, exposure: null, index: 0, laws: [] });
+  });
+
+  it("flags health data and HIPAA for a hospital", () => {
+    const r = computeImpact([idOf("Hospitals")]);
+    expect(r.flags.health_data).toBe("Core");
+    expect(r.laws.find((l) => l.name === "HIPAA")!.status).toBe("Likely");
+    expect(r.laws[0]).toMatchObject({ name: "DPDP Act 2023", status: "Applies" });
+  });
+
+  it("flags RBI-regulated financial data for digital lending and ignores unknown ids", () => {
+    const r = computeImpact([idOf("Digital Lending"), "nope"]);
+    expect(r.count).toBe(1);
+    expect(r.flags.financial_data).toBe("RBI-regulated");
+    expect(r.flags.sdf_likelihood).toBe("High");
+  });
+
+  it("scales the index with exposure", () => {
+    const low = PRIVCYBHUB_INDUSTRIES.find((i) => i.DPDP_Exposure === "Low")!.PrivCybHub_Sector_ID;
+    const high = PRIVCYBHUB_INDUSTRIES.find((i) => i.DPDP_Exposure === "High")!.PrivCybHub_Sector_ID;
+    expect(computeImpact([low]).index).toBe(0);
+    expect(computeImpact([high]).index).toBe(100);
+    expect(computeImpact([low, high]).index).toBe(50);
+  });
+});
+
+describe("lotus segments", () => {
+  const tree = buildIndustryTree();
+
+  it("sizes petals by risk, not by taxonomy count", () => {
+    expect(riskScore(["High"])).toBeGreaterThan(riskScore(["Low"]));
+    const segs = buildDonutSegments(tree);
+    expect(segs).toHaveLength(tree.children!.length);
+    segs.forEach((s) => expect(s.risk).toBeGreaterThanOrEqual(0.3));
+  });
+
+  it("blooms a cluster into one petal per sub-sector", () => {
+    const bfsi = tree.children!.find((c) => c.name === "BFSI")!;
+    const leaves = buildLeafSegments(bfsi);
+    expect(leaves).toHaveLength(bfsi.leafIds!.length);
+    leaves.forEach((l) => expect(l.node.industry).toBeDefined());
   });
 });

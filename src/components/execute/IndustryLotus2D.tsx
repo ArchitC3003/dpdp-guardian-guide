@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { SunburstNode } from "@/types/execute";
-import type { DonutSegment } from "./IndustryDonut3D";
+import { petalColor, type DonutSegment } from "./lotusSegments";
 
 /**
  * 2.5D organic lotus: layered SVG planes under CSS perspective. The flower tilts
@@ -19,9 +19,6 @@ function leafIds(n: SunburstNode, out: string[] = []) {
   return out;
 }
 
-/** Distinct hue per petal (jewel tones), cycled if more petals than hues. */
-const PETAL_HUES = [168, 280, 350, 42, 192, 318, 145, 222, 12, 88, 262, 205, 335, 158, 28, 245];
-const petalColor = (i: number) => `hsl(${PETAL_HUES[i % PETAL_HUES.length]}, 82%, 58%)`;
 
 /** Deterministic per-petal variation in [-1, 1]. */
 const jitter = (i: number, k: number) => Math.sin(i * 12.9898 + k * 78.233) * 0.5 + Math.cos(i * 4.1 + k) * 0.5;
@@ -41,12 +38,15 @@ interface Props {
   selectedIds: Set<string>;
   onSelect: (n: SunburstNode, additive: boolean) => void;
   onHover?: (node: SunburstNode | null, breadcrumb: string[]) => void;
-  highlightClusters?: Set<string> | null;
+  /** Sector ids to keep lit (e.g. search matches); null = no highlight. */
+  highlightIds?: Set<string> | null;
   /** Touch layout: square stage, no side card. */
   compact?: boolean;
+  /** Extra controls drawn over the stage (e.g. back / add-all while a sector is open). */
+  overlay?: ReactNode;
 }
 
-export function IndustryLotus2D({ segments, selectedIds, onSelect, onHover, highlightClusters = null, compact = false }: Props) {
+export function IndustryLotus2D({ segments, selectedIds, onSelect, onHover, highlightIds = null, compact = false, overlay }: Props) {
   const stage = useRef<HTMLDivElement>(null);
   const tilt = useRef({ x: 0, y: 0, tx: 0, ty: 0, px: 0.5, py: 0.5, tpx: 0.5, tpy: 0.5 });
   const [, force] = useState(0);
@@ -58,7 +58,6 @@ export function IndustryLotus2D({ segments, selectedIds, onSelect, onHover, high
   );
 
   const n = segments.length || 1;
-  const maxShare = Math.max(...segments.map((s) => s.share), 0.0001);
   const selectedIdx = useMemo(() => {
     const set = new Set<number>();
     segments.forEach((s, i) => {
@@ -133,9 +132,10 @@ export function IndustryLotus2D({ segments, selectedIds, onSelect, onHover, high
 
   const petals = segments.map((s, i) => {
     const ang = (i / n) * 360;
-    const len = 150 + (s.share / maxShare) * 105;
+    // Petal length = data-protection risk (0.3 all-Low … 1 all-High).
+    const len = 150 + ((s.risk - 0.3) / 0.7) * 105;
     const w = Math.min(62, (Math.PI * 2 * 95) / n * 0.62);
-    const lit = !highlightClusters || highlightClusters.has(s.name);
+    const lit = !highlightIds || leafIds(s.node).some((id) => highlightIds.has(id));
     const active = hover === i || selectedIdx.has(i);
     const color = petalColor(i);
     return { s, i, ang: ang + jitter(i, 6) * 4, len, w, lit, active, color };
@@ -185,6 +185,8 @@ export function IndustryLotus2D({ segments, selectedIds, onSelect, onHover, high
         </div>
       )}
 
+      {overlay && <div className="absolute bottom-4 left-4 z-20 flex flex-wrap items-center gap-2">{overlay}</div>}
+
       {/* 2.5D flower */}
       <div className="absolute inset-0 grid place-items-center [perspective:1400px]">
         <div
@@ -218,11 +220,12 @@ export function IndustryLotus2D({ segments, selectedIds, onSelect, onHover, high
             </defs>
             <g transform={`translate(${C} ${C})`}>
               {petals.map(({ s, i, ang, len, w, lit, active, color }) => (
-                <g key={s.name} transform={`rotate(${ang})`}>
+                <g key={s.name + i} transform={`rotate(${ang})`}>
+                  <g className={reduced ? "" : "lotus-bloom"} style={{ animationDelay: `${i * (0.45 / n)}s` }}>
                   <g
                     role="button"
                     tabIndex={0}
-                    aria-label={`${s.name}, ${(s.share * 100).toFixed(1)}% share, ${s.exposure} DPDP exposure`}
+                    aria-label={`${s.name}, ${s.count > 1 ? `${s.count} sub-sectors, ` : ""}${s.exposure} DPDP exposure`}
                     aria-pressed={selectedIdx.has(i)}
                     className="lotus-petal cursor-pointer outline-none"
                     style={{
@@ -246,6 +249,7 @@ export function IndustryLotus2D({ segments, selectedIds, onSelect, onHover, high
                     <path d={`M0,-30 Q${-w * 0.55},${-len * 0.45} ${-w * 0.35},${-len * 0.78}`} fill="none" className="stroke-foreground/15" strokeWidth={0.8} />
                     {selectedIdx.has(i) && <circle cx={w * 0.22 * jitter(i, 2)} cy={-len - 12} r={4} fill={color} className="lotus-pulse" />}
                   </g>
+                  </g>
                 </g>
               ))}
             </g>
@@ -255,8 +259,12 @@ export function IndustryLotus2D({ segments, selectedIds, onSelect, onHover, high
           <div className="pointer-events-none absolute inset-0 grid place-items-center" style={{ transform: "translateZ(60px)" }}>
             <div className="lotus-core grid h-[24%] w-[24%] place-items-center rounded-full text-center">
               <div>
-                <p className="font-mono text-2xl font-bold text-foreground">{focusSeg ? `${(focusSeg.share * 100).toFixed(0)}%` : segments.length}</p>
-                <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{focusSeg ? "share" : "sectors"}</p>
+                <p className="font-mono text-2xl font-bold text-foreground">
+                  {focusSeg ? (focusSeg.count > 1 ? focusSeg.count : focusSeg.exposure) : segments.length}
+                </p>
+                <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                  {focusSeg ? (focusSeg.count > 1 ? "sub-sectors" : "exposure") : segments[0]?.count === 1 ? "sub-sectors" : "sectors"}
+                </p>
               </div>
             </div>
           </div>
@@ -270,8 +278,10 @@ export function IndustryLotus2D({ segments, selectedIds, onSelect, onHover, high
           style={{ left: tip.x + 16, top: tip.y + 16 }}
         >
           <p className="font-semibold text-popover-foreground">{segments[hover].name}</p>
+          {segments[hover].subtitle && <p className="max-w-[14rem] text-[11px] text-muted-foreground">{segments[hover].subtitle}</p>}
           <p className="font-mono text-muted-foreground">
-            {(segments[hover].share * 100).toFixed(1)}% · <span style={{ color: `hsl(${AURA[segments[hover].exposure]})` }}>{segments[hover].exposure}</span>
+            {segments[hover].count > 1 ? `${segments[hover].count} sub-sectors · ` : ""}
+            <span style={{ color: `hsl(${AURA[segments[hover].exposure]})` }}>{segments[hover].exposure}</span>
           </p>
         </div>
       )}

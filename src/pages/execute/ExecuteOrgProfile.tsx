@@ -80,6 +80,7 @@ export default function ExecuteOrgProfile() {
     setSaving(false);
     if (error) { toast.error(error.message); return; }
     sessionStorage.removeItem("execute.selectedSectors");
+    try { localStorage.removeItem("execute.draftSectors"); } catch { /* storage unavailable */ }
     toast.success("Workspace created");
     navigate(`/execute/workspace/${data.id}`);
   };
