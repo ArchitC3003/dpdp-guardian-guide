@@ -2,6 +2,7 @@ import * as React from 'npm:react@18.3.1'
 import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { TEMPLATES } from '../_shared/transactional-email-templates/registry.ts'
+import { isServiceRoleRequest, maskEmail, requireUser } from '../_shared/auth.ts'
 
 // Configuration baked in at scaffold time — do NOT change these manually.
 // To update, re-run the email domain setup flow.
@@ -30,9 +31,9 @@ function generateToken(): string {
     .join('')
 }
 
-// Auth note: this function uses verify_jwt = true in config.toml, so Supabase's
-// gateway validates the caller's JWT (anon or service_role) before the request
-// reaches this code. No in-function auth check is needed.
+// Auth: the gateway's verify_jwt also accepts the public anon key, so it is not
+// enough on its own. Callers must be either the service role (server-to-server)
+// or a signed-in user. Non-admin users may only send to their own address.
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
@@ -52,6 +53,16 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     )
+  }
+
+  let callerEmail: string | null = null
+  let callerIsPrivileged = isServiceRoleRequest(req)
+  if (!callerIsPrivileged) {
+    const auth = await requireUser(req, corsHeaders)
+    if (!auth.ok) return auth.response
+    callerEmail = auth.user.email?.toLowerCase() ?? null
+    const { data: isAdmin } = await auth.client.rpc('current_user_has_role', { _role: 'admin' })
+    callerIsPrivileged = isAdmin === true
   }
 
   // Parse request body
@@ -122,6 +133,20 @@ Deno.serve(async (req) => {
     )
   }
 
+  if (
+    !callerIsPrivileged &&
+    !template.to &&
+    String(effectiveRecipient).toLowerCase() !== callerEmail
+  ) {
+    return new Response(
+      JSON.stringify({ error: 'You can only send this email to your own address' }),
+      {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
+  }
+
   // Create Supabase client with service role (bypasses RLS)
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
@@ -135,7 +160,7 @@ Deno.serve(async (req) => {
   if (suppressionError) {
     console.error('Suppression check failed — refusing to send', {
       error: suppressionError,
-      effectiveRecipient,
+      recipient: maskEmail(effectiveRecipient),
     })
     return new Response(
       JSON.stringify({ error: 'Failed to verify suppression status' }),
@@ -155,7 +180,7 @@ Deno.serve(async (req) => {
       status: 'suppressed',
     })
 
-    console.log('Email suppressed', { effectiveRecipient, templateName })
+    console.log('Email suppressed', { recipient: maskEmail(effectiveRecipient), templateName })
     return new Response(
       JSON.stringify({ success: false, reason: 'email_suppressed' }),
       {
@@ -179,7 +204,7 @@ Deno.serve(async (req) => {
   if (tokenLookupError) {
     console.error('Token lookup failed', {
       error: tokenLookupError,
-      email: normalizedEmail,
+      recipient: maskEmail(normalizedEmail),
     })
     await supabase.from('email_send_log').insert({
       message_id: messageId,
@@ -263,7 +288,7 @@ Deno.serve(async (req) => {
     // Token exists but is already used — email should have been caught by suppression check above.
     // This is a safety fallback; log and skip sending.
     console.warn('Unsubscribe token already used but email not suppressed', {
-      email: normalizedEmail,
+      recipient: maskEmail(normalizedEmail),
     })
     await supabase.from('email_send_log').insert({
       message_id: messageId,
@@ -330,7 +355,7 @@ Deno.serve(async (req) => {
     console.error('Failed to enqueue email', {
       error: enqueueError,
       templateName,
-      effectiveRecipient,
+      recipient: maskEmail(effectiveRecipient),
     })
 
     await supabase.from('email_send_log').insert({
@@ -347,7 +372,7 @@ Deno.serve(async (req) => {
     })
   }
 
-  console.log('Transactional email enqueued', { templateName, effectiveRecipient })
+  console.log('Transactional email enqueued', { templateName, recipient: maskEmail(effectiveRecipient) })
 
   return new Response(
     JSON.stringify({ success: true, queued: true }),

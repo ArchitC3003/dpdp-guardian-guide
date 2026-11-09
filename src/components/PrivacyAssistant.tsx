@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { functionAuthHeaders } from "@/lib/edgeAuth";
 import { MessageSquare, X, Send, Bot, User, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -61,10 +62,7 @@ export function PrivacyAssistant() {
       try {
         const resp = await fetch(CHAT_URL, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
+          headers: await functionAuthHeaders(),
           body: JSON.stringify({ messages: apiMessages, currentPage: location.pathname }),
           signal: controller.signal,
         });
