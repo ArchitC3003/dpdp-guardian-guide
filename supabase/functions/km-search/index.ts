@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { requireUser } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,7 +14,11 @@ serve(async (req) => {
   }
 
   try {
-    const { queryText, industries, maxResults = 5 } = await req.json();
+    const auth = await requireUser(req, corsHeaders);
+    if (!auth.ok) return auth.response;
+
+    const { queryText, industries, maxResults: requestedMax = 5 } = await req.json();
+    const maxResults = Math.min(Math.max(Number(requestedMax) || 5, 1), 20);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

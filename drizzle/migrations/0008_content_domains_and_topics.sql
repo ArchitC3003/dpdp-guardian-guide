@@ -37,7 +37,12 @@ ALTER TABLE public.content_post_topics ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Anyone reads active domains" ON public.content_domains FOR SELECT TO anon, authenticated USING (is_active OR public.is_content_staff(auth.uid()));
 CREATE POLICY "Publishers manage domains" ON public.content_domains FOR ALL TO authenticated
   USING (public.is_content_publisher(auth.uid())) WITH CHECK (public.is_content_publisher(auth.uid()));
-CREATE POLICY "Anyone reads active topics" ON public.content_topics FOR SELECT TO anon, authenticated USING (is_active OR public.is_content_staff(auth.uid()));
+-- Topics are shown to visitors only when a live post is filed under them (same rule as 0007 lookup reads); staff see all.
+CREATE POLICY "Read topics of live content" ON public.content_topics FOR SELECT TO anon, authenticated USING (
+  public.is_content_staff(auth.uid()) OR (is_active AND EXISTS (
+    SELECT 1 FROM public.content_post_topics pt JOIN public.content_posts p ON p.id = pt.post_id
+    WHERE pt.topic_id = content_topics.id
+      AND ((p.status='published' AND COALESCE(p.published_at, now()) <= now()) OR (p.status='scheduled' AND p.scheduled_for IS NOT NULL AND p.scheduled_for <= now())))));
 CREATE POLICY "Publishers manage topics" ON public.content_topics FOR ALL TO authenticated
   USING (public.is_content_publisher(auth.uid())) WITH CHECK (public.is_content_publisher(auth.uid()));
 -- A filing is visible only when its post is visible to the reader (content_posts RLS applies inside the subquery).

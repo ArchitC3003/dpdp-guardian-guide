@@ -1,5 +1,6 @@
 import { DocumentConfig, FRAMEWORKS, DOCUMENT_TYPES, MATURITY_LEVELS } from "./types";
 import { OrgContext } from "./orgContextTypes";
+import { functionAuthHeaders } from "@/lib/edgeAuth";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -39,10 +40,7 @@ export async function streamPolicyChat({
   try {
     const resp = await fetch(CHAT_URL, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-      },
+      headers: await functionAuthHeaders(),
       body: JSON.stringify({
         documentType: docLabel,
         frameworks: frameworkLabels.join(", ") || "NIST CSF 2.0",

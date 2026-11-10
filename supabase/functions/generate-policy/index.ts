@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { requireUser } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -472,6 +473,9 @@ serve(async (req) => {
   }
 
   try {
+    const auth = await requireUser(req, corsHeaders);
+    if (!auth.ok) return auth.response;
+
     const {
       documentType, frameworks, orgName, industry, industryVerticals, orgSize, maturityLevel,
       userMessage, conversationHistory, sdfClassification, geographies,
@@ -498,8 +502,9 @@ serve(async (req) => {
 
     try {
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
-      const sb = createClient(supabaseUrl, supabaseKey);
+      // Service role: prompt config is not readable by anon or ordinary users.
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const sb = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } });
 
       const { data: configData } = await sb
         .from("ai_prompt_config")

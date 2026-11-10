@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { functionAuthHeaders } from "@/lib/edgeAuth";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -42,10 +43,7 @@ export default function AccountSettings() {
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/policy-chat`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
+          headers: await functionAuthHeaders(),
           body: JSON.stringify({
             messages: [{ role: "user", content: "Respond with: CONNECTION_OK" }],
             config: { documentType: "Test", frameworks: "NIST CSF 2.0", industry: "Technology", orgSize: "enterprise", maturity: 2, outputFormat: "docx", classification: "internal" },
