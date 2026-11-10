@@ -57,6 +57,13 @@
       "when": 1794301346619,
       "tag": "0007_scope_learn_lookup_reads",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794302000000,
+      "tag": "0008_content_domains_and_topics",
+      "breakpoints": true
     }
   ]
 }

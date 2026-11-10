@@ -108,7 +108,7 @@ export default function LearnArticle() {
               </div>
             </section>
           )}
-          {post.tags?.length > 0 && <div className="flex flex-wrap gap-2 mt-10">{post.tags.map((t: string) => <Link key={t} to={`/learn/topic/${encodeURIComponent(t)}`} className="text-xs border border-border rounded-full px-3 py-1">{t}</Link>)}</div>}
+          {post.tags?.length > 0 && <div className="flex flex-wrap gap-2 mt-10">{post.tags.map((t: string) => <Link key={t} to={`/learn/topic/${encodeURIComponent(t)}`} className="glass-hover text-xs border border-border rounded-full px-3 py-1">{t}</Link>)}</div>}
         </div>
         <aside className="hidden lg:block">
           <div className="sticky top-24 space-y-6">
@@ -121,7 +121,7 @@ export default function LearnArticle() {
       <section className="max-w-3xl mx-auto px-5 mt-16"><LeadForm sourceSlug={post.slug} /></section>
       {related.length > 0 && (
         <section className="max-w-6xl mx-auto px-5 mt-16"><h2 className="text-2xl font-semibold mb-4" style={{ fontFamily: FONT_DISPLAY }}>Related reading</h2>
-          <div className="grid md:grid-cols-3 gap-5">{related.map((r) => <Link key={r.slug} to={publicPath(r)} className="border border-border rounded-xl p-5 hover:border-primary"><h3 className="font-semibold">{r.title}</h3><p className="text-sm text-muted-foreground mt-2 line-clamp-2">{r.excerpt}</p></Link>)}</div>
+          <div className="grid md:grid-cols-3 gap-5">{related.map((r) => <Link key={r.slug} to={publicPath(r)} className="glass-hover border border-border rounded-xl p-5 bg-card"><h3 className="font-semibold">{r.title}</h3><p className="text-sm text-muted-foreground mt-2 line-clamp-2">{r.excerpt}</p></Link>)}</div>
         </section>
       )}
     </PublicShell>

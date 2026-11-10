@@ -101,3 +101,39 @@ describe("Learn filters", () => {
   });
   it("nav threshold is 5", () => expect(LEARN_NAV_MIN_ITEMS).toBe(5));
 });
+
+import { DEFAULT_DOMAINS, EMPTY_FILING, MAX_TOPICS_PER_POST, filingError, setPrimaryTopic, toggleTopic } from "./content";
+
+describe("Learn repository filing", () => {
+  it("ships ten numbered domains with unique codes and non-empty topic lists", () => {
+    expect(DEFAULT_DOMAINS.map((d) => d.number)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(new Set(DEFAULT_DOMAINS.map((d) => d.code)).size).toBe(10);
+    expect(DEFAULT_DOMAINS.every((d) => d.topics.length > 0 && new Set(d.topics).size === d.topics.length)).toBe(true);
+  });
+  it("makes the first topic the home and cross-lists the rest", () => {
+    const f = toggleTopic(toggleTopic(EMPTY_FILING, "consent"), "privacy-notices");
+    expect(f).toEqual({ topicIds: ["consent", "privacy-notices"], primaryId: "consent" });
+  });
+  it("promotes the next topic when the home is removed, and clears when none are left", () => {
+    const f = toggleTopic({ topicIds: ["a", "b"], primaryId: "a" }, "a");
+    expect(f).toEqual({ topicIds: ["b"], primaryId: "b" });
+    expect(toggleTopic(f, "b")).toEqual(EMPTY_FILING);
+  });
+  it("only lets a selected topic become the home", () => {
+    const f = { topicIds: ["a", "b"], primaryId: "a" };
+    expect(setPrimaryTopic(f, "b").primaryId).toBe("b");
+    expect(setPrimaryTopic(f, "z")).toBe(f);
+  });
+  it("caps the number of topics per post", () => {
+    const ids = Array.from({ length: MAX_TOPICS_PER_POST }, (_, i) => `t${i}`);
+    const full = ids.reduce(toggleTopic, EMPTY_FILING);
+    expect(toggleTopic(full, "extra")).toBe(full);
+  });
+  it("requires a topic before a Learn post goes live, but not for drafts or landing pages", () => {
+    expect(filingError("article", "published", EMPTY_FILING)).toBeTruthy();
+    expect(filingError("video", "scheduled", EMPTY_FILING)).toBeTruthy();
+    expect(filingError("article", "draft", EMPTY_FILING)).toBeNull();
+    expect(filingError("landing", "published", EMPTY_FILING)).toBeNull();
+    expect(filingError("article", "published", { topicIds: ["a"], primaryId: "a" })).toBeNull();
+  });
+});

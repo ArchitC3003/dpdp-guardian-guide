@@ -10,3 +10,5 @@
 - Sitemap/RSS/llms entries for posts are generated live by the `content-feed` function so publishing never needs a rebuild.
 - Presentation/video posts store their file in `content_posts.media_*` (private `content-media` signed links); upload limits live in `validateMediaFile` in `src/lib/content.ts` so editor and tests share one rule.
 - Learn framework vocabulary lives in the `content_frameworks` table (publishers add values in the editor); `content_posts.frameworks` is validated by trigger and filters match exact values only — never substring-match frameworks.
+- The Learn repository is ten fixed domains (`content_domains`) holding topics (`content_topics`); a post has one home topic plus cross-listings in `content_post_topics`, written only by `rpc_save_content_post` from `topic_ids` / `primary_topic_id` in the payload (max 6, mirrored by `MAX_TOPICS_PER_POST`). Filing rules live in `src/lib/content.ts` (`toggleTopic`, `filingError`); never name the source framework for the ten domains in user-facing text.
+- Public Learn surfaces use the shared `BrandLogo` and the `glass-hover` / `glow-hover` classes in `src/index.css` for hover and focus states.

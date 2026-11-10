@@ -138,3 +138,42 @@ export function matchesLearnFilters(r: Filterable, format: FormatFilter, framewo
   const qOk = !needle || [r.title, r.excerpt || "", ...(r.tags || [])].join(" ").toLowerCase().includes(needle);
   return fmtOk && fwOk && qOk;
 }
+
+/** Starter repository structure: ten privacy domains, each with topics. The live list is the content_domains / content_topics tables, so publishers can add topics without code changes. */
+export type DomainSeed = { code: string; number: number; name: string; topics: string[] };
+export const DEFAULT_DOMAINS: DomainSeed[] = [
+  { code: "management", number: 1, name: "Management", topics: ["Governance", "Accountability", "DPO", "Policies", "Training", "Risk management"] },
+  { code: "notice", number: 2, name: "Notice", topics: ["Transparency", "Privacy notices", "Layered notices", "Communication"] },
+  { code: "choice-consent", number: 3, name: "Choice and Consent", topics: ["Consent", "Lawful basis", "Preferences", "Withdrawal", "Objection"] },
+  { code: "collection", number: 4, name: "Collection", topics: ["Purpose limitation", "Minimisation", "Collection restrictions", "Sensitive data"] },
+  { code: "use-retention-disposal", number: 5, name: "Use, Retention and Disposal", topics: ["Processing limitations", "Secondary use", "Retention", "Deletion", "Anonymisation"] },
+  { code: "access", number: 6, name: "Access", topics: ["Access rights", "Correction", "Erasure", "Portability", "Restriction", "Grievance"] },
+  { code: "third-party-disclosure", number: 7, name: "Third-party Disclosure", topics: ["Processors", "Controllers", "Vendors", "Contracts", "Subprocessors", "Transfers"] },
+  { code: "security", number: 8, name: "Security for Privacy", topics: ["Security safeguards", "Access controls", "Encryption", "Breaches", "Incident response"] },
+  { code: "quality", number: 9, name: "Quality", topics: ["Accuracy", "Completeness", "Data integrity", "Validation"] },
+  { code: "monitoring-enforcement", number: 10, name: "Monitoring and Enforcement", topics: ["Audits", "Assessments", "Complaints", "Regulatory cooperation", "Accountability monitoring"] },
+];
+/** Mirrors the limit enforced by rpc_save_content_post. */
+export const MAX_TOPICS_PER_POST = 6;
+export const domainNumber = (n: number) => String(n).padStart(2, "0");
+
+/** A post's filing: every topic it is listed under, and the one primary topic that is its home. */
+export type TopicFiling = { topicIds: string[]; primaryId: string | null };
+export const EMPTY_FILING: TopicFiling = { topicIds: [], primaryId: null };
+/** Adds or removes a topic. The first topic added becomes primary; removing the primary promotes the next one. */
+export function toggleTopic(f: TopicFiling, id: string): TopicFiling {
+  if (f.topicIds.includes(id)) {
+    const topicIds = f.topicIds.filter((x) => x !== id);
+    return { topicIds, primaryId: f.primaryId === id ? topicIds[0] ?? null : f.primaryId };
+  }
+  if (f.topicIds.length >= MAX_TOPICS_PER_POST) return f;
+  return { topicIds: [...f.topicIds, id], primaryId: f.primaryId ?? id };
+}
+export function setPrimaryTopic(f: TopicFiling, id: string): TopicFiling {
+  return f.topicIds.includes(id) ? { ...f, primaryId: id } : f;
+}
+/** Learn posts must have a home topic before they go live. Landing pages sit outside the repository. */
+export function filingError(contentType: string, status: string, f: TopicFiling): string | null {
+  if (contentType === "landing" || (status !== "published" && status !== "scheduled")) return null;
+  return f.topicIds.length === 0 ? "File this under at least one topic before it goes live" : null;
+}

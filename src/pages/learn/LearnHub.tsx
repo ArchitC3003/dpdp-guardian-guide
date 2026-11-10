@@ -64,16 +64,16 @@ export default function LearnHub() {
         <div className="mt-4 flex flex-wrap gap-2 items-center">
           <span className="font-mono text-xs uppercase text-muted-foreground w-20">Format</span>
           <div role="group" aria-label="Format" className="flex flex-wrap gap-1">{FORMAT_FILTERS.map(([k, l]) => (
-            <button key={k} type="button" aria-pressed={kind === k} onClick={() => setKind(k)} className={`text-xs rounded-full px-3 py-1 border ${kind === k ? "border-primary bg-primary/10 text-primary" : "border-border"}`}>{l}</button>))}</div>
+            <button key={k} type="button" aria-pressed={kind === k} onClick={() => setKind(k)} className={`glass-hover text-xs rounded-full px-3 py-1 border ${kind === k ? "border-primary bg-primary/10 text-primary" : "border-border"}`}>{l}</button>))}</div>
         </div>
         <div className="mt-2 flex flex-wrap gap-2 items-center">
           <span className="font-mono text-xs uppercase text-muted-foreground w-20">Framework</span>
           <div role="group" aria-label="Framework" className="flex flex-wrap gap-1">{FRAMEWORK_FILTERS.map((k) => (
-            <button key={k} type="button" aria-pressed={fw === k} onClick={() => setFw(k)} className={`text-xs rounded-full px-3 py-1 border ${fw === k ? "border-primary bg-primary/10 text-primary" : "border-border"}`}>{k}</button>))}</div>
+            <button key={k} type="button" aria-pressed={fw === k} onClick={() => setFw(k)} className={`glass-hover text-xs rounded-full px-3 py-1 border ${fw === k ? "border-primary bg-primary/10 text-primary" : "border-border"}`}>{k}</button>))}</div>
         </div>
         <div className="mt-4 flex flex-wrap gap-3 items-center">
           {tag && <Link to="/learn" className="text-sm text-primary">All topics</Link>}
-          {allTags.map((t) => <Link key={t} to={`/learn/topic/${encodeURIComponent(t)}`} aria-current={t === tag ? "page" : undefined} className={`text-xs border rounded-full px-3 py-1 hover:border-primary ${t === tag ? "border-primary text-primary" : "border-border"}`}>{t}</Link>)}
+          {allTags.map((t) => <Link key={t} to={`/learn/topic/${encodeURIComponent(t)}`} aria-current={t === tag ? "page" : undefined} className={`glass-hover text-xs border rounded-full px-3 py-1 hover:border-primary ${t === tag ? "border-primary text-primary" : "border-border"}`}>{t}</Link>)}
         </div>
       </section>
 
@@ -88,7 +88,7 @@ export default function LearnHub() {
         ) : (
           <>
             {featured && (
-              <Link to={publicPath(featured)} className="grid md:grid-cols-2 gap-8 border border-border rounded-2xl overflow-hidden bg-card hover:border-primary transition-colors mb-12">
+              <Link to={publicPath(featured)} className="glass-hover grid md:grid-cols-2 gap-8 border border-border rounded-2xl overflow-hidden bg-card mb-12">
                 {featured.cover_image_url ? <img src={featured.cover_image_url} alt="" className="w-full h-72 object-cover" /> : <div className="h-72 bg-gradient-to-br from-primary/30 to-accent/20" />}
                 <div className="p-8 flex flex-col justify-center">
                   <span className="font-mono text-xs text-primary uppercase">{featured.category || "Featured"}</span>
@@ -100,7 +100,7 @@ export default function LearnHub() {
             )}
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {rest.map((r) => (
-                <Link key={r.id} to={publicPath(r)} className="border border-border rounded-xl overflow-hidden bg-card hover:border-primary transition-colors flex flex-col">
+                <Link key={r.id} to={publicPath(r)} className="glass-hover border border-border rounded-xl overflow-hidden bg-card flex flex-col">
                   {r.cover_image_url ? <img src={r.cover_image_url} alt="" loading="lazy" className="h-44 w-full object-cover" /> : <div className="h-2 bg-primary/40" />}
                   <div className="p-5 flex-1 flex flex-col">
                     <span className="font-mono text-[11px] text-primary uppercase">{TYPE_BADGES[r.content_type as ContentType] || "Blog"}{r.category ? ` · ${r.category}` : ""}</span>
