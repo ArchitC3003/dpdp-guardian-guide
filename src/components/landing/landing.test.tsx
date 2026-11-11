@@ -4,6 +4,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter, Routes, Route, useLocation } from "react-router-dom";
 import { STAGES, stageDestination, isUpcoming } from "./stages";
 import { trailPath, ridgePath, RIDGES } from "./landscape";
+import { clearBuildIntent, postSignInPath } from "@/lib/buildIntent";
 
 let session: unknown = null;
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ session }) }));
@@ -80,6 +81,16 @@ describe("LandingPage", () => {
     await mount();
     fireEvent.click(screen.getByRole("button", { name: "Draft a policy" }));
     expect(screen.getByTestId("where").textContent).toBe("/auth");
+    expect(postSignInPath()).toBe("/policy-sop-builder");
+    clearBuildIntent();
+  });
+  it("remembers a gated stage so sign-in lands there", async () => {
+    session = null;
+    await mount();
+    fireEvent.click(screen.getByRole("button", { name: "Plan implementation" }));
+    expect(screen.getByTestId("where").textContent).toBe("/auth");
+    expect(postSignInPath()).toBe("/execute");
+    clearBuildIntent();
   });
   it("opens the Learn hub from Know without sign-in", async () => {
     session = null;

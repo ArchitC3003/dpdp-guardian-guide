@@ -9,6 +9,7 @@ import { WhySection } from "@/components/landing/WhySection";
 import { Coverage } from "@/components/landing/Coverage";
 import { ClosingDoors, LandingFooter } from "@/components/landing/ClosingDoors";
 import { stageDestination, type Stage } from "@/components/landing/stages";
+import { BUILDER_PATH, clearBuildIntent, saveBuildIntent, saveRouteIntent } from "@/lib/buildIntent";
 import "@/styles/landing.css";
 
 export default function LandingPage() {
@@ -17,10 +18,19 @@ export default function LandingPage() {
   const journey = useRef<StageJourneyHandle>(null);
 
   /** "Start an assessment": signed-in visitors go to their assessments, everyone else signs in first. */
-  const goAuth = () => navigate(session ? "/assessments" : "/auth");
+  /** Remember where a signed-out visitor was heading, so sign-in lands there and not on the dashboard. */
+  const remember = (route?: string) => {
+    if (session) return;
+    clearBuildIntent();
+    if (route === BUILDER_PATH) saveBuildIntent();
+    else saveRouteIntent(route);
+  };
+  const goAuth = () => { remember("/assessments"); navigate(session ? "/assessments" : "/auth"); };
   const onAction = (stage: Stage) => {
     const to = stageDestination(stage, !!session);
-    if (to) navigate(to);
+    if (!to) return;
+    if (!stage.open) remember(stage.route);
+    navigate(to);
   };
 
   return (
