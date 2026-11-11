@@ -34,7 +34,22 @@ serve(async (req) => {
     const auth = await requireUser(req, corsHeaders);
     if (!auth.ok) return auth.response;
 
-    const { messages, currentPage } = await req.json();
+    const body = await req.json().catch(() => null);
+    const currentPage = typeof body?.currentPage === "string" ? body.currentPage.slice(0, 200) : undefined;
+    const rawMessages = Array.isArray(body?.messages) ? body.messages : null;
+    if (!rawMessages || rawMessages.length === 0 || rawMessages.length > 50) {
+      return new Response(JSON.stringify({ error: "Invalid messages." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    // Only user/assistant turns are accepted; caller-supplied system or tool roles are rejected.
+    const messages: { role: "user" | "assistant"; content: string }[] = [];
+    for (const m of rawMessages) {
+      if (!m || (m.role !== "user" && m.role !== "assistant") || typeof m.content !== "string" || m.content.length > 8000) {
+        return new Response(JSON.stringify({ error: "Invalid messages." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      messages.push({ role: m.role, content: m.content });
+    }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
