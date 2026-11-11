@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { builderPath, clearBuildIntent, isBuilderDocumentType, postSignInPath, saveBuildIntent } from "./buildIntent";
+import { builderPath, clearBuildIntent, isBuilderDocumentType, postSignInPath, saveBuildIntent, saveRouteIntent } from "./buildIntent";
 
 describe("build intent from Learn to the builder", () => {
   beforeEach(() => sessionStorage.clear());
@@ -25,6 +25,29 @@ describe("build intent from Learn to the builder", () => {
   });
   it("forgets the choice once cleared", () => {
     saveBuildIntent("data-privacy-policy"); clearBuildIntent();
+    expect(postSignInPath()).toBe("/dashboard");
+  });
+});
+
+describe("route intent", () => {
+  it("resumes an allow-listed stage after sign-in", () => {
+    clearBuildIntent(); saveRouteIntent("/assessments", 1000);
+    expect(postSignInPath(2000)).toBe("/assessments");
+  });
+  it("ignores routes that are not allow-listed", () => {
+    clearBuildIntent(); saveRouteIntent("https://evil.example/x"); saveRouteIntent("/admin/ai-config");
+    expect(postSignInPath()).toBe("/dashboard");
+    sessionStorage.setItem("privcybhub_route_intent", JSON.stringify({ route: "/settings", at: Date.now() }));
+    expect(postSignInPath()).toBe("/dashboard");
+  });
+  it("expires", () => {
+    clearBuildIntent(); saveRouteIntent("/execute", 0);
+    expect(postSignInPath(16 * 60 * 1000)).toBe("/dashboard");
+  });
+  it("gives way to a build intent and is cleared with it", () => {
+    clearBuildIntent(); saveRouteIntent("/execute"); saveBuildIntent(null);
+    expect(postSignInPath()).toBe("/policy-sop-builder");
+    clearBuildIntent();
     expect(postSignInPath()).toBe("/dashboard");
   });
 });

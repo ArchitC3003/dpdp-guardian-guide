@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Cog } from "lucide-react";
+import { WheelMark } from "@/components/BrandLogo";
 import { Separator } from "@/components/ui/separator";
 
 function PasswordStrength({ password }: { password: string }) {
@@ -113,7 +113,7 @@ export default function Auth() {
       <Card className="w-full max-w-md border-border bg-card">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto flex items-center gap-2">
-            <Cog className="h-8 w-8 text-primary" />
+            <WheelMark size={32} />
             <span className="text-2xl font-bold text-gradient">PrivcybHub</span>
           </div>
           <CardTitle className="text-xl">{isLogin ? "Welcome back" : "Create account"}</CardTitle>

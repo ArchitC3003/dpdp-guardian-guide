@@ -1,3 +1,4 @@
+import { WheelMark } from "@/components/BrandLogo";
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -102,7 +103,7 @@ export function AppSidebar() {
   const renderNavItem = (item: NavItem) => (
     <SidebarMenuItem key={item.title}>
       <SidebarMenuButton asChild>
-        <NavLink to={item.url} end={item.url === "/dashboard" || item.url === "/assessments"} className="hover:bg-sidebar-accent" activeClassName="bg-sidebar-accent text-primary font-medium">
+        <NavLink to={item.url} end={item.url === "/dashboard" || item.url === "/assessments"} className="hover:bg-sidebar-accent" activeClassName="bg-sidebar-accent text-sidebar-primary font-medium">
           <item.icon className="h-4 w-4 mr-2 shrink-0 self-start mt-0.5" />
           {!collapsed && (
             <div className="flex flex-col">
@@ -129,11 +130,11 @@ export function AppSidebar() {
       <SidebarContent>
         {/* Logo */}
         <div className="p-4 flex items-center gap-2 border-b border-border">
-          <Cog className="h-7 w-7 text-primary shrink-0" />
+          <span className="shrink-0"><WheelMark size={28} color="hsl(var(--sidebar-primary))" /></span>
           {!collapsed && (
             <div className="flex items-center gap-2">
               <span className="font-bold text-lg text-gradient">PrivcybHub</span>
-              <span className="text-[10px] font-mono bg-primary/20 text-primary px-1.5 py-0.5 rounded">v3.0</span>
+              <span className="text-[10px] font-mono bg-sidebar-primary/20 text-sidebar-primary px-1.5 py-0.5 rounded">v3.0</span>
             </div>
           )}
         </div>
@@ -157,7 +158,7 @@ export function AppSidebar() {
                       <NavLink
                         to={`/assessment/${assessmentId}/${phase.url}`}
                         className="hover:bg-sidebar-accent"
-                        activeClassName="bg-sidebar-accent text-primary font-medium"
+                        activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
                       >
                         <phase.icon className="h-4 w-4 mr-2 shrink-0" />
                         {!collapsed && <span className="text-sm">{phase.title}</span>}

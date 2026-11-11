@@ -23,11 +23,29 @@ export function saveBuildIntent(documentType?: string | null) {
   try { sessionStorage.setItem(KEY, isBuilderDocumentType(documentType) ? documentType : "any"); } catch { /* storage unavailable: sign-in still works */ }
 }
 export function clearBuildIntent() {
-  try { sessionStorage.removeItem(KEY); } catch { /* nothing to clear */ }
+  try { sessionStorage.removeItem(KEY); sessionStorage.removeItem(ROUTE_KEY); } catch { /* nothing to clear */ }
 }
-/** Where to go after sign-in: the builder if the visitor asked to build something, otherwise the dashboard. */
-export function postSignInPath(): string {
+
+/**
+ * Carries "take me to this stage" from the landing page through sign-in. Only the routes listed here are ever
+ * stored or acted on, and the choice expires, so a stale value cannot redirect a later sign-in.
+ */
+const ROUTE_KEY = "privcybhub_route_intent";
+const ROUTE_TTL_MS = 15 * 60 * 1000;
+export const RESUMABLE_ROUTES = ["/assessments", "/execute"];
+export function saveRouteIntent(route: string | null | undefined, now = Date.now()) {
+  if (!route || !RESUMABLE_ROUTES.includes(route)) return;
+  try { sessionStorage.setItem(ROUTE_KEY, JSON.stringify({ route, at: now })); } catch { /* storage unavailable: sign-in still works */ }
+}
+function routeIntent(now: number): string | null {
+  try {
+    const v = JSON.parse(sessionStorage.getItem(ROUTE_KEY) || "null");
+    return v && RESUMABLE_ROUTES.includes(v.route) && typeof v.at === "number" && now - v.at >= 0 && now - v.at < ROUTE_TTL_MS ? v.route : null;
+  } catch { return null; }
+}
+/** Where to go after sign-in: the builder if the visitor asked to build something, a stage they chose on the landing page, otherwise the dashboard. */
+export function postSignInPath(now = Date.now()): string {
   let v: string | null = null;
-  try { v = sessionStorage.getItem(KEY); } catch { /* fall through to the dashboard */ }
-  return v ? builderPath(v) : "/dashboard";
+  try { v = sessionStorage.getItem(KEY); } catch { /* fall through */ }
+  return v ? builderPath(v) : routeIntent(now) ?? "/dashboard";
 }

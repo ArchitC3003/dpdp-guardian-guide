@@ -17,7 +17,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
           <BrandLogo />
           <div className="flex items-center gap-2 text-[13px]">
             {showLearn && <Link to="/learn" className="glass-hover rounded-md px-3.5 py-2.5 font-medium text-muted-foreground hover:text-foreground">Learn</Link>}
-            <Link to="/auth" className="glow-hover rounded-[7px] bg-[#047857] text-white px-[18px] py-[9px] font-semibold">Sign in</Link>
+            <Link to="/auth" className="glow-hover rounded-[7px] bg-primary text-primary-foreground px-[18px] py-[9px] font-semibold">Sign in</Link>
           </div>
         </nav>
       </header>

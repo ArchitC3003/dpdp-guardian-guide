@@ -13,7 +13,7 @@ import {
 } from "@/hooks/useThemePreferences";
 
 const ACCENT_OPTIONS: { key: AccentTheme; label: string }[] = [
-  { key: "teal", label: "Teal" },
+  { key: "teal", label: "Pine" },
   { key: "ocean", label: "Ocean Blue" },
   { key: "purple", label: "Royal Purple" },
   { key: "rose", label: "Rose" },
