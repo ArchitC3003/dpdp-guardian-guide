@@ -37,7 +37,18 @@ serve(async (req) => {
     const auth = await requireUser(req, corsHeaders);
     if (!auth.ok) return auth.response;
 
-    const { messages, config } = await req.json();
+    const body = await req.json().catch(() => null);
+    const config = body?.config;
+    const rawMessages = Array.isArray(body?.messages) ? body.messages : null;
+    const badRequest = () => new Response(JSON.stringify({ error: "Invalid messages." }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (!rawMessages || rawMessages.length === 0 || rawMessages.length > 50) return badRequest();
+    // Only user/assistant turns are accepted; caller-supplied system or tool roles are rejected.
+    const messages: { role: "user" | "assistant"; content: string }[] = [];
+    for (const m of rawMessages) {
+      if (!m || (m.role !== "user" && m.role !== "assistant") || typeof m.content !== "string" || m.content.length > 20000) return badRequest();
+      messages.push({ role: m.role, content: m.content });
+    }
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
