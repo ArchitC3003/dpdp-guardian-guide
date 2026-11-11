@@ -765,6 +765,39 @@ export type Database = {
           },
         ]
       }
+      content_artefacts: {
+        Row: {
+          builder_type: string | null
+          code: string
+          created_at: string
+          description: string | null
+          display_order: number
+          is_active: boolean
+          kind: string
+          label: string
+        }
+        Insert: {
+          builder_type?: string | null
+          code: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          is_active?: boolean
+          kind?: string
+          label: string
+        }
+        Update: {
+          builder_type?: string | null
+          code?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          is_active?: boolean
+          kind?: string
+          label?: string
+        }
+        Relationships: []
+      }
       content_authors: {
         Row: {
           avatar_url: string | null
@@ -850,6 +883,7 @@ export type Database = {
         Row: {
           code: string
           created_at: string
+          description: string | null
           display_order: number
           is_active: boolean
           label: string
@@ -857,6 +891,7 @@ export type Database = {
         Insert: {
           code: string
           created_at?: string
+          description?: string | null
           display_order?: number
           is_active?: boolean
           label: string
@@ -864,6 +899,7 @@ export type Database = {
         Update: {
           code?: string
           created_at?: string
+          description?: string | null
           display_order?: number
           is_active?: boolean
           label?: string
@@ -937,6 +973,7 @@ export type Database = {
         Row: {
           ai_summary: string | null
           allow_download: boolean
+          artefacts: string[]
           author_id: string | null
           author_name: string | null
           blocks: Json
@@ -978,6 +1015,7 @@ export type Database = {
         Insert: {
           ai_summary?: string | null
           allow_download?: boolean
+          artefacts?: string[]
           author_id?: string | null
           author_name?: string | null
           blocks?: Json
@@ -1019,6 +1057,7 @@ export type Database = {
         Update: {
           ai_summary?: string | null
           allow_download?: boolean
+          artefacts?: string[]
           author_id?: string | null
           author_name?: string | null
           blocks?: Json
@@ -2869,6 +2908,7 @@ export type Database = {
         Returns: {
           ai_summary: string | null
           allow_download: boolean
+          artefacts: string[]
           author_id: string | null
           author_name: string | null
           blocks: Json
@@ -2919,6 +2959,7 @@ export type Database = {
         Returns: {
           ai_summary: string | null
           allow_download: boolean
+          artefacts: string[]
           author_id: string | null
           author_name: string | null
           blocks: Json

@@ -1,0 +1,1 @@
+-- Applies pending 0010_content_artefacts_and_framework_descriptions unchanged.

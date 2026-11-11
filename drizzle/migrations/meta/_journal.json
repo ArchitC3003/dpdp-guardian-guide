@@ -78,6 +78,13 @@
       "when": 1794380000000,
       "tag": "0010_content_artefacts_and_framework_descriptions",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794383211378,
+      "tag": "0011_apply_pending_content_artefacts",
+      "breakpoints": true
     }
   ]
 }
