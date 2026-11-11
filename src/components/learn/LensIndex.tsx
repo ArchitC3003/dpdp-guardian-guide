@@ -16,7 +16,7 @@ export type LensItem = {
   posts: { slug: string; title: string; content_type: string }[];
   moreLabel: string;
   emptyText: string;
-  cta?: { label: string; href: string };
+  cta?: { label: string; href: string; onClick?: () => void };
 };
 
 export function FormatGlyph({ type, className = "h-4 w-4" }: { type: string; className?: string }) {
@@ -129,7 +129,7 @@ export function LensIndex({ items, label }: { items: LensItem[]; label: string }
           ) : (
             <p className="mt-7 text-sm text-foreground/80 max-w-md">{cur.emptyText} <a href="#updates" className="text-primary underline underline-offset-4">Get an email when the first piece lands.</a></p>
           )}
-          {cur.cta && <div className="mt-6"><Link to={cur.cta.href} className="lrn-cta">{cur.cta.label}</Link></div>}
+          {cur.cta && <div className="mt-6"><Link to={cur.cta.href} onClick={cur.cta.onClick} className="lrn-cta">{cur.cta.label}</Link></div>}
         </section>
       </div>
     </div>

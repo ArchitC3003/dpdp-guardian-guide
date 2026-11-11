@@ -3,6 +3,8 @@ import { Link, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { saveBuildIntent } from "@/lib/buildIntent";
 import { PublicShell } from "@/components/learn/PublicShell";
 import { LeadForm } from "@/components/learn/LeadForm";
 import { FormatGlyph, LensIndex, type LensItem } from "@/components/learn/LensIndex";
@@ -33,6 +35,7 @@ export default function LearnHub() {
   const taxonomy = useContentTaxonomy();
   const { artefacts, available: artefactsAvailable } = useArtefacts();
   const hero = useRef<HTMLDivElement>(null);
+  const { session } = useAuth();
 
   useEffect(() => {
     supabase.from("content_frameworks").select("*").eq("is_active", true).order("display_order")
@@ -76,8 +79,9 @@ export default function LearnHub() {
     key: a.code, label: a.label, href: artefactPath(a.code), blurb: a.description || `A ${a.kind.toLowerCase()} you can prepare in PrivcybHub.`,
     chips: [], note: `${a.kind}. Read how it works here, then prepare your own.`,
     posts: postsCarrying(rows, "artefacts", a.code), moreLabel: `More on the ${a.label}`, emptyText: "No guide is published for this yet.",
-    cta: { label: "Sign in to build it", href: "/auth" },
-  })), [artefacts, rows]);
+    // /auth sends a signed-in visitor straight on, so one link serves both cases.
+    cta: { label: session ? "Build it now" : "Sign in to build it", href: "/auth", onClick: () => saveBuildIntent(a.builder_type) },
+  })), [artefacts, rows, session]);
   const modes: [Mode, string, LensItem[]][] = [["domains", "Domains", domainItems], ["frameworks", "Regulations and standards", frameworkItems],
     ...(artefactsAvailable && artefactItems.length ? [["artefacts", "Artefacts to build", artefactItems] as [Mode, string, LensItem[]]] : [])];
   const current = modes.find(([m]) => m === mode) || modes[0];
@@ -144,7 +148,7 @@ export default function LearnHub() {
               {scopeDomain.chips.map((c) => <li key={c.href}><Link to={c.href} aria-current={c.href === scopeTopic?.href ? "page" : undefined} className="lrn-chip">{c.label}</Link></li>)}
             </ul>
           )}
-          {scopeArtefact?.cta && <div className="mt-7"><Link to={scopeArtefact.cta.href} className="lrn-cta">{scopeArtefact.cta.label}</Link></div>}
+          {scopeArtefact?.cta && <div className="mt-7"><Link to={scopeArtefact.cta.href} onClick={scopeArtefact.cta.onClick} className="lrn-cta">{scopeArtefact.cta.label}</Link></div>}
         </section>
 
         {isHub ? (

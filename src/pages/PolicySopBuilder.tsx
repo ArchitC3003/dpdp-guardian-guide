@@ -1,4 +1,6 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { builderDocumentLabel, clearBuildIntent, isBuilderDocumentType } from "@/lib/buildIntent";
 import { Bot, FileText, Shield, Sparkles, Lock, ClipboardList } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -30,7 +32,15 @@ const DEFAULT_CONFIG: DocumentConfig = {
 };
 
 export default function PolicySopBuilder() {
-  const [config, setConfig] = useState<DocumentConfig>(DEFAULT_CONFIG);
+  // A visitor who chose an artefact on a Learn page arrives with its document type in the address.
+  const [searchParams] = useSearchParams();
+  const requestedType = searchParams.get("documentType");
+  const [config, setConfig] = useState<DocumentConfig>(() => (isBuilderDocumentType(requestedType) ? { ...DEFAULT_CONFIG, documentType: requestedType } : DEFAULT_CONFIG));
+  useEffect(() => {
+    clearBuildIntent();
+    const label = builderDocumentLabel(requestedType);
+    if (label) toast.success(`Ready to build: ${label}`, { description: "Chosen on Learn. Change the document type below if you need another." });
+  }, [requestedType]);
   const [orgContext, setOrgContext] = useState<OrgContext>(DEFAULT_ORG_CONTEXT);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);

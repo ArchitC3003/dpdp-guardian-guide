@@ -16,6 +16,8 @@ CREATE TABLE public.content_artefacts (
   label text NOT NULL,
   kind text NOT NULL DEFAULT 'Template',
   description text,
+  -- Document type the Policy and SOP Builder opens on for this artefact (a value from its DOCUMENT_TYPES list); null opens the builder without a preset.
+  builder_type text,
   display_order integer NOT NULL DEFAULT 100,
   is_active boolean NOT NULL DEFAULT true,
   created_at timestamptz NOT NULL DEFAULT now()
@@ -28,16 +30,21 @@ CREATE POLICY "Anyone reads active artefacts" ON public.content_artefacts FOR SE
 CREATE POLICY "Publishers insert artefacts" ON public.content_artefacts FOR INSERT TO authenticated WITH CHECK (public.is_content_publisher(auth.uid()));
 CREATE POLICY "Publishers update artefacts" ON public.content_artefacts FOR UPDATE TO authenticated USING (public.is_content_publisher(auth.uid())) WITH CHECK (public.is_content_publisher(auth.uid()));
 CREATE POLICY "Publishers delete artefacts" ON public.content_artefacts FOR DELETE TO authenticated USING (public.is_content_publisher(auth.uid()));
-INSERT INTO public.content_artefacts (code, label, kind, description, display_order) VALUES
- ('privacy-notice','Privacy notice','Notice','Tells people what personal data you collect, why, and how to exercise their rights.',10),
- ('consent-management-policy','Consent management policy','Policy','Organisation-wide rules for requesting, recording and reviewing consent.',20),
- ('consent-withdrawal-sop','Consent withdrawal SOP','SOP','Step-by-step procedure for receiving, actioning and recording withdrawals.',30),
- ('rights-request-sop','Rights request SOP','SOP','How requests to access, correct or erase personal data are handled and tracked.',40),
- ('grievance-redressal-procedure','Grievance redressal procedure','Procedure','How complaints are received, answered and escalated.',50),
- ('retention-schedule','Retention schedule','Schedule','How long each kind of personal data is kept, and how it is removed.',60),
- ('data-processing-agreement','Data processing agreement','Agreement','Contract terms that bind a processor handling personal data for you.',70),
- ('breach-response-plan','Breach response plan','Plan','Who does what, and who is told, when personal data is compromised.',80),
- ('dpia','Data protection impact assessment','Assessment','A structured review of the risks a processing activity creates for people.',90);
+-- Starter list mirrors what the Policy and SOP Builder can produce today, so every artefact shown has somewhere to be built.
+INSERT INTO public.content_artefacts (code, label, kind, builder_type, description, display_order) VALUES
+ ('data-privacy-policy','Data privacy policy','Policy','data-privacy-policy','How the organisation collects, uses, shares and protects personal data.',10),
+ ('info-security-policy','Information security policy','Policy','info-security-policy','The rules and responsibilities that keep information secure.',20),
+ ('data-classification-policy','Data classification policy','Policy','data-classification-policy','How data is labelled by sensitivity, and how each class is handled.',30),
+ ('access-control-policy','Access control policy','Policy','access-control-policy','Who may access which systems and data, and how access is approved.',40),
+ ('acceptable-use-policy','Acceptable use policy','Policy','acceptable-use-policy','What staff may and may not do with company systems and data.',50),
+ ('vendor-risk-policy','Vendor risk management policy','Policy','vendor-risk-policy','How vendors and processors are assessed, contracted and monitored.',60),
+ ('incident-response-policy','Incident response policy','Policy','incident-response-policy','How security and privacy incidents are identified, escalated and closed.',70),
+ ('business-continuity-policy','Business continuity policy','Policy','business-continuity-policy','How critical services keep running through a disruption.',80),
+ ('sop-breach-notification','Data breach notification SOP','SOP','sop-breach-notification','Steps for telling regulators and affected people about a personal data breach.',90),
+ ('sop-incident-response','Incident response SOP','SOP','sop-incident-response','Step-by-step handling of an incident from detection to review.',100),
+ ('sop-access-provisioning','Access provisioning SOP','SOP','sop-access-provisioning','Steps for granting, changing and removing access.',110),
+ ('sop-third-party-onboarding','Third party onboarding SOP','SOP','sop-third-party-onboarding','Steps for bringing a new vendor or processor on board.',120),
+ ('sop-vuln-management','Vulnerability management SOP','SOP','sop-vuln-management','Steps for finding, ranking and fixing vulnerabilities.',130);
 
 ALTER TABLE public.content_posts ADD COLUMN artefacts text[] NOT NULL DEFAULT '{}';
 CREATE OR REPLACE FUNCTION public.content_posts_validate_artefacts() RETURNS trigger LANGUAGE plpgsql SET search_path = public AS $$

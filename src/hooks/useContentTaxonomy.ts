@@ -48,13 +48,13 @@ export async function loadAllFilings() {
   return error ? null : ((data || []) as { post_id: string; topic_id: string; is_primary: boolean }[]);
 }
 
-export type Artefact = { code: string; label: string; kind: string; description: string | null };
+export type Artefact = { code: string; label: string; kind: string; description: string | null; builder_type: string | null };
 /** Artefacts readers can build. `available` is false when the table is not in the database yet. */
 export function useArtefacts() {
   const [artefacts, setArtefacts] = useState<Artefact[]>([]);
   const [available, setAvailable] = useState(false);
   const reload = useCallback(async () => {
-    const { data, error } = await db.from("content_artefacts").select("code,label,kind,description").eq("is_active", true).order("display_order").order("label");
+    const { data, error } = await db.from("content_artefacts").select("code,label,kind,description,builder_type").eq("is_active", true).order("display_order").order("label");
     if (error) { setAvailable(false); return; }
     setArtefacts(data || []); setAvailable(true);
   }, []);

@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { postSignInPath } from "@/lib/buildIntent";
 import { AppLayout } from "@/components/AppLayout";
 import { CookieConsentBanner } from "@/components/consent/CookieConsentBanner";
 import LandingPage from "./pages/LandingPage";
@@ -68,7 +69,7 @@ function ProtectedRoutes() {
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth();
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">Loading...</div>;
-  if (session) return <Navigate to="/dashboard" replace />;
+  if (session) return <Navigate to={postSignInPath()} replace />;
   return <>{children}</>;
 }
 

@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef } from "react";
+import { postSignInPath } from "@/lib/buildIntent";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -68,7 +69,7 @@ export default function Auth() {
       // The managed helper sets the session; validate it before entering the app.
       const { data, error } = await supabase.auth.getUser();
       if (error || !data.user) throw error ?? new Error("No authenticated user received");
-      navigate("/dashboard", { replace: true });
+      navigate(postSignInPath(), { replace: true });
     } catch {
       toast.error("Google sign-in did not complete. Please start a new sign-in attempt.");
     } finally {
@@ -90,7 +91,7 @@ export default function Auth() {
       if (error) {
         toast.error(error.message);
       } else {
-        navigate("/dashboard");
+        navigate(postSignInPath());
       }
     } else {
       const { error } = await supabase.auth.signUp({
