@@ -2,15 +2,14 @@ import { Link } from "react-router-dom";
 import { m, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { BrandLogo, WheelMark } from "@/components/BrandLogo";
 
-const WHEEL_GREEN = "#2f7a57";
-export const LANDING_LOGO = { accent: WHEEL_GREEN, color: "#1b2420", fontFamily: "'Newsreader', Georgia, serif", fontSize: 22, fontWeight: 500 } as const;
+export const LANDING_LOGO = { color: "#1b2420", fontFamily: "'Newsreader', Georgia, serif", fontSize: 22, fontWeight: 500 } as const;
 
 /** The wheel turns as the page scrolls: it is what sets the programme in motion. */
 function TurningWheel() {
   const reduce = useReducedMotion();
   const { scrollY } = useScroll();
   const rotate = useTransform(scrollY, (y) => (reduce ? 0 : y * 0.12));
-  return <m.span style={{ rotate, display: "flex" }}><WheelMark color={WHEEL_GREEN} /></m.span>;
+  return <m.span style={{ rotate, display: "flex" }}><WheelMark /></m.span>;
 }
 
 export function LandingNav({ onStart }: { onStart: () => void }) {

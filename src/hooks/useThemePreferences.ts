@@ -27,12 +27,13 @@ interface AccentConfig {
 }
 
 const ACCENT_MAP: Record<AccentTheme, AccentConfig> = {
+  // The default. Its key stays "teal" so stored preferences keep working; the values mirror the tokens in index.css.
   teal: {
-    primary: "158 64% 51%",
-    primaryForeground: "165 91% 9%",
-    ring: "158 64% 51%",
-    accentBg: "178 84% 10%",
-    accentFg: "172 66% 50%",
+    primary: "152 44% 33%",
+    primaryForeground: "40 45% 97%",
+    ring: "152 44% 33%",
+    accentBg: "37 30% 90%",
+    accentFg: "152 44% 24%",
   },
   ocean: {
     primary: "210 90% 50%",
@@ -72,7 +73,7 @@ const ACCENT_MAP: Record<AccentTheme, AccentConfig> = {
 };
 
 const CHART_PALETTES: Record<ChartPalette, string[]> = {
-  default: ["156 71% 66%", "141 76% 73%", "170 76% 64%", "81 84% 67%", "0 0% 45%"],
+  default: ["152 44% 40%", "14 67% 55%", "150 20% 60%", "37 45% 58%", "0 0% 45%"],
   warm: ["12 90% 60%", "38 92% 55%", "55 85% 50%", "350 80% 55%", "25 75% 45%"],
   cool: ["210 90% 55%", "190 80% 50%", "240 75% 60%", "170 70% 50%", "220 60% 45%"],
   highContrast: ["158 90% 40%", "0 85% 55%", "210 95% 50%", "45 100% 50%", "270 80% 55%"],

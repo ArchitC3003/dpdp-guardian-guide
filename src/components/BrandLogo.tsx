@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
-const ACCENT = "#059669";
+const ACCENT = "#2f7a57";
 const STUDS = Array.from({ length: 12 }, (_, i) => (i * Math.PI) / 6);
 const SPOKES = [0, 120, 240].map((deg) => (deg * Math.PI) / 180);
 const at = (r: number, a: number) => `${(12 + r * Math.cos(a)).toFixed(2)} ${(12 + r * Math.sin(a)).toFixed(2)}`;
@@ -38,7 +38,7 @@ export function BrandLogo({ to = "/", showVersion = true, accent = ACCENT, color
       {mark ?? <WheelMark color={accent} />}
       <span style={{ fontFamily, fontWeight, fontSize, letterSpacing: "-0.01em" }}>PrivcybHub</span>
       {showVersion && (
-        <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, color: accent, background: "#d1fae5", borderRadius: 99, padding: "2px 8px" }}>v3.0</span>
+        <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, color: accent, background: "#dfeee6", borderRadius: 99, padding: "2px 8px" }}>v3.0</span>
       )}
     </Link>
   );
