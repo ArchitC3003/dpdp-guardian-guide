@@ -18,8 +18,8 @@ export function Coverage() {
     <section className="lp-cover">
       <div className="lp-wrap">
         <div>
-          <h2>Regulations and standards we cover today.</h2>
-          <p>The list grows as we publish.</p>
+          <h2>Regulations and standards covered today.</h2>
+          <p>Coverage expands as we publish.</p>
         </div>
         <ul>
           {frameworks.map((f) => <li key={f.code}><Link to={frameworkPath(f.code)}>{f.label}</Link></li>)}

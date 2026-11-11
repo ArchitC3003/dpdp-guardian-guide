@@ -2,9 +2,9 @@ import { useRef, type CSSProperties } from "react";
 import { useInView } from "framer-motion";
 
 const LINES: [string, string, string][] = [
-  ["Regulation is", "written for lawyers", "written for you."],
-  ["It lives", "on every regulator's site", "in one place."],
-  ["Compliance runs", "on spreadsheets", "on one path."],
+  ["Regulation is", "written for lawyers", "written for practitioners."],
+  ["It lives", "across every regulator's site", "in one repository."],
+  ["Compliance runs", "on spreadsheets", "as one programme."],
 ];
 
 /** The problem and the intent, set as an edited draft: the old state struck through, the new one written in. */
@@ -19,7 +19,7 @@ export function WhySection() {
             {lead} <s>{before}</s> <ins>{after}</ins>
           </p>
         ))}
-        <p className="lp-intent">That is why we are building PrivcybHub: one stop for privacy and cyber security regulation, translated so anyone can act on it.</p>
+        <p className="lp-intent">That is why we are building PrivcybHub: a single source for privacy and cyber security regulation, translated into obligations your organisation can act on.</p>
       </div>
     </section>
   );

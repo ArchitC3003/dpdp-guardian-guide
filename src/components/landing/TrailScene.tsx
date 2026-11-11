@@ -7,6 +7,7 @@ const EASE = [0.2, 0.7, 0.2, 1] as const;
 /** Seconds before the marker starts walking, so the line has finished drawing. */
 const WALK_DELAY = 3.6;
 const WALK_LOOP = 15;
+const WHEEL_R = 13;
 
 /** A group of the scene that shifts with the pointer; nearer layers shift further. */
 function Layer({ depth, px, py, children }: { depth: number; px: MotionValue<number>; py: MotionValue<number>; children: React.ReactNode }) {
@@ -24,7 +25,7 @@ export function TrailScene({ onStage }: { onStage: (index: number) => void }) {
   const [active, setActive] = useState(0);
   const held = useRef(false);
   const trail = useRef<SVGPathElement>(null);
-  const walker = useRef<SVGCircleElement>(null);
+  const walker = useRef<SVGGElement>(null);
   const marks = useRef<number[] | null>(null);
   const rawX = useMotionValue(0);
   const rawY = useMotionValue(0);
@@ -56,8 +57,8 @@ export function TrailScene({ onStage }: { onStage: (index: number) => void }) {
     const c = (e % WALK_LOOP) / WALK_LOOP;
     const at = mk[0] + (mk[mk.length - 1] - mk[0]) * Math.min(1, c / 0.88);
     const q = path.getPointAtLength(total * at);
-    walker.current.setAttribute("cx", String(q.x));
-    walker.current.setAttribute("cy", String(q.y));
+    // The wheel rolls: it turns by the distance it has covered.
+    walker.current.setAttribute("transform", `translate(${q.x.toFixed(1)} ${q.y.toFixed(1)}) rotate(${(((total * at) / WHEEL_R) * 57.3).toFixed(1)})`);
     let k = 0;
     for (let i = 0; i < mk.length; i++) if (at >= mk[i] - 0.004) k = i;
     setActive((prev) => (prev === k ? prev : k));
@@ -76,7 +77,7 @@ export function TrailScene({ onStage }: { onStage: (index: number) => void }) {
         rawY.set(0.5 - (ev.clientY - r.top) / r.height);
       }}
     >
-      <svg viewBox={`0 0 ${VIEW.w} ${VIEW.h}`} preserveAspectRatio="none" role="img" aria-label="A tangled line unknots into a trail that climbs a mountain range to the sun, passing six stages.">
+      <svg viewBox={`0 0 ${VIEW.w} ${VIEW.h}`} preserveAspectRatio="none" role="img" aria-label="A tangled line unknots into a trail that climbs a mountain range to the sun, passing six stages. A wheel rolls up the trail.">
         <defs>
           <filter id="lp-blur" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="22" /></filter>
         </defs>
@@ -95,7 +96,13 @@ export function TrailScene({ onStage }: { onStage: (index: number) => void }) {
         <Layer depth={20} px={px} py={py}>
           <m.path ref={trail} className="lp-trail" d={d} initial={reduce ? false : { pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 3.2, delay: 0.5, ease: [0.5, 0, 0.2, 1] }} />
           {STAGES.map((s) => <circle key={s.key} className="lp-dot" cx={s.x} cy={s.y} r={7} />)}
-          <circle ref={walker} className="lp-walker" r={8} cx={STAGES[0].x} cy={STAGES[0].y} />
+          <g ref={walker} className="lp-walker" transform={`translate(${STAGES[0].x} ${STAGES[0].y})`}>
+            <circle r={WHEEL_R + 5} className="lp-walker-disc" />
+            <circle r={WHEEL_R - 3} />
+            <circle r={3} />
+            <path d="M3 0 L10 0 M-1.5 2.6 L-5 8.7 M-1.5 -2.6 L-5 -8.7" />
+            <path d={Array.from({ length: 12 }, (_, i) => { const a = (i * Math.PI) / 6; return `M${(11.5 * Math.cos(a)).toFixed(1)} ${(11.5 * Math.sin(a)).toFixed(1)} L${(14 * Math.cos(a)).toFixed(1)} ${(14 * Math.sin(a)).toFixed(1)}`; }).join(" ")} />
+          </g>
         </Layer>
       </svg>
       {STAGES.map((s, i) => (

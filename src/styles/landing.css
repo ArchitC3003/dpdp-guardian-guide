@@ -53,8 +53,9 @@
 @keyframes lp-drift { from { transform: translateX(-40px); } to { transform: translateX(60px); } }
 .lp-trail { fill: none; stroke: var(--lp-coral); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
 .lp-dot { fill: var(--lp-paper); stroke: var(--lp-coral); stroke-width: 2.6; }
-.lp-walker { fill: var(--lp-coral); stroke: var(--lp-paper); stroke-width: 3; }
-.lp-way-pos { position: absolute; z-index: 2; left: var(--x); top: var(--y); transform: translate(14px, -50%); }
+.lp-walker { fill: none; stroke: var(--lp-pine); stroke-width: 2.4; stroke-linecap: round; }
+.lp-walker-disc { fill: var(--lp-paper); stroke: none; }
+.lp-way-pos { position: absolute; z-index: 2; left: var(--x); top: var(--y); transform: translate(26px, -50%); }
 .lp-way-pos.lp-on { z-index: 4; }
 .lp-way { background: var(--lp-paper); border: 0; border-radius: 8px; padding: 5px 11px; text-align: left; display: flex; flex-direction: column; gap: 2px; max-width: 230px; }
 .lp-way strong { font-size: 14px; font-weight: 700; display: flex; gap: 8px; align-items: center; }

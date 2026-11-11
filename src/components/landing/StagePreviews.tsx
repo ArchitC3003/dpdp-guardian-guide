@@ -4,7 +4,7 @@ import type { StageKey } from "./stages";
 const v = (vars: Record<string, string | number>) => vars as CSSProperties;
 
 /** One obligation, shown as it passes through each stage. All content is illustrative. */
-export const OBLIGATION = "Tell people when their data is breached.";
+export const OBLIGATION = "Notify the regulator and affected individuals of a personal data breach.";
 
 function Know() {
   return (
@@ -12,7 +12,7 @@ function Know() {
       <div className="lp-fog" aria-hidden="true">
         {[96, 88, 99, 74, 92, 81, 95, 60, 90, 70].map((w, i) => <i key={i} style={v({ "--w": `${w}%` })} />)}
       </div>
-      <p className="lp-say">If personal data leaks, tell the regulator and every person affected.</p>
+      <p className="lp-say">On a personal data breach, notify the regulator and the affected individuals.</p>
     </div>
   );
 }
@@ -20,9 +20,9 @@ function Know() {
 function Assess() {
   return (
     <div className="lp-ask">
-      <strong>When personal data is breached, do you tell the people affected?</strong>
-      <div className="lp-opts"><span>Always</span><span className="lp-picked">Sometimes</span><span>Not yet</span></div>
-      <span className="lp-gap">Gap found: no set process</span>
+      <strong>Is there a documented process to notify affected individuals of a personal data breach?</strong>
+      <div className="lp-opts"><span>Implemented</span><span className="lp-picked">Partially implemented</span><span>Not implemented</span></div>
+      <span className="lp-gap">Gap identified: process not documented</span>
     </div>
   );
 }
@@ -30,9 +30,9 @@ function Assess() {
 function Build() {
   return (
     <div className="lp-doc">
-      <h4>Breach response procedure</h4>
+      <h4>Incident response procedure</h4>
       <i style={v({ "--i": 0, "--w": "94%" })} /><i style={v({ "--i": 1, "--w": "82%" })} />
-      <span className="lp-doc-line">Notify the regulator and each affected person.</span>
+      <span className="lp-doc-line">Notify the regulator and affected individuals.</span>
       <i style={v({ "--i": 4, "--w": "90%" })} /><i style={v({ "--i": 5, "--w": "58%" })} />
     </div>
   );
@@ -40,9 +40,9 @@ function Build() {
 
 function Execute() {
   const rows: [string, string, boolean][] = [
-    ["Approve the breach response procedure", "Legal", true],
-    ["Keep the notification contact list current", "IT", true],
-    ["Run a breach response drill", "Security", false],
+    ["Approve the incident response procedure", "Legal", true],
+    ["Maintain the breach notification contact register", "IT", true],
+    ["Conduct a breach response tabletop exercise", "Security", false],
   ];
   return (
     <div className="lp-ctl">
@@ -60,17 +60,17 @@ function Execute() {
 function Manage() {
   return (
     <div className="lp-board">
-      <b>Gap</b><b>In progress</b><b>Met</b>
-      <span>Vendor contracts</span><span>Retention schedule</span><span>Consent records</span>
-      <span className="lp-me">Breach notice</span>
+      <b>Gap</b><b>In remediation</b><b>Compliant</b>
+      <span>Processor contracts</span><span>Retention schedule</span><span>Consent records</span>
+      <span className="lp-me">Breach notification</span>
     </div>
   );
 }
 
 function Improve() {
   const rows: [string, string][] = [
-    ["The drill found an out-of-date contact list", "Next: fix and re-run"],
-    ["The regulator changed the notice format", "Next: update in Build"],
+    ["Tabletop exercise found an outdated contact register", "Corrective action: update and retest"],
+    ["Regulator revised the notification format", "Corrective action: revise the procedure"],
   ];
   return (
     <div className="lp-ctl lp-ctl-next">

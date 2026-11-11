@@ -34,7 +34,7 @@ function StagePanel({ stage, onAction }: { stage: Stage; onAction: (stage: Stage
         {stage.action ? (
           <>
             <button type="button" className="lp-btn lp-btn-primary lp-btn-sm" onClick={() => onAction(stage)}>{stage.action}</button>
-            <span className="lp-route">{stage.open ? "Open to everyone" : "After sign-in"}</span>
+            <span className="lp-route">{stage.open ? "Open access" : "Requires sign-in"}</span>
           </>
         ) : (
           <span className="lp-route">{stage.note}</span>
@@ -79,7 +79,7 @@ export const StageJourney = forwardRef<StageJourneyHandle, { onAction: (stage: S
         <div className="lp-wrap">
           <div className="lp-j-grid">
             <div className="lp-j-side">
-              <h2>Follow one obligation all the way up.</h2>
+              <h2>Trace one obligation from requirement to evidence.</h2>
               <div className="lp-j-list">
                 <m.div className="lp-rail" style={{ scaleY: scrollYProgress }} />
                 {STAGES.map((s, i) => (

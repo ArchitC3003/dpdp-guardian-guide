@@ -72,13 +72,13 @@ describe("LandingPage", () => {
     await mount();
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("From complexity to confidence.");
     for (const s of STAGES) expect(screen.getByRole("heading", { level: 3, name: s.name })).toBeInTheDocument();
-    expect(screen.getAllByText("In build").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("In development").length).toBeGreaterThan(0);
     expect(await screen.findByRole("link", { name: "NIS2" })).toHaveAttribute("href", "/learn/framework/NIS2");
   });
   it("sends a signed-out visitor to sign-in from a gated stage", async () => {
     session = null;
     await mount();
-    fireEvent.click(screen.getByRole("button", { name: "Build a document" }));
+    fireEvent.click(screen.getByRole("button", { name: "Draft a policy" }));
     expect(screen.getByTestId("where").textContent).toBe("/auth");
   });
   it("opens the Learn hub from Know without sign-in", async () => {

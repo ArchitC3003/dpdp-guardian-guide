@@ -9,12 +9,12 @@ export function ClosingDoors({ onStart }: { onStart: () => void }) {
       <div className="lp-wrap">
         <div className="lp-door">
           <h3>Read the regulation.</h3>
-          <p>Plain-language regulatory information for anyone. No account needed.</p>
+          <p>Regulatory guidance and analysis, open to everyone. No account required.</p>
           <Link className="lp-btn" to="/learn">Open the Learn hub</Link>
         </div>
         <div className="lp-door">
-          <h3>Put it to work.</h3>
-          <p>Sign in, find where you stand and build what is missing.</p>
+          <h3>Operationalise it.</h3>
+          <p>Sign in to assess your compliance posture and remediate the gaps.</p>
           <button type="button" className="lp-btn lp-btn-primary" onClick={onStart}>Start an assessment</button>
         </div>
       </div>
