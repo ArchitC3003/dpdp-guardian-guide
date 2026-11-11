@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { postSignInPath } from "@/lib/buildIntent";
 import { AppLayout } from "@/components/AppLayout";
 import { CookieConsentBanner } from "@/components/consent/CookieConsentBanner";
 import LandingPage from "./pages/LandingPage";
@@ -68,7 +69,7 @@ function ProtectedRoutes() {
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth();
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">Loading...</div>;
-  if (session) return <Navigate to="/dashboard" replace />;
+  if (session) return <Navigate to={postSignInPath()} replace />;
   return <>{children}</>;
 }
 
@@ -94,6 +95,10 @@ const App = () => (
             <Route path="/learn" element={<LearnHub />} />
             <Route path="/learn/topic/:tag" element={<LearnHub />} />
             <Route path="/learn/:slug" element={<LearnArticle />} />
+            <Route path="/learn/domain/:domain" element={<LearnHub />} />
+            <Route path="/learn/framework/:framework" element={<LearnHub />} />
+            <Route path="/learn/artefact/:artefact" element={<LearnHub />} />
+            <Route path="/learn/:domain/:topic" element={<LearnHub />} />
             <Route path="/lp/:slug" element={<LandingView />} />
             <Route element={<ProtectedRoutes />}>
               <Route path="/dashboard" element={<Dashboard />} />

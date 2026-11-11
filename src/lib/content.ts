@@ -177,3 +177,52 @@ export function filingError(contentType: string, status: string, f: TopicFiling)
   if (contentType === "landing" || (status !== "published" && status !== "scheduled")) return null;
   return f.topicIds.length === 0 ? "File this under at least one topic before it goes live" : null;
 }
+
+/** One plain line per domain, shown on the public Learn index. */
+export const DOMAIN_BLURBS: Record<string, string> = {
+  "management": "Who owns privacy in the organisation, and how the programme is run.",
+  "notice": "Telling people what you collect and why, in words they can follow.",
+  "choice-consent": "How people agree to processing, and how they change their mind.",
+  "collection": "Taking only the personal data the purpose needs.",
+  "use-retention-disposal": "What you may do with data, how long you keep it, and how it is removed.",
+  "access": "Answering people who ask to see, correct or erase their data.",
+  "third-party-disclosure": "Sharing data with processors and vendors, and staying accountable for it.",
+  "security": "Safeguards that protect personal data, and what to do when they fail.",
+  "quality": "Keeping personal data accurate, complete and fit for its purpose.",
+  "monitoring-enforcement": "Checking the programme works, and handling complaints and regulators.",
+};
+export const domainPath = (code: string) => `/learn/domain/${code}`;
+export const topicPath = (domainCode: string, topicSlug: string) => `/learn/${domainCode}/${topicSlug}`;
+
+type FilingRow = { post_id: string; topic_id: string; is_primary: boolean };
+type TopicRef = { id: string; domain_code: string; slug: string };
+/** Ids of posts filed (as home or cross-listing) under a domain, or under one topic of it when a slug is given. */
+export function postIdsFiledUnder(filings: FilingRow[], topics: TopicRef[], domainCode: string, topicSlug?: string): Set<string> {
+  const wanted = new Set(topics.filter((t) => t.domain_code === domainCode && (!topicSlug || t.slug === topicSlug)).map((t) => t.id));
+  return new Set(filings.filter((f) => wanted.has(f.topic_id)).map((f) => f.post_id));
+}
+/** The domain a post calls home, falling back to its first cross-listing. */
+export function homeDomainOf(postId: string, filings: FilingRow[], topics: TopicRef[]): string | null {
+  const mine = filings.filter((f) => f.post_id === postId);
+  const pick = mine.find((f) => f.is_primary) || mine[0];
+  return pick ? topics.find((t) => t.id === pick.topic_id)?.domain_code ?? null : null;
+}
+
+/** Fallback one-liners for the starter frameworks; the live text is content_frameworks.description. */
+export const FRAMEWORK_BLURBS: Record<string, string> = {
+  "DPDP": "India's Digital Personal Data Protection Act, 2023.",
+  "GDPR": "The European Union's General Data Protection Regulation.",
+  "RBI": "Reserve Bank of India directions for regulated entities.",
+  "SEBI": "Securities and Exchange Board of India cyber and data requirements.",
+  "CERT-In": "Indian Computer Emergency Response Team directions on incident reporting.",
+  "ISO 27001": "The international standard for information security management.",
+  "ISO 27701": "The privacy extension to ISO 27001.",
+  "ISO 42001": "The international standard for AI management systems.",
+};
+export const frameworkPath = (code: string) => `/learn/framework/${encodeURIComponent(code)}`;
+export const artefactPath = (code: string) => `/learn/artefact/${encodeURIComponent(code)}`;
+/** Posts that carry an exact value in one of their vocabulary arrays (frameworks or artefacts). Never substring-matches. */
+export function postsCarrying<T extends { frameworks?: string[] | null; artefacts?: string[] | null }>(posts: T[], field: "frameworks" | "artefacts", code: string): T[] {
+  return posts.filter((p) => (p[field] || []).includes(code));
+}
+export const piecesLabel = (n: number) => (n === 1 ? "1 piece" : `${n} pieces`);

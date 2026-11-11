@@ -71,6 +71,13 @@
       "when": 1794374707326,
       "tag": "0009_apply_pending_content_domains_and_topics",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794380000000,
+      "tag": "0010_content_artefacts_and_framework_descriptions",
+      "breakpoints": true
     }
   ]
 }

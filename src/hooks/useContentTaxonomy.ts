@@ -47,3 +47,35 @@ export async function loadAllFilings() {
   const { data, error } = await db.from("content_post_topics").select("post_id,topic_id,is_primary").limit(5000);
   return error ? null : ((data || []) as { post_id: string; topic_id: string; is_primary: boolean }[]);
 }
+
+export type Artefact = { code: string; label: string; kind: string; description: string | null; builder_type: string | null };
+/** Artefacts readers can build. `available` is false when the table is not in the database yet. */
+export function useArtefacts() {
+  const [artefacts, setArtefacts] = useState<Artefact[]>([]);
+  const [available, setAvailable] = useState(false);
+  const reload = useCallback(async () => {
+    const { data, error } = await db.from("content_artefacts").select("code,label,kind,description,builder_type").eq("is_active", true).order("display_order").order("label");
+    if (error) { setAvailable(false); return; }
+    setArtefacts(data || []); setAvailable(true);
+  }, []);
+  useEffect(() => { reload(); }, [reload]);
+  const add = useCallback(async (row: { code: string; label: string; kind: string; description?: string }) => {
+    const { error } = await db.from("content_artefacts").insert(row);
+    if (!error) await reload();
+    return error?.message as string | undefined;
+  }, [reload]);
+  return { artefacts, available, reload, add };
+}
+
+const POST_COLUMNS = "id,slug,title,excerpt,content_type,category,tags,frameworks,cover_image_url,published_at,scheduled_for,status,reading_minutes,featured";
+/** Published and scheduled Learn posts for the public hub. "artefacts" is a newer column, so the query falls back if the database lacks it. */
+export async function loadLivePosts(tag?: string) {
+  const run = async (cols: string) => {
+    let query = db.from("content_posts").select(cols).in("status", ["published", "scheduled"]).neq("content_type", "landing").order("updated_at", { ascending: false }).limit(200);
+    if (tag) query = query.contains("tags", [tag]);
+    return query;
+  };
+  let res = await run(`${POST_COLUMNS},artefacts`);
+  if (res.error) res = await run(POST_COLUMNS);
+  return (res.data || []) as Record<string, unknown>[];
+}
