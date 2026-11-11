@@ -94,6 +94,8 @@ const App = () => (
             <Route path="/learn" element={<LearnHub />} />
             <Route path="/learn/topic/:tag" element={<LearnHub />} />
             <Route path="/learn/:slug" element={<LearnArticle />} />
+            <Route path="/learn/domain/:domain" element={<LearnHub />} />
+            <Route path="/learn/:domain/:topic" element={<LearnHub />} />
             <Route path="/lp/:slug" element={<LandingView />} />
             <Route element={<ProtectedRoutes />}>
               <Route path="/dashboard" element={<Dashboard />} />

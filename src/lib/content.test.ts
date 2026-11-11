@@ -137,3 +137,33 @@ describe("Learn repository filing", () => {
     expect(filingError("article", "published", { topicIds: ["a"], primaryId: "a" })).toBeNull();
   });
 });
+
+import { DOMAIN_BLURBS, homeDomainOf, postIdsFiledUnder } from "./content";
+
+describe("Learn index helpers", () => {
+  const topics = [
+    { id: "t1", domain_code: "choice-consent", slug: "consent" },
+    { id: "t2", domain_code: "choice-consent", slug: "withdrawal" },
+    { id: "t3", domain_code: "notice", slug: "privacy-notices" },
+  ];
+  const filings = [
+    { post_id: "p1", topic_id: "t1", is_primary: true },
+    { post_id: "p1", topic_id: "t3", is_primary: false },
+    { post_id: "p2", topic_id: "t2", is_primary: true },
+  ];
+  it("has a blurb for every domain", () => {
+    expect(DEFAULT_DOMAINS.every((d) => !!DOMAIN_BLURBS[d.code])).toBe(true);
+  });
+  it("finds posts under a domain, including cross-listings", () => {
+    expect([...postIdsFiledUnder(filings, topics, "choice-consent")].sort()).toEqual(["p1", "p2"]);
+    expect([...postIdsFiledUnder(filings, topics, "notice")]).toEqual(["p1"]);
+  });
+  it("narrows to one topic by exact slug", () => {
+    expect([...postIdsFiledUnder(filings, topics, "choice-consent", "withdrawal")]).toEqual(["p2"]);
+    expect(postIdsFiledUnder(filings, topics, "choice-consent", "with").size).toBe(0);
+  });
+  it("reports the home domain, not a cross-listing", () => {
+    expect(homeDomainOf("p1", filings, topics)).toBe("choice-consent");
+    expect(homeDomainOf("nope", filings, topics)).toBeNull();
+  });
+});

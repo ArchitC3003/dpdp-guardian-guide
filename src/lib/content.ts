@@ -177,3 +177,33 @@ export function filingError(contentType: string, status: string, f: TopicFiling)
   if (contentType === "landing" || (status !== "published" && status !== "scheduled")) return null;
   return f.topicIds.length === 0 ? "File this under at least one topic before it goes live" : null;
 }
+
+/** One plain line per domain, shown on the public Learn index. */
+export const DOMAIN_BLURBS: Record<string, string> = {
+  "management": "Who owns privacy in the organisation, and how the programme is run.",
+  "notice": "Telling people what you collect and why, in words they can follow.",
+  "choice-consent": "How people agree to processing, and how they change their mind.",
+  "collection": "Taking only the personal data the purpose needs.",
+  "use-retention-disposal": "What you may do with data, how long you keep it, and how it is removed.",
+  "access": "Answering people who ask to see, correct or erase their data.",
+  "third-party-disclosure": "Sharing data with processors and vendors, and staying accountable for it.",
+  "security": "Safeguards that protect personal data, and what to do when they fail.",
+  "quality": "Keeping personal data accurate, complete and fit for its purpose.",
+  "monitoring-enforcement": "Checking the programme works, and handling complaints and regulators.",
+};
+export const domainPath = (code: string) => `/learn/domain/${code}`;
+export const topicPath = (domainCode: string, topicSlug: string) => `/learn/${domainCode}/${topicSlug}`;
+
+type FilingRow = { post_id: string; topic_id: string; is_primary: boolean };
+type TopicRef = { id: string; domain_code: string; slug: string };
+/** Ids of posts filed (as home or cross-listing) under a domain, or under one topic of it when a slug is given. */
+export function postIdsFiledUnder(filings: FilingRow[], topics: TopicRef[], domainCode: string, topicSlug?: string): Set<string> {
+  const wanted = new Set(topics.filter((t) => t.domain_code === domainCode && (!topicSlug || t.slug === topicSlug)).map((t) => t.id));
+  return new Set(filings.filter((f) => wanted.has(f.topic_id)).map((f) => f.post_id));
+}
+/** The domain a post calls home, falling back to its first cross-listing. */
+export function homeDomainOf(postId: string, filings: FilingRow[], topics: TopicRef[]): string | null {
+  const mine = filings.filter((f) => f.post_id === postId);
+  const pick = mine.find((f) => f.is_primary) || mine[0];
+  return pick ? topics.find((t) => t.id === pick.topic_id)?.domain_code ?? null : null;
+}

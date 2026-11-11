@@ -1,27 +1,37 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import { Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PublicShell } from "@/components/learn/PublicShell";
 import { LeadForm } from "@/components/learn/LeadForm";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { FONT_DISPLAY, SITE_URL, publicPath, isLive, liveDate, TOPIC_PILLS, TYPE_BADGES, type ContentType, FORMAT_FILTERS, FRAMEWORK_FILTERS, matchesLearnFilters, type FormatFilter } from "@/lib/content";
+import { DomainIndex, FormatGlyph, type IndexDomain } from "@/components/learn/DomainIndex";
+import { loadAllFilings, useContentTaxonomy } from "@/hooks/useContentTaxonomy";
+import {
+  DEFAULT_DOMAINS, DOMAIN_BLURBS, FONT_DISPLAY, FORMAT_FILTERS, FRAMEWORK_FILTERS, SITE_URL,
+  domainPath, homeDomainOf, isLive, liveDate, matchesLearnFilters, postIdsFiledUnder, publicPath, topicPath, type FormatFilter,
+} from "@/lib/content";
 
 type Row = { id: string; slug: string; title: string; excerpt: string | null; content_type: string; category: string | null; tags: string[]; frameworks: string[]; cover_image_url: string | null; published_at: string; scheduled_for: string | null; status: string; reading_minutes: number; featured: boolean };
+type Filing = { post_id: string; topic_id: string; is_primary: boolean };
+
+const effort = (r: Row) => (r.content_type === "video" ? "Watch" : r.content_type === "presentation" ? "Slides" : `${r.reading_minutes} min read`);
 
 export default function LearnHub() {
-  const { tag } = useParams();
+  const { tag, domain: domainCode, topic: topicSlug } = useParams();
   const [rows, setRows] = useState<Row[]>([]);
+  const [filings, setFilings] = useState<Filing[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [kind, setKind] = useState<FormatFilter>("all");
   const [fw, setFw] = useState<string>("All");
   const [fwChips, setFwChips] = useState<string[]>(FRAMEWORK_FILTERS);
+  const taxonomy = useContentTaxonomy();
 
   useEffect(() => {
     supabase.from("content_frameworks").select("code").eq("is_active", true).order("display_order")
       .then(({ data }) => { if (data?.length) setFwChips(["All", ...data.map((d) => d.code)]); });
+    loadAllFilings().then((f) => { if (f) setFilings(f); });
   }, []);
 
   useEffect(() => {
@@ -37,13 +47,44 @@ export default function LearnHub() {
     });
   }, [tag]);
 
-  const filtered = useMemo(() => rows.filter((r) => matchesLearnFilters(r, kind, fw, q)), [rows, q, kind, fw]);
-  const allTags = useMemo(() => Array.from(new Set([...TOPIC_PILLS, ...rows.flatMap((r) => r.tags)])).slice(0, 16), [rows]);
-  const featured = !tag && !q && kind === "all" && fw === "All" ? filtered.find((r) => r.featured) || filtered[0] : undefined;
-  const rest = filtered.filter((r) => r !== featured);
-  const url = `${SITE_URL}/learn${tag ? `/topic/${tag}` : ""}`;
-  const title = tag ? `${tag} — PrivcybHub Learn` : "Learn — DPDP & privacy compliance insights | PrivcybHub";
-  const desc = "Practical guides, articles and analysis on India's DPDP Act 2023, global privacy laws and cyber compliance from PrivcybHub.";
+  // The ten parts always show, even before the database has them or before anything is filed.
+  const domains: IndexDomain[] = useMemo(() => {
+    const allTopics = taxonomy.domains.flatMap((d) => d.topics);
+    return DEFAULT_DOMAINS.map((seed) => {
+      const live = taxonomy.domains.find((d) => d.code === seed.code);
+      const ids = postIdsFiledUnder(filings, allTopics, seed.code);
+      return { code: seed.code, number: seed.number, name: live?.name || seed.name, covers: seed.topics,
+        topics: (live?.topics || []).map((t) => ({ id: t.id, slug: t.slug, name: t.name })),
+        posts: rows.filter((r) => ids.has(r.id)) };
+    });
+  }, [taxonomy.domains, filings, rows]);
+  const allTopics = useMemo(() => taxonomy.domains.flatMap((d) => d.topics), [taxonomy.domains]);
+  const domainName = (code: string | null) => domains.find((d) => d.code === code)?.name;
+
+  const scopeDomain = domainCode ? domains.find((d) => d.code === domainCode) : undefined;
+  const scopeTopic = scopeDomain && topicSlug ? scopeDomain.topics.find((t) => t.slug === topicSlug) : undefined;
+  const scoped = useMemo(() => {
+    if (!domainCode) return rows;
+    const ids = postIdsFiledUnder(filings, allTopics, domainCode, topicSlug);
+    return rows.filter((r) => ids.has(r.id));
+  }, [rows, filings, allTopics, domainCode, topicSlug]);
+  const filtered = useMemo(() => scoped.filter((r) => matchesLearnFilters(r, kind, fw, q)), [scoped, q, kind, fw]);
+  const filtering = !!q || kind !== "all" || fw !== "All";
+
+  const heading = scopeTopic ? scopeTopic.name : scopeDomain ? scopeDomain.name : tag ? tag : "Privacy practice, in ten parts";
+  const lede = scopeTopic ? `Part ${scopeDomain!.number} of ten, ${scopeDomain!.name}. ${DOMAIN_BLURBS[scopeDomain!.code]}`
+    : scopeDomain ? DOMAIN_BLURBS[scopeDomain.code]
+    : tag ? "Everything we have published with this tag."
+    : "Every guide, video and deck we publish sits in one of ten parts of a privacy programme. Start with the part you are working on.";
+  const path = scopeTopic ? topicPath(scopeDomain!.code, scopeTopic.slug) : scopeDomain ? domainPath(scopeDomain.code) : tag ? `/learn/topic/${tag}` : "/learn";
+  const url = SITE_URL + path;
+  const title = scopeTopic ? `${scopeTopic.name}: guides, videos and slides | PrivcybHub Learn`
+    : scopeDomain ? `${scopeDomain.name}: privacy guides and resources | PrivcybHub Learn`
+    : tag ? `${tag} | PrivcybHub Learn` : "Learn: DPDP and privacy compliance, in ten parts | PrivcybHub";
+  const desc = scopeDomain ? `${DOMAIN_BLURBS[scopeDomain.code]} Guides, videos and slides from PrivcybHub.`
+    : "Practical guides, videos and slides on India's DPDP Act 2023, global privacy laws and cyber compliance, organised into ten parts of a privacy programme.";
+  const listHeading = scopeTopic || scopeDomain || tag ? `${scoped.length === 1 ? "1 piece" : `${scoped.length} pieces`} here` : "Newest";
+  const kindIndex = FORMAT_FILTERS.findIndex(([k]) => k === kind);
 
   return (
     <PublicShell>
@@ -53,68 +94,93 @@ export default function LearnHub() {
         <link rel="canonical" href={url} />
         <meta property="og:title" content={title} /><meta property="og:description" content={desc} /><meta property="og:url" content={url} />
         <script type="application/ld+json">{JSON.stringify({ "@context": "https://schema.org", "@type": "Blog", name: "PrivcybHub Learn", url,
-          blogPost: rows.slice(0, 20).map((r) => ({ "@type": "BlogPosting", headline: r.title, url: SITE_URL + publicPath(r), datePublished: liveDate(r) })) })}</script>
+          blogPost: scoped.slice(0, 20).map((r) => ({ "@type": "BlogPosting", headline: r.title, url: SITE_URL + publicPath(r), datePublished: liveDate(r) })) })}</script>
+        {scopeDomain && <script type="application/ld+json">{JSON.stringify({ "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Learn", item: `${SITE_URL}/learn` },
+          { "@type": "ListItem", position: 2, name: scopeDomain.name, item: SITE_URL + domainPath(scopeDomain.code) },
+          ...(scopeTopic ? [{ "@type": "ListItem", position: 3, name: scopeTopic.name, item: url }] : [])] })}</script>}
       </Helmet>
-      <section className="max-w-6xl mx-auto px-5 pt-16 pb-10">
-        <p className="font-mono text-xs uppercase tracking-widest text-primary">PrivcybHub Learn</p>
-        <h1 className="text-5xl md:text-6xl font-semibold mt-3 max-w-3xl" style={{ fontFamily: FONT_DISPLAY }}>{tag ? `Topic: ${tag}` : "Clear thinking on privacy, DPDP and cyber compliance"}</h1>
-        <div className="mt-8 flex flex-wrap gap-3 items-center">
-          <Input placeholder="Search resources" value={q} onChange={(e) => setQ(e.target.value)} className="max-w-xs" aria-label="Search resources" />
+
+      <section className="max-w-6xl mx-auto px-5 pt-14 md:pt-20">
+        {(scopeDomain || tag) && (
+          <nav aria-label="Breadcrumb" className="text-sm text-muted-foreground mb-5">
+            <Link to="/learn" className="text-primary underline-offset-4 hover:underline">Learn</Link>
+            {scopeTopic && <> / <Link to={domainPath(scopeDomain!.code)} className="text-primary underline-offset-4 hover:underline">{scopeDomain!.name}</Link></>}
+          </nav>
+        )}
+        <h1 className="text-[clamp(2.6rem,6.2vw,5rem)] leading-[0.98] font-semibold tracking-[-0.01em] max-w-4xl" style={{ fontFamily: FONT_DISPLAY }}>{heading}</h1>
+        <p className="mt-5 text-lg leading-relaxed text-muted-foreground max-w-xl">{lede}</p>
+        {scopeDomain && scopeDomain.topics.length > 0 && (
+          <ul className="mt-7 flex flex-wrap gap-2 list-none p-0">
+            {scopeDomain.topics.map((t) => <li key={t.id}><Link to={topicPath(scopeDomain.code, t.slug)} aria-current={t.slug === topicSlug ? "page" : undefined} className="lrn-chip">{t.name}</Link></li>)}
+          </ul>
+        )}
+      </section>
+
+      {!tag && !domainCode && (
+        <div className="overflow-x-clip py-10 -my-10">
+          <section className="max-w-6xl mx-auto px-5 mt-12 md:mt-16" aria-label="The ten parts">
+            <DomainIndex domains={domains} />
+          </section>
         </div>
-        <div className="mt-4 flex flex-wrap gap-2 items-center">
-          <span className="font-mono text-xs uppercase text-muted-foreground w-20">Format</span>
-          <div role="group" aria-label="Format" className="flex flex-wrap gap-1">{FORMAT_FILTERS.map(([k, l]) => (
-            <button key={k} type="button" aria-pressed={kind === k} onClick={() => setKind(k)} className={`glass-hover text-xs rounded-full px-3 py-1 border ${kind === k ? "border-primary bg-primary/10 text-primary" : "border-border"}`}>{l}</button>))}</div>
+      )}
+
+      <section className={`max-w-6xl mx-auto px-5 ${tag || domainCode ? "mt-14" : "mt-20 md:mt-28"}`} aria-labelledby="learn-list">
+        <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-5">
+          <h2 id="learn-list" className="text-4xl font-semibold" style={{ fontFamily: FONT_DISPLAY }}>{listHeading}</h2>
+          <div className="flex flex-wrap items-center gap-3">
+            <div role="group" aria-label="Format" className="lrn-seg" style={{ "--count": FORMAT_FILTERS.length, "--n": kindIndex } as React.CSSProperties}>
+              <span className="lrn-seg-thumb" aria-hidden="true" />
+              {FORMAT_FILTERS.map(([k, l]) => <button key={k} type="button" aria-pressed={kind === k} onClick={() => setKind(k)}>{l}</button>)}
+            </div>
+            <label className="relative block">
+              <span className="sr-only">Search resources</span>
+              <Search className="h-4 w-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" type="search"
+                className="h-11 w-56 rounded-full border border-border bg-card pl-10 pr-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+            </label>
+          </div>
         </div>
-        <div className="mt-2 flex flex-wrap gap-2 items-center">
-          <span className="font-mono text-xs uppercase text-muted-foreground w-20">Framework</span>
-          <div role="group" aria-label="Framework" className="flex flex-wrap gap-1">{FRAMEWORK_FILTERS.map((k) => (
-            <button key={k} type="button" aria-pressed={fw === k} onClick={() => setFw(k)} className={`glass-hover text-xs rounded-full px-3 py-1 border ${fw === k ? "border-primary bg-primary/10 text-primary" : "border-border"}`}>{k}</button>))}</div>
+        <div role="group" aria-label="Framework" className="mt-5 flex flex-wrap gap-2">
+          {fwChips.map((k) => <button key={k} type="button" aria-pressed={fw === k} onClick={() => setFw(k)} className="lrn-chip">{k === "All" ? "All frameworks" : k}</button>)}
         </div>
-        <div className="mt-4 flex flex-wrap gap-3 items-center">
-          {tag && <Link to="/learn" className="text-sm text-primary">All topics</Link>}
-          {allTags.map((t) => <Link key={t} to={`/learn/topic/${encodeURIComponent(t)}`} aria-current={t === tag ? "page" : undefined} className={`glass-hover text-xs border rounded-full px-3 py-1 hover:border-primary ${t === tag ? "border-primary text-primary" : "border-border"}`}>{t}</Link>)}
+
+        <div className="mt-8">
+          {loading ? <p className="text-muted-foreground">Loading…</p> : scoped.length === 0 ? (
+            <p className="text-foreground/80 border-t border-border pt-8 max-w-xl">
+              {scopeDomain || tag ? "Nothing is published here yet. " : "The first pieces are being prepared. "}
+              <a href="#updates" className="text-primary underline underline-offset-4">Get an email when they go live.</a>
+            </p>
+          ) : filtered.length === 0 ? (
+            <p className="text-foreground/80 border-t border-border pt-8">
+              Nothing matches those filters. <button type="button" className="text-primary underline underline-offset-4" onClick={() => { setQ(""); setKind("all"); setFw("All"); }}>Clear filters</button>
+            </p>
+          ) : (
+            <ul className="list-none p-0 border-t border-border">
+              {filtered.map((r) => {
+                const home = domainName(homeDomainOf(r.id, filings, allTopics));
+                return (
+                  <li key={r.id} className="border-b border-border">
+                    <Link to={publicPath(r)} className="lrn-item py-6 md:grid-cols-[auto_minmax(0,1fr)_14rem]">
+                      <span className="lrn-glyph"><FormatGlyph type={r.content_type} className="h-[1.15rem] w-[1.15rem]" /></span>
+                      <span className="min-w-0">
+                        <span className="lrn-item-title block text-[1.65rem] leading-tight font-semibold" style={{ fontFamily: FONT_DISPLAY }}>{r.title}</span>
+                        {r.excerpt && <span className="block mt-1.5 text-[0.95rem] leading-relaxed text-muted-foreground line-clamp-2 max-w-2xl">{r.excerpt}</span>}
+                      </span>
+                      <span className="col-start-2 md:col-start-3 mt-2 md:mt-0 md:text-right text-sm text-muted-foreground">
+                        {home && <span className="block text-foreground/80">{home}</span>}
+                        <span className="block">{effort(r)}{!filtering && r.featured ? ", editor's pick" : ""}</span>
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
       </section>
 
-      <section className="max-w-6xl mx-auto px-5">
-        {loading ? <p className="text-muted-foreground">Loading…</p> : rows.length === 0 ? (
-          <p className="text-muted-foreground border border-dashed border-border rounded-xl p-10 text-center">Resources are being prepared. Subscribe below to be notified when they go live.</p>
-        ) : filtered.length === 0 ? (
-          <div className="text-muted-foreground border border-dashed border-border rounded-xl p-10 text-center space-y-3">
-            <p>No resources match your filters.</p>
-            <Button variant="outline" size="sm" onClick={() => { setQ(""); setKind("all"); setFw("All"); }}>Clear filters</Button>
-          </div>
-        ) : (
-          <>
-            {featured && (
-              <Link to={publicPath(featured)} className="glass-hover grid md:grid-cols-2 gap-8 border border-border rounded-2xl overflow-hidden bg-card mb-12">
-                {featured.cover_image_url ? <img src={featured.cover_image_url} alt="" className="w-full h-72 object-cover" /> : <div className="h-72 bg-gradient-to-br from-primary/30 to-accent/20" />}
-                <div className="p-8 flex flex-col justify-center">
-                  <span className="font-mono text-xs text-primary uppercase">{featured.category || "Featured"}</span>
-                  <h2 className="text-3xl font-semibold mt-2" style={{ fontFamily: FONT_DISPLAY }}>{featured.title}</h2>
-                  <p className="text-muted-foreground mt-3">{featured.excerpt}</p>
-                  <span className="text-xs text-muted-foreground mt-4">{new Date(liveDate(featured)).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium" })} · {featured.reading_minutes} min read</span>
-                </div>
-              </Link>
-            )}
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {rest.map((r) => (
-                <Link key={r.id} to={publicPath(r)} className="glass-hover border border-border rounded-xl overflow-hidden bg-card flex flex-col">
-                  {r.cover_image_url ? <img src={r.cover_image_url} alt="" loading="lazy" className="h-44 w-full object-cover" /> : <div className="h-2 bg-primary/40" />}
-                  <div className="p-5 flex-1 flex flex-col">
-                    <span className="font-mono text-[11px] text-primary uppercase">{TYPE_BADGES[r.content_type as ContentType] || "Blog"}{r.category ? ` · ${r.category}` : ""}</span>
-                    <h3 className="text-xl font-semibold mt-1" style={{ fontFamily: FONT_DISPLAY }}>{r.title}</h3>
-                    <p className="text-sm text-muted-foreground mt-2 line-clamp-3 flex-1">{r.excerpt}</p>
-                    <span className="text-xs text-muted-foreground mt-4">{r.content_type === "video" ? "Watch" : r.content_type === "presentation" ? "View slides" : `${r.reading_minutes} min read`}</span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </>
-        )}
-      </section>
-      <section className="max-w-xl mx-auto px-5 mt-20">
+      <section id="updates" className="max-w-xl mx-auto px-5 mt-24 scroll-mt-28">
         <LeadForm type="newsletter" compact heading="Get new DPDP insights by email" sourceSlug="learn-hub" />
       </section>
     </PublicShell>
