@@ -64,6 +64,13 @@
       "when": 1794302000000,
       "tag": "0008_content_domains_and_topics",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794374707326,
+      "tag": "0009_apply_pending_content_domains_and_topics",
+      "breakpoints": true
     }
   ]
 }

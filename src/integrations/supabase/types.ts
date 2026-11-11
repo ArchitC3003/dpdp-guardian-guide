@@ -819,6 +819,33 @@ export type Database = {
         }
         Relationships: []
       }
+      content_domains: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          is_active: boolean
+          name: string
+          number: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          is_active?: boolean
+          name: string
+          number: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          is_active?: boolean
+          name?: string
+          number?: number
+        }
+        Relationships: []
+      }
       content_frameworks: {
         Row: {
           code: string
@@ -869,6 +896,39 @@ export type Database = {
             columns: ["tag_id"]
             isOneToOne: false
             referencedRelation: "content_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_post_topics: {
+        Row: {
+          is_primary: boolean
+          post_id: string
+          topic_id: string
+        }
+        Insert: {
+          is_primary?: boolean
+          post_id: string
+          topic_id: string
+        }
+        Update: {
+          is_primary?: boolean
+          post_id?: string
+          topic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_post_topics_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "content_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_post_topics_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "content_topics"
             referencedColumns: ["id"]
           },
         ]
@@ -1034,6 +1094,44 @@ export type Database = {
           slug?: string
         }
         Relationships: []
+      }
+      content_topics: {
+        Row: {
+          created_at: string
+          display_order: number
+          domain_code: string
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          domain_code: string
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          domain_code?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_topics_domain_code_fkey"
+            columns: ["domain_code"]
+            isOneToOne: false
+            referencedRelation: "content_domains"
+            referencedColumns: ["code"]
+          },
+        ]
       }
       content_versions: {
         Row: {

@@ -1,0 +1,1 @@
+-- Apply the existing pending 0008_content_domains_and_topics migration without changing its SQL.
