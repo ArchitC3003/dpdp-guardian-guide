@@ -18,7 +18,7 @@ import {
   DEFAULT_FRAMEWORKS, unknownFrameworks, EMPTY_FILING, filingError, toggleTopic, type TopicFiling,
 } from "@/lib/content";
 import { TopicPicker } from "@/components/studio/TopicPicker";
-import { loadPostFiling, useContentTaxonomy } from "@/hooks/useContentTaxonomy";
+import { loadPostFiling, useArtefacts, useContentTaxonomy } from "@/hooks/useContentTaxonomy";
 import { ArrowLeft, Check, X, Sparkles, Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 
 const EMPTY = {
@@ -51,6 +51,8 @@ export default function ContentEditor() {
   const [fwSel, setFwSel] = useState<string[]>([]);
   const [filing, setFiling] = useState<TopicFiling>(EMPTY_FILING);
   const taxonomy = useContentTaxonomy();
+  const artefactList = useArtefacts();
+  const [artSel, setArtSel] = useState<string[]>([]);
   // The filing is sent on save only once it is known, so a save made before it loads (or after a failed load) cannot wipe it.
   const [filingReady, setFilingReady] = useState(isNew);
   const loadFiling = (pid: string) => { setFilingReady(false); return loadPostFiling(pid).then((f) => { if (f) { setFiling(f); setFilingReady(true); } }); };
@@ -76,6 +78,7 @@ export default function ContentEditor() {
     supabase.from("content_posts").select("*").eq("id", id!).maybeSingle().then(({ data, error }) => {
       if (error) toast({ title: "Could not load post", description: error.message, variant: "destructive" });
       if (data) setFwSel((data as any).frameworks || []);
+      if (data) setArtSel((data as any).artefacts || []);
       if (data) setP({ ...EMPTY, ...Object.fromEntries(Object.entries(data).map(([k, v]) => [k, v ?? (EMPTY as any)[k]])) } as any);
       setLoaded(true);
     });
@@ -116,6 +119,7 @@ export default function ContentEditor() {
       author_id: p.author_id || null, category_id: p.category_id || null,
       // Sent only when the repository tables exist and this post's filing has loaded.
       ...(sendFiling ? { topic_ids: filing.topicIds, primary_topic_id: filing.primaryId } : {}),
+      ...(artefactList.available ? { artefacts: artSel } : {}),
     };
     const { data, error } = await supabase.rpc("rpc_save_content_post", { payload: payload as any, tag_ids: tagIds });
     if (!error && data) {
@@ -145,6 +149,8 @@ export default function ContentEditor() {
     const { data: t, error: te } = await supabase.from("content_post_tags").select("tag_id").eq("post_id", d.id);
     if (!te) setTagIds((t || []).map((x) => x.tag_id));
     loadFiling(d.id);
+    setArtSel(d.artefacts || []);
+    setFwSel(d.frameworks || []);
     loadVersions(d.id);
     toast({ title: "Version restored" });
   };
@@ -205,6 +211,17 @@ export default function ContentEditor() {
     if (res.error || !res.id) return toast({ title: "Could not add topic", description: res.error?.includes("duplicate") ? "That topic already exists in this domain." : res.error, variant: "destructive" });
     setFiling((f) => toggleTopic(f, res.id!));
     toast({ title: "Topic added" });
+  };
+
+  const addArtefact = async () => {
+    const label = prompt("Artefact name (for example: Vendor assessment checklist)")?.trim();
+    if (!label) return;
+    const kind = prompt("What kind is it? (Policy, SOP, Notice, Template, Agreement, Plan…)", "Template")?.trim() || "Template";
+    const code = slugify(label);
+    const err = await artefactList.add({ code, label, kind });
+    if (err) return toast({ title: "Could not add artefact", description: err.includes("duplicate") ? "That artefact already exists." : err, variant: "destructive" });
+    setArtSel((x) => [...x, code]);
+    toast({ title: "Artefact added" });
   };
 
   const del = async () => {
@@ -376,6 +393,13 @@ export default function ContentEditor() {
               <div className="flex flex-wrap gap-1 mt-1">{fwVocab.map((c) => { const on = fwSel.includes(c); return (
                 <button key={c} type="button" aria-pressed={on} onClick={() => setFwSel((x) => on ? x.filter((y) => y !== c) : [...x, c])}
                   className={`text-[11px] rounded-full border px-2 py-0.5 ${on ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>{c}</button>); })}</div></div>
+            {artefactList.available && p.content_type !== "landing" && (
+              <div><div className="flex justify-between items-center"><Label className="text-xs">Artefacts this helps build</Label>{canPublish && <button type="button" className="text-[11px] text-primary" onClick={addArtefact}>+ New</button>}</div>
+                <div className="flex flex-wrap gap-1 mt-1">{artefactList.artefacts.map((a) => { const on = artSel.includes(a.code); return (
+                  <button key={a.code} type="button" aria-pressed={on} title={a.kind} onClick={() => setArtSel((x) => on ? x.filter((y) => y !== a.code) : [...x, a.code])}
+                    className={`text-[11px] rounded-full border px-2 py-0.5 ${on ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>{a.label}</button>); })}</div>
+                <p className="text-[11px] text-muted-foreground mt-1">Shown on the public Learn page under "Artefacts to build".</p></div>
+            )}
             <div><Label className="text-xs">Cover image</Label>
               {p.cover_image_url && <img src={p.cover_image_url} alt="" className="rounded-md mt-1 h-28 w-full object-cover" />}
               <Input type="file" accept="image/*" disabled={uploading} className="mt-1" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadCover(f); e.target.value = ""; }} />

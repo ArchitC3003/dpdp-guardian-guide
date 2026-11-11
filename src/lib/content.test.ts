@@ -167,3 +167,19 @@ describe("Learn index helpers", () => {
     expect(homeDomainOf("nope", filings, topics)).toBeNull();
   });
 });
+
+import { postsCarrying, piecesLabel, FRAMEWORK_BLURBS, DEFAULT_FRAMEWORKS as STARTER_FRAMEWORKS } from "./content";
+
+describe("Learn vocabulary lookups", () => {
+  const posts = [{ id: "a", frameworks: ["DPDP", "ISO 27001"], artefacts: ["privacy-notice"] }, { id: "b", frameworks: ["ISO 27701"], artefacts: null }];
+  it("matches frameworks and artefacts by exact value only", () => {
+    expect(postsCarrying(posts, "frameworks", "ISO 27001").map((p) => p.id)).toEqual(["a"]);
+    expect(postsCarrying(posts, "frameworks", "ISO 27")).toEqual([]);
+    expect(postsCarrying(posts, "artefacts", "privacy-notice").map((p) => p.id)).toEqual(["a"]);
+    expect(postsCarrying(posts, "artefacts", "privacy")).toEqual([]);
+  });
+  it("describes every starter framework and counts pieces in plain words", () => {
+    expect(STARTER_FRAMEWORKS.every((f) => !!FRAMEWORK_BLURBS[f])).toBe(true);
+    expect([piecesLabel(1), piecesLabel(4)]).toEqual(["1 piece", "4 pieces"]);
+  });
+});

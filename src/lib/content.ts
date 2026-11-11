@@ -207,3 +207,22 @@ export function homeDomainOf(postId: string, filings: FilingRow[], topics: Topic
   const pick = mine.find((f) => f.is_primary) || mine[0];
   return pick ? topics.find((t) => t.id === pick.topic_id)?.domain_code ?? null : null;
 }
+
+/** Fallback one-liners for the starter frameworks; the live text is content_frameworks.description. */
+export const FRAMEWORK_BLURBS: Record<string, string> = {
+  "DPDP": "India's Digital Personal Data Protection Act, 2023.",
+  "GDPR": "The European Union's General Data Protection Regulation.",
+  "RBI": "Reserve Bank of India directions for regulated entities.",
+  "SEBI": "Securities and Exchange Board of India cyber and data requirements.",
+  "CERT-In": "Indian Computer Emergency Response Team directions on incident reporting.",
+  "ISO 27001": "The international standard for information security management.",
+  "ISO 27701": "The privacy extension to ISO 27001.",
+  "ISO 42001": "The international standard for AI management systems.",
+};
+export const frameworkPath = (code: string) => `/learn/framework/${encodeURIComponent(code)}`;
+export const artefactPath = (code: string) => `/learn/artefact/${encodeURIComponent(code)}`;
+/** Posts that carry an exact value in one of their vocabulary arrays (frameworks or artefacts). Never substring-matches. */
+export function postsCarrying<T extends { frameworks?: string[] | null; artefacts?: string[] | null }>(posts: T[], field: "frameworks" | "artefacts", code: string): T[] {
+  return posts.filter((p) => (p[field] || []).includes(code));
+}
+export const piecesLabel = (n: number) => (n === 1 ? "1 piece" : `${n} pieces`);
