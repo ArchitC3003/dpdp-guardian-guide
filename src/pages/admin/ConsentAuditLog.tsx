@@ -1,3 +1,4 @@
+import { csvRow } from "@/lib/csv";
 import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,8 +48,8 @@ export default function ConsentAuditLog() {
 
   const exportCSV = () => {
     const headers = ["Event ID", "Timestamp", "Actor", "Actor Type", "Action", "Entity Type", "Entity ID", "Previous State", "New State", "Notes"];
-    const rows = filtered.map((l: any) => [l.id, l.event_timestamp, l.actor_id || "system", l.actor_type, l.action, l.entity_type, l.entity_id || "", l.previous_state || "", l.new_state || "", (l.notes || "").replace(/,/g, ";")].join(","));
-    const csv = [headers.join(","), ...rows].join("\n");
+    const rows = filtered.map((l: any) => csvRow([l.id, l.event_timestamp, l.actor_id || "system", l.actor_type, l.action, l.entity_type, l.entity_id || "", l.previous_state || "", l.new_state || "", l.notes || ""]));
+    const csv = [csvRow(headers), ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href = url; a.download = `audit-log-${new Date().toISOString().slice(0, 10)}.csv`;

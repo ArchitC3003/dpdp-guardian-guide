@@ -728,7 +728,16 @@ User-Specific Requirements: ${userMessage}`;
     }
 
     if (conversationHistory && Array.isArray(conversationHistory)) {
+      if (conversationHistory.length > 50) {
+        return new Response(JSON.stringify({ error: "Invalid conversation history." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      // Only user/assistant turns are accepted; caller-supplied system or tool roles are rejected.
       for (const msg of conversationHistory) {
+        if (!msg || (msg.role !== "user" && msg.role !== "assistant") || typeof msg.content !== "string" || msg.content.length > 20000) {
+          return new Response(JSON.stringify({ error: "Invalid conversation history." }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
         messages.push({ role: msg.role, content: msg.content });
       }
     }

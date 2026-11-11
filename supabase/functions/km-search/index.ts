@@ -33,15 +33,22 @@ serve(async (req) => {
       .limit(maxResults);
 
     // Filter by industries if provided
-    if (industries && industries.length > 0) {
+    if (Array.isArray(industries) && industries.length > 0) {
+      if (industries.length > 20 || !industries.every((i: unknown) => typeof i === "string" && i.length <= 100)) {
+        return new Response(JSON.stringify({ error: "Invalid industries." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
       // Use overlaps to find artefacts matching any of the industries
       query = query.overlaps("industry_verticals", industries);
     }
 
     // Text search via ilike on title/content
-    if (queryText) {
+    if (typeof queryText === "string" && queryText) {
+      // Keep only letters, digits and hyphens so keywords cannot inject filter syntax.
       const keywords = queryText
+        .slice(0, 1000)
         .split(/[\s,]+/)
+        .map((w: string) => w.replace(/[^\p{L}\p{N}-]/gu, ""))
         .filter((w: string) => w.length > 3)
         .slice(0, 5);
 

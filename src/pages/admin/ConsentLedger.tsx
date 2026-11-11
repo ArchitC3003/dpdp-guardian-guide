@@ -1,3 +1,4 @@
+import { csvRow } from "@/lib/csv";
 import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,8 +44,8 @@ export default function ConsentLedger() {
 
   const exportCSV = () => {
     const headers = ["Consent ID", "User/Session", "Action Type", "Notice Version", "Categories Accepted", "Categories Rejected", "Timestamp", "Withdrawal"];
-    const rows = filtered.map((r: any) => [r.id, r.user_id || r.session_id, r.action_type, r.notice_version_id || "", (r.categories_accepted || []).join(";"), (r.categories_rejected || []).join(";"), r.consent_timestamp, r.withdrawal_timestamp || ""].join(","));
-    const csv = [headers.join(","), ...rows].join("\n");
+    const rows = filtered.map((r: any) => csvRow([r.id, r.user_id || r.session_id, r.action_type, r.notice_version_id || "", (r.categories_accepted || []).join(";"), (r.categories_rejected || []).join(";"), r.consent_timestamp, r.withdrawal_timestamp || ""]));
+    const csv = [csvRow(headers), ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
