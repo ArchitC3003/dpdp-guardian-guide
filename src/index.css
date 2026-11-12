@@ -243,6 +243,15 @@
   }
 }
 
+/* Learn article: the passage being read aloud by the Listen player. */
+@layer components {
+  [data-listen-current] {
+    background: hsl(var(--primary) / 0.1);
+    box-shadow: 0 0 0 6px hsl(var(--primary) / 0.1);
+    border-radius: 4px;
+  }
+}
+
 /* Public Learn: a hero whose glow and dot field answer the pointer, and an index with a gliding glass lens. */
 @layer components {
   /* Same gutters as the landing page, so the logo and the content share one left edge. */
