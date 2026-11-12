@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,6 +6,7 @@ import { PublicShell } from "@/components/learn/PublicShell";
 import { LeadForm } from "@/components/learn/LeadForm";
 import { Markdown } from "@/components/learn/Markdown";
 import { MediaViewer } from "@/components/learn/MediaViewer";
+import { ListenPlayer } from "@/components/learn/ListenPlayer";
 import { videoEmbed, FONT_DISPLAY, SITE_URL, headings, publicPath, isLive, liveDate, type FaqItem } from "@/lib/content";
 
 export default function LearnArticle() {
@@ -14,6 +15,7 @@ export default function LearnArticle() {
   const [related, setRelated] = useState<any[]>([]);
   const [author, setAuthor] = useState<any>(null);
   const [state, setState] = useState<"loading" | "ok" | "missing">("loading");
+  const readable = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setState("loading");
@@ -79,26 +81,28 @@ export default function LearnArticle() {
         {ld.map((x, i) => <script key={i} type="application/ld+json">{JSON.stringify(x)}</script>)}
       </Helmet>
       <article className="max-w-6xl mx-auto px-5 pt-12 grid lg:grid-cols-[1fr_260px] gap-12">
-        <div className="max-w-3xl">
+        <div className="max-w-3xl" ref={readable}>
           <nav aria-label="Breadcrumb" className="text-xs text-muted-foreground"><Link to="/learn">Learn</Link> / {post.category || "Article"}</nav>
           <h1 className="text-4xl md:text-5xl font-semibold mt-4 leading-tight" style={{ fontFamily: FONT_DISPLAY }}>{post.title}</h1>
           {post.excerpt && <p className="text-lg text-muted-foreground mt-4">{post.excerpt}</p>}
-          <p className="text-sm text-muted-foreground mt-4">{post.author_name || "PrivcybHub"} · <time dateTime={pub}>{date}</time> {!isMedia && <> · {post.reading_minutes} min read</>}</p>
-          {isMedia ? <div className="mt-8"><MediaViewer post={post} /></div> : post.cover_image_url && <img src={post.cover_image_url} alt="" className="rounded-xl mt-8 w-full max-h-[420px] object-cover" />}
+          <p data-listen-skip className="text-sm text-muted-foreground mt-4">{post.author_name || "PrivcybHub"} · <time dateTime={pub}>{date}</time> {!isMedia && <> · {post.reading_minutes} min read</>}</p>
+          {isMedia ? <div data-listen-skip className="mt-8"><MediaViewer post={post} /></div> : post.cover_image_url && <img src={post.cover_image_url} alt="" className="rounded-xl mt-8 w-full max-h-[420px] object-cover" />}
+          {/* Every live post can be listened to. A video already carries its own sound. */}
+          {post.content_type !== "video" && <ListenPlayer articleRef={readable} contentKey={`${post.id}:${post.updated_at}`} />}
           {post.ai_summary && (
             <aside className="mt-8 rounded-xl border border-primary/30 bg-primary/5 p-5" aria-label="Summary">
               <p className="font-mono text-xs uppercase text-primary mb-1">AI summary · Key regulatory takeaways</p><p className="text-sm">{post.ai_summary}</p>
             </aside>
           )}
           <div className="mt-6"><Markdown>{post.body_md}</Markdown></div>
-          {post.content_type === "video" && post.transcript && <details className="mt-8 border border-border rounded-xl p-5 bg-card"><summary className="font-medium cursor-pointer">Transcript</summary><p className="text-sm text-muted-foreground mt-3 whitespace-pre-line">{post.transcript}</p></details>}
+          {post.content_type === "video" && post.transcript && <details data-listen-skip className="mt-8 border border-border rounded-xl p-5 bg-card"><summary className="font-medium cursor-pointer">Transcript</summary><p className="text-sm text-muted-foreground mt-3 whitespace-pre-line">{post.transcript}</p></details>}
           {faq.length > 0 && (
             <section className="mt-12"><h2 className="text-3xl font-semibold mb-4" style={{ fontFamily: FONT_DISPLAY }}>Frequently asked questions</h2>
               {faq.map((f, i) => <details key={i} className="border-b border-border py-4"><summary className="font-medium cursor-pointer">{f.q}</summary><p className="text-muted-foreground mt-2">{f.a}</p></details>)}
             </section>
           )}
           {(author || post.author_name) && (
-            <section aria-label="About the author" className="mt-12 flex gap-4 items-start border border-border rounded-xl p-5 bg-card">
+            <section data-listen-skip aria-label="About the author" className="mt-12 flex gap-4 items-start border border-border rounded-xl p-5 bg-card">
               {author?.avatar_url ? <img src={author.avatar_url} alt="" className="h-14 w-14 rounded-full object-cover" /> : <div className="h-14 w-14 rounded-full bg-primary/20 flex items-center justify-center font-semibold text-primary">{(author?.name || post.author_name || "P")[0]}</div>}
               <div>
                 <p className="font-semibold">{author?.name || post.author_name}</p>
@@ -108,7 +112,7 @@ export default function LearnArticle() {
               </div>
             </section>
           )}
-          {post.tags?.length > 0 && <div className="flex flex-wrap gap-2 mt-10">{post.tags.map((t: string) => <Link key={t} to={`/learn/topic/${encodeURIComponent(t)}`} className="glass-hover text-xs border border-border rounded-full px-3 py-1">{t}</Link>)}</div>}
+          {post.tags?.length > 0 && <div data-listen-skip className="flex flex-wrap gap-2 mt-10">{post.tags.map((t: string) => <Link key={t} to={`/learn/topic/${encodeURIComponent(t)}`} className="glass-hover text-xs border border-border rounded-full px-3 py-1">{t}</Link>)}</div>}
         </div>
         <aside className="hidden lg:block">
           <div className="sticky top-24 space-y-6">
