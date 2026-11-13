@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:db": "bash scripts/test-cmp-db.sh",
+    "test:db:mutations": "bash scripts/test-cmp-mutations.sh",
     "test:watch": "vitest",
     "audit": "node scripts/security-audit.mjs"
   },

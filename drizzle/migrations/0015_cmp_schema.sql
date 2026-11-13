@@ -113,7 +113,8 @@ CREATE TABLE cmp.technologies (
   match_patterns      text[] NOT NULL DEFAULT '{}',
   blocking_strategy   text NOT NULL DEFAULT 'declared' CHECK (blocking_strategy IN ('declared','automatic','signal_only','none')),
   source              text NOT NULL DEFAULT 'manual' CHECK (source IN ('manual','scanned')),
-  last_verified_at    timestamptz
+  last_verified_at    timestamptz,
+  CONSTRAINT technologies_scope_uq UNIQUE (id, site_id, org_id)
 );
 CREATE INDEX technologies_site ON cmp.technologies (site_id);
 
@@ -162,8 +163,10 @@ CREATE TABLE cmp.config_versions (
   published_by    uuid NOT NULL,
   published_at    timestamptz NOT NULL DEFAULT now(),
   UNIQUE (site_id, version),
-  -- Target for same-site, same-organisation references from other tables.
+  -- Targets for same-site, same-organisation references from other tables. The second also
+  -- carries the profile, so a receipt is bound to the exact profile its config was published under.
   UNIQUE (id, site_id, org_id),
+  CONSTRAINT config_versions_evidence_uq UNIQUE (id, site_id, org_id, profile_id),
   FOREIGN KEY (supersedes_id, site_id, org_id) REFERENCES cmp.config_versions (id, site_id, org_id),
   FOREIGN KEY (copied_from_id, site_id, org_id) REFERENCES cmp.config_versions (id, site_id, org_id)
 );
@@ -201,8 +204,12 @@ CREATE TABLE cmp.receipts (
   CHECK ((action = 'migrated') = (provenance IS NOT NULL)),
   CHECK (action = 'migrated' OR config_version_id IS NOT NULL),
   UNIQUE (receipt_id, site_id, org_id),
-  -- A receipt can only name a config of its own site and organisation.
-  FOREIGN KEY (config_version_id, site_id, org_id) REFERENCES cmp.config_versions (id, site_id, org_id)
+  -- A receipt can only name a config of its own site and organisation, and must carry that
+  -- config's own profile. Hash and notice version are bound to the config by trigger.
+  FOREIGN KEY (config_version_id, site_id, org_id) REFERENCES cmp.config_versions (id, site_id, org_id),
+  CONSTRAINT receipts_config_profile_fk FOREIGN KEY (config_version_id, site_id, org_id, profile_id)
+    REFERENCES cmp.config_versions (id, site_id, org_id, profile_id),
+  CONSTRAINT receipts_profile_required_for_config CHECK (config_version_id IS NULL OR profile_id IS NOT NULL)
 );
 CREATE INDEX receipts_site_received ON cmp.receipts (site_id, received_at);
 CREATE INDEX receipts_visitor ON cmp.receipts (site_id, visitor_id, received_at);
@@ -276,11 +283,15 @@ CREATE TABLE cmp.violation_reports (
   site_id        uuid NOT NULL REFERENCES cmp.sites(id),
   day            date NOT NULL,
   category       text NOT NULL CHECK (category IN ('observed','known_technology','potential_violation')),
-  technology_id  uuid REFERENCES cmp.technologies(id) ON DELETE SET NULL,
+  technology_id  uuid,
   pattern        text NOT NULL DEFAULT '',
   occurrences    integer NOT NULL DEFAULT 0 CHECK (occurrences >= 0),
   views_sampled  integer NOT NULL DEFAULT 0 CHECK (views_sampled >= 0),
-  sample_rate    numeric NOT NULL CHECK (sample_rate > 0 AND sample_rate <= 1)
+  sample_rate    numeric NOT NULL CHECK (sample_rate > 0 AND sample_rate <= 1),
+  -- A report can only name a technology of its own site and organisation. When the technology
+  -- is deleted only technology_id is cleared; the report keeps its site and organisation.
+  CONSTRAINT violation_reports_technology_scope_fk FOREIGN KEY (technology_id, site_id, org_id)
+    REFERENCES cmp.technologies (id, site_id, org_id) ON DELETE SET NULL (technology_id)
 );
 CREATE UNIQUE INDEX violation_reports_bucket ON cmp.violation_reports
   (site_id, day, category, pattern, COALESCE(technology_id, '00000000-0000-0000-0000-000000000000'::uuid));
@@ -461,17 +472,19 @@ BEGIN
   RETURN NEW;
 END $$;
 
--- A config can be published only under an approved profile, only while the site's default profile
--- has an approved version, and only signed with an active key issued for signing configs.
+-- A config can be published only under an approved version of the site's default profile, and
+-- only signed with an active key issued for signing configs.
 CREATE FUNCTION cmp.tg_config_guard() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = cmp, pg_temp AS $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM cmp.regulation_profiles p WHERE p.id = NEW.profile_id AND p.status = 'approved') THEN
     RAISE EXCEPTION 'cmp: a config can be published only under an approved regulation profile' USING ERRCODE = '42501';
   END IF;
+  -- The config's profile is the site's fallback profile: it must be a version of the site's
+  -- default profile. Country overrides, where used, live inside the signed snapshot (package 2).
   IF NOT EXISTS (SELECT 1 FROM cmp.sites s JOIN cmp.regulation_profiles p ON p.key = s.default_profile
-                 WHERE s.id = NEW.site_id AND p.status = 'approved') THEN
-    RAISE EXCEPTION 'cmp: the site''s default regulation profile has no approved version' USING ERRCODE = '42501';
+                 WHERE s.id = NEW.site_id AND p.id = NEW.profile_id) THEN
+    RAISE EXCEPTION 'cmp: a config''s profile must be a version of the site''s default regulation profile' USING ERRCODE = '42501';
   END IF;
   IF NOT EXISTS (SELECT 1 FROM cmp.signing_keys k
                  WHERE k.key_id = NEW.signing_key_id AND k.purpose = 'config' AND k.retired_at IS NULL) THEN
@@ -521,6 +534,46 @@ BEGIN
     RAISE EXCEPTION 'cmp: an organisation must keep at least one owner' USING ERRCODE = '42501';
   END IF;
   RETURN NULL;
+END $$;
+
+-- A receipt's evidence metadata must be the referenced config's own: same content hash and same
+-- notice version. (Its profile is bound by receipts_config_profile_fk.) Migrated records name no
+-- config and follow the provenance rules instead.
+CREATE FUNCTION cmp.tg_receipt_config() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = cmp, pg_temp AS $$
+DECLARE c cmp.config_versions;
+BEGIN
+  IF NEW.config_version_id IS NULL THEN RETURN NEW; END IF;
+  SELECT * INTO c FROM cmp.config_versions v
+   WHERE v.id = NEW.config_version_id AND v.site_id = NEW.site_id AND v.org_id = NEW.org_id AND v.profile_id = NEW.profile_id;
+  IF c.id IS NULL THEN RETURN NEW; END IF;   -- not this site's config or not its profile: the foreign keys refuse it
+  IF NEW.config_hash IS DISTINCT FROM c.content_hash THEN
+    RAISE EXCEPTION 'cmp: receipt config_hash does not match the referenced config' USING ERRCODE = '23514';
+  END IF;
+  IF NEW.notice_version IS DISTINCT FROM c.notice_version THEN
+    RAISE EXCEPTION 'cmp: receipt notice_version does not match the referenced config' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END $$;
+
+-- An inventory row belongs to one site for life. Moving it would leave its purpose mappings
+-- pointing across sites; retire the old row and create a new one instead.
+CREATE FUNCTION cmp.tg_technology_scope_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.site_id IS DISTINCT FROM OLD.site_id OR NEW.org_id IS DISTINCT FROM OLD.org_id THEN
+    RAISE EXCEPTION 'cmp: technology site and organisation cannot change; create a new inventory row' USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END $$;
+
+-- The same rule for the other site-scoped management rows.
+CREATE FUNCTION cmp.tg_scope_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF (to_jsonb(NEW)->>'site_id') IS DISTINCT FROM (to_jsonb(OLD)->>'site_id')
+     OR (to_jsonb(NEW)->>'org_id') IS DISTINCT FROM (to_jsonb(OLD)->>'org_id') THEN
+    RAISE EXCEPTION 'cmp: % site and organisation cannot change', TG_TABLE_NAME USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
 END $$;
 
 -- Before and after values of every management change.
@@ -586,6 +639,18 @@ CREATE TRIGGER signing_key_frozen BEFORE UPDATE OR DELETE ON cmp.signing_keys
   FOR EACH ROW EXECUTE FUNCTION cmp.tg_signing_key_frozen();
 CREATE TRIGGER keep_an_owner AFTER UPDATE OR DELETE ON cmp.org_members
   FOR EACH ROW EXECUTE FUNCTION cmp.tg_keep_an_owner();
+CREATE TRIGGER receipt_config BEFORE INSERT ON cmp.receipts
+  FOR EACH ROW EXECUTE FUNCTION cmp.tg_receipt_config();
+CREATE TRIGGER technology_scope_immutable BEFORE UPDATE OF site_id, org_id ON cmp.technologies
+  FOR EACH ROW EXECUTE FUNCTION cmp.tg_technology_scope_immutable();
+CREATE TRIGGER scope_immutable BEFORE UPDATE OF site_id, org_id ON cmp.purposes
+  FOR EACH ROW EXECUTE FUNCTION cmp.tg_scope_immutable();
+CREATE TRIGGER scope_immutable BEFORE UPDATE OF site_id, org_id ON cmp.site_domains
+  FOR EACH ROW EXECUTE FUNCTION cmp.tg_scope_immutable();
+CREATE TRIGGER scope_immutable BEFORE UPDATE OF site_id, org_id ON cmp.translations
+  FOR EACH ROW EXECUTE FUNCTION cmp.tg_scope_immutable();
+CREATE TRIGGER scope_immutable BEFORE UPDATE OF org_id ON cmp.vendors
+  FOR EACH ROW EXECUTE FUNCTION cmp.tg_scope_immutable();
 
 -- ───────────────────────── Privileges ─────────────────────────
 -- Nothing is granted by default. anon gets nothing. Members get exactly the columns they may
@@ -615,13 +680,18 @@ GRANT INSERT ON cmp.config_versions, cmp.receipts, cmp.receipt_seals, cmp.receip
       cmp.ledger_segments, cmp.checkpoints, cmp.audit_log TO service_role;
 
 -- ───────────────────────── Row-level security ─────────────────────────
+-- Row-level security is enabled on every table but not FORCEd. The tables and the SECURITY
+-- DEFINER functions (membership helper, integrity and audit triggers) share one owner: the role
+-- that runs this migration. As table owner that role is exempt from the policies, which is what
+-- those functions rely on, so the schema needs no BYPASSRLS grant to work and none is made here.
+-- The owner role is an administrative role and never serves a request; anon, authenticated and
+-- service_role are never owners. Tests run with the owner both with and without BYPASSRLS.
 
 DO $$
 DECLARE t text;
 BEGIN
   FOR t IN SELECT tablename FROM pg_tables WHERE schemaname = 'cmp' LOOP
     EXECUTE format('ALTER TABLE cmp.%I ENABLE ROW LEVEL SECURITY', t);
-    EXECUTE format('ALTER TABLE cmp.%I FORCE ROW LEVEL SECURITY', t);
   END LOOP;
   -- Read-only for members: published config and evidence.
   FOREACH t IN ARRAY ARRAY['config_versions','receipts','receipt_seals','receipt_flags','ledger_segments',

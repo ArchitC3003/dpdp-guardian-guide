@@ -1,5 +1,5 @@
 -- Package 1 acceptance tests for the consent-platform schema.
--- Run by scripts/test-cmp-db.sh against a throwaway database. Fails the run on any failed check.
+-- Run by scripts/test-cmp-db.sh against a throwaway database. Any failed check ends the run with an error.
 --
 -- Every refusal names the cause it expects. A statement that is refused for any other reason,
 -- or that raises any unexpected error, FAILS the check:
@@ -7,7 +7,8 @@
 --   'priv'    SQLSTATE 42501, "permission denied"            (no table or column privilege)
 --   'rls'     SQLSTATE 42501, "row-level security"           (a WITH CHECK policy refused the row)
 --   'rule'    SQLSTATE 42501, message starting "cmp:"        (an integrity trigger of this schema)
---   'check'   SQLSTATE 23514                                 (a CHECK constraint)
+--   'check'   SQLSTATE 23514, message not starting "cmp:"    (a CHECK constraint)
+--   'evidence' SQLSTATE 23514, message starting "cmp:"       (a receipt does not match its config)
 --   'fk'      SQLSTATE 23503                                 (a foreign key)
 --   'unique'  SQLSTATE 23505                                 (a unique index)
 \set QUIET 1
@@ -25,7 +26,7 @@ CREATE FUNCTION t.ok(label text, cond boolean, detail text DEFAULT NULL) RETURNS
 CREATE FUNCTION t.refused(label text, stmt text, how text) RETURNS void LANGUAGE plpgsql AS $$
 DECLARE n bigint; state text; msg text; got text; pass boolean;
 BEGIN
-  IF how NOT IN ('rows0','priv','rls','rule','check','fk','unique') THEN
+  IF how NOT IN ('rows0','priv','rls','rule','check','evidence','fk','unique') THEN
     RAISE EXCEPTION 'test error: unknown expectation %', how;
   END IF;
   BEGIN
@@ -39,7 +40,8 @@ BEGIN
       WHEN 'priv'   THEN state = '42501' AND msg LIKE 'permission denied%'
       WHEN 'rls'    THEN state = '42501' AND msg LIKE '%row-level security%'
       WHEN 'rule'   THEN state = '42501' AND msg LIKE 'cmp:%'
-      WHEN 'check'  THEN state = '23514'
+      WHEN 'check'  THEN state = '23514' AND msg NOT LIKE 'cmp:%'
+      WHEN 'evidence' THEN state = '23514' AND msg LIKE 'cmp:%'
       WHEN 'fk'     THEN state = '23503'
       WHEN 'unique' THEN state = '23505'
       ELSE false END;
@@ -66,6 +68,23 @@ CREATE FUNCTION t.login(u uuid) RETURNS void LANGUAGE sql AS
   $$ SELECT set_config('request.jwt.claim.sub', COALESCE(u::text, ''), false) $$;
 
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA t TO PUBLIC;
+
+-- The suite must run as the schema owner and that owner must not be a superuser, so that
+-- "database owner" checks below prove the triggers under the hosting platform's kind of role.
+SELECT t.ok('tests run as a non-superuser schema owner',
+  (SELECT NOT rolsuper FROM pg_roles WHERE rolname = current_user)
+  AND (SELECT nspowner = (SELECT oid FROM pg_roles WHERE rolname = current_user) FROM pg_namespace WHERE nspname = 'cmp'),
+  current_user || ', bypassrls=' || (SELECT rolbypassrls FROM pg_roles WHERE rolname = current_user));
+SELECT t.ok('every SECURITY DEFINER function in cmp is owned by the schema owner and pins its search path',
+  count(*) > 0 AND bool_and(p.proowner = n.nspowner AND p.proconfig::text LIKE '%search_path=cmp, pg_temp%'),
+  count(*) || ' functions: ' || string_agg(p.proname, ', ' ORDER BY p.proname))
+  FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'cmp' AND p.prosecdef;
+SELECT t.ok('no request-serving role owns anything in cmp',
+  NOT EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'cmp' AND pg_get_userbyid(c.relowner) IN ('anon','authenticated','service_role'))
+  AND NOT EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'cmp' AND pg_get_userbyid(p.proowner) IN ('anon','authenticated','service_role')));
+SELECT t.ok('row-level security is enabled on every cmp table',
+  bool_and(c.relrowsecurity), count(*) || ' tables')
+  FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'cmp' AND c.relkind = 'r';
 
 -- ───────────── 1. Seeds (checked before fixtures change anything) ─────────────
 
@@ -114,6 +133,9 @@ SELECT t.refused('a profile cannot be approved with a blank reviewer',
 SELECT t.allowed('a profile can be approved with reviewer and date',
   'UPDATE cmp.regulation_profiles SET status = ''approved'', reviewed_by = ''Test counsel'', reviewed_at = current_date WHERE key = ''in-dpdp''');
 
+UPDATE cmp.regulation_profiles SET status = 'approved', reviewed_by = 'Test counsel', reviewed_at = current_date WHERE key = 'uk';
+SELECT t.refused('a config cannot use an approved profile that is not the site''s default',
+  format(q, :org_a, :site_a, 9, 'cfg-test', 'uk'), 'rule') FROM t.cfg_insert;
 SELECT t.refused('a config cannot be published under a draft profile',
   format(q, :org_a, :site_a, 9, 'cfg-test', 'eu-gdpr'), 'rule') FROM t.cfg_insert;
 SELECT t.refused('a config cannot be signed with a checkpoint key',
@@ -136,8 +158,8 @@ BEGIN
     INSERT INTO cmp.config_versions (org_id, site_id, version, snapshot, content_hash, signature, signing_key_id, profile_id, notice_version, change_impact, published_by)
       VALUES (o.org, o.site, 1, '{}', z, 'sig', 'cfg-test', prof, 'v1', 'none', gen_random_uuid()) RETURNING id INTO cfg;
     rid := gen_random_uuid();
-    INSERT INTO cmp.receipts (receipt_id, org_id, site_id, visitor_id, action, purposes, config_version_id, canonical)
-      VALUES (rid, o.org, o.site, gen_random_uuid(), 'given', '[]', cfg, '{}');
+    INSERT INTO cmp.receipts (receipt_id, org_id, site_id, visitor_id, action, purposes, config_version_id, profile_id, config_hash, notice_version, canonical)
+      VALUES (rid, o.org, o.site, gen_random_uuid(), 'given', '[]', cfg, prof, z, 'v1', '{}');
     INSERT INTO cmp.ledger_segments (org_id, site_id, segment_no, first_seq, last_seq, receipt_count, segment_hash, prev_segment_hash)
       VALUES (o.org, o.site, 1, 1, 1, 1, z, z) RETURNING id INTO seg;
     INSERT INTO cmp.receipt_seals (receipt_id, org_id, site_id, segment_id, seq, prev_hash, hash) VALUES (rid, o.org, o.site, seg, 1, z, z);
@@ -150,16 +172,25 @@ END $$;
 CREATE TABLE t.ids AS SELECT
   (SELECT id FROM cmp.purposes WHERE site_id = :site_b AND key = 'analytics') AS b_purpose,
   (SELECT id FROM cmp.vendors WHERE org_id = :org_b) AS b_vendor,
-  (SELECT id FROM cmp.technologies WHERE site_id = :site_a) AS a_tech,
-  (SELECT id FROM cmp.config_versions WHERE site_id = :site_a) AS a_cfg,
-  (SELECT id FROM cmp.config_versions WHERE site_id = :site_b) AS b_cfg,
+  (SELECT id FROM cmp.technologies WHERE site_id = :site_a AND name = '_ga') AS a_tech,
+  (SELECT id FROM cmp.config_versions WHERE site_id = :site_a AND version = 1) AS a_cfg,
+  (SELECT id FROM cmp.config_versions WHERE site_id = :site_b AND version = 1) AS b_cfg,
   (SELECT id FROM cmp.ledger_segments WHERE site_id = :site_a) AS a_seg,
   (SELECT id FROM cmp.ledger_segments WHERE site_id = :site_b) AS b_seg,
   (SELECT receipt_id FROM cmp.receipts WHERE site_id = :site_a) AS a_receipt,
   (SELECT id FROM cmp.purposes WHERE site_id = :site_a AND key = 'analytics') AS a_purpose,
   (SELECT id FROM cmp.purposes WHERE site_id = :site_a AND key = 'preferences') AS a_pref,
+  (SELECT id FROM cmp.technologies WHERE site_id = :site_b) AS b_tech,
+  (SELECT id FROM cmp.regulation_profiles WHERE key = 'in-dpdp' AND version = 1) AS dpdp,
+  (SELECT id FROM cmp.regulation_profiles WHERE key = 'uk' AND version = 1) AS uk,
   repeat('0', 64) AS z;
 GRANT SELECT ON t.ids TO PUBLIC;
+
+-- A receipt insert in which every value is individually valid; tests change exactly one thing.
+-- Arguments: receipt id, organisation, site, config, profile, config hash, notice version.
+CREATE TABLE t.rcpt AS SELECT
+  'INSERT INTO cmp.receipts (receipt_id, org_id, site_id, visitor_id, action, purposes, config_version_id, profile_id, config_hash, notice_version, canonical) VALUES (%L, %L, %L, gen_random_uuid(), ''given'', ''[]'', %L, %L, %L, %L, ''{}'')'::text AS q;
+GRANT SELECT ON t.rcpt TO PUBLIC;
 
 -- ───────────── 2. Visitors (anon) have no access at all ─────────────
 
@@ -235,7 +266,7 @@ SELECT t.login(:a_viewer);
 SELECT t.refused('viewer cannot add a technology', format('INSERT INTO cmp.technologies (org_id, site_id, name, type, party) VALUES (%L, %L, ''v'', ''cookie'', ''first'')', :org_a, :site_a), 'rls');
 SELECT t.refused('viewer cannot edit a purpose', 'UPDATE cmp.purposes SET display_order = 9', 'rows0');
 SELECT t.ok('viewer cannot read the audit log', t.n('SELECT 1 FROM cmp.audit_log') = 0);
-SELECT t.ok('members read approved regulation profiles only', t.n('SELECT 1 FROM cmp.regulation_profiles') = 1);
+SELECT t.ok('members read approved regulation profiles only', t.n('SELECT 1 FROM cmp.regulation_profiles') = 2 AND t.n('SELECT 1 FROM cmp.regulation_profiles WHERE status <> ''approved''') = 0);
 
 SELECT t.login(:a_editor);
 SELECT t.allowed('editor can add a technology', format('INSERT INTO cmp.technologies (org_id, site_id, name, type, party) VALUES (%L, %L, ''_fbp'', ''cookie'', ''third'')', :org_a, :site_a));
@@ -314,9 +345,21 @@ SELECT t.refused('a segment cannot be marked purged and altered together', 'UPDA
 -- Each statement uses identifiers that are individually valid, so only the cross-site link is wrong.
 
 SELECT t.refused('a Site A receipt cannot name Site B''s config',
-  format('INSERT INTO cmp.receipts (receipt_id, org_id, site_id, visitor_id, action, purposes, config_version_id, canonical) VALUES (gen_random_uuid(), %L, %L, gen_random_uuid(), ''given'', ''[]'', %L, ''{}'')', :org_a, :site_a, b_cfg), 'fk') FROM t.ids;
-INSERT INTO cmp.receipts (receipt_id, org_id, site_id, visitor_id, action, purposes, config_version_id, canonical)
-  SELECT 'aaaaaaaa-2222-0000-0000-000000000000', :org_a, :site_a, gen_random_uuid(), 'given', '[]', a_cfg, '{}' FROM t.ids;
+  format(r.q, gen_random_uuid(), :org_a, :site_a, i.b_cfg, i.dpdp, i.z, 'v1'), 'fk') FROM t.ids i, t.rcpt r;
+SELECT t.refused('a receipt cannot carry a profile other than its config''s',
+  format(r.q, gen_random_uuid(), :org_a, :site_a, i.a_cfg, i.uk, i.z, 'v1'), 'fk') FROM t.ids i, t.rcpt r;
+SELECT t.refused('a receipt naming a config must carry a profile',
+  format(r.q, gen_random_uuid(), :org_a, :site_a, i.a_cfg, NULL, i.z, 'v1'), 'check') FROM t.ids i, t.rcpt r;
+SELECT t.refused('a receipt cannot carry a hash other than its config''s',
+  format(r.q, gen_random_uuid(), :org_a, :site_a, i.a_cfg, i.dpdp, repeat('1', 64), 'v1'), 'evidence') FROM t.ids i, t.rcpt r;
+SELECT t.refused('a receipt naming a config cannot omit the hash',
+  format(r.q, gen_random_uuid(), :org_a, :site_a, i.a_cfg, i.dpdp, NULL, 'v1'), 'evidence') FROM t.ids i, t.rcpt r;
+SELECT t.refused('a receipt cannot carry a notice version other than its config''s',
+  format(r.q, gen_random_uuid(), :org_a, :site_a, i.a_cfg, i.dpdp, i.z, 'v2'), 'evidence') FROM t.ids i, t.rcpt r;
+SELECT t.allowed('a receipt matching its config in site, profile, hash and notice version is accepted',
+  format(r.q, 'aaaaaaaa-2222-0000-0000-000000000000', :org_a, :site_a, i.a_cfg, i.dpdp, i.z, 'v1')) FROM t.ids i, t.rcpt r;
+SELECT t.allowed('a migrated record with provenance and no config is accepted',
+  format('INSERT INTO cmp.receipts (receipt_id, org_id, site_id, visitor_id, action, purposes, provenance, canonical) VALUES (gen_random_uuid(), %L, %L, gen_random_uuid(), ''migrated'', ''[]'', ''{"source":"legacy banner","original_time":"2026-11-01T10:00:00Z","migrated_at":"2026-12-01T00:00:00Z"}'', ''{}'')', :org_a, :site_a));
 SELECT t.refused('a Site A receipt cannot be sealed into Site B''s segment',
   format('INSERT INTO cmp.receipt_seals (receipt_id, org_id, site_id, segment_id, seq, prev_hash, hash) VALUES (''aaaaaaaa-2222-0000-0000-000000000000'', %L, %L, %L, 2, %L, %L)', :org_a, :site_a, b_seg, z, z), 'fk') FROM t.ids;
 SELECT t.refused('a Site A receipt cannot be sealed under Site B''s identity',
@@ -334,10 +377,49 @@ SELECT t.refused('a Site B flag cannot point at a Site A receipt',
 SELECT t.refused('a config cannot supersede another site''s config',
   format('INSERT INTO cmp.config_versions (org_id, site_id, version, snapshot, content_hash, signature, signing_key_id, profile_id, notice_version, change_impact, published_by, supersedes_id) VALUES (%L, %L, 2, ''{}'', %L, ''sig'', ''cfg-test'', (SELECT id FROM cmp.regulation_profiles WHERE key = ''in-dpdp''), ''v1'', ''none'', gen_random_uuid(), %L)', :org_a, :site_a, z, b_cfg), 'fk') FROM t.ids;
 SELECT t.refused('a receipt cannot claim another organisation''s site',
-  format('INSERT INTO cmp.receipts (receipt_id, org_id, site_id, visitor_id, action, purposes, config_version_id, canonical) VALUES (gen_random_uuid(), %L, %L, gen_random_uuid(), ''given'', ''[]'', %L, ''{}'')', :org_b, :site_a, a_cfg), 'rule') FROM t.ids;
+  format(r.q, gen_random_uuid(), :org_b, :site_a, i.a_cfg, i.dpdp, i.z, 'v1'), 'rule') FROM t.ids i, t.rcpt r;
 SELECT t.refused('a migrated receipt must carry provenance', format('INSERT INTO cmp.receipts (receipt_id, org_id, site_id, visitor_id, action, purposes, canonical) VALUES (gen_random_uuid(), %L, %L, gen_random_uuid(), ''migrated'', ''[]'', ''{}'')', :org_a, :site_a), 'check');
 SELECT t.refused('a captured receipt must name its config', format('INSERT INTO cmp.receipts (receipt_id, org_id, site_id, visitor_id, action, purposes, canonical) VALUES (gen_random_uuid(), %L, %L, gen_random_uuid(), ''given'', ''[]'', ''{}'')', :org_a, :site_a), 'check');
 SELECT t.refused('a violation count cannot be negative', format('INSERT INTO cmp.violation_reports (org_id, site_id, day, category, pattern, occurrences, sample_rate) VALUES (%L, %L, current_date, ''observed'', ''neg.example'', -1, 0.05)', :org_a, :site_a), 'check');
+
+-- Violation reports can only name a technology of their own site and organisation.
+INSERT INTO cmp.sites (id, org_id, name, default_profile, retention_days) VALUES ('aaaaaaaa-3333-0000-0000-000000000000', :org_a, 'Site A2', 'in-dpdp', 365);
+INSERT INTO cmp.technologies (id, org_id, site_id, name, type, party) VALUES
+  ('aaaaaaaa-4444-0000-0000-000000000000', :org_a, 'aaaaaaaa-3333-0000-0000-000000000000', 'a2 tech', 'cookie', 'first'),
+  ('aaaaaaaa-5555-0000-0000-000000000000', :org_a, :site_a, 'short lived', 'cookie', 'first');
+CREATE TABLE t.vr AS SELECT
+  'INSERT INTO cmp.violation_reports (org_id, site_id, day, category, technology_id, pattern, sample_rate) VALUES (%L, %L, current_date, ''potential_violation'', %L, %L, 0.05)'::text AS q;
+SELECT t.refused('a report cannot name a technology of another site in the same organisation',
+  format(v.q, :org_a, :site_a, 'aaaaaaaa-4444-0000-0000-000000000000', 'x1'), 'fk') FROM t.vr v;
+SELECT t.refused('a report cannot name a technology of another organisation',
+  format(v.q, :org_a, :site_a, i.b_tech, 'x2'), 'fk') FROM t.vr v, t.ids i;
+SELECT t.allowed('a report can name a technology of its own site',
+  format(v.q, :org_a, :site_a, 'aaaaaaaa-5555-0000-0000-000000000000', 'del.example')) FROM t.vr v;
+SELECT t.allowed('a technology named by a report can be deleted', 'DELETE FROM cmp.technologies WHERE id = ''aaaaaaaa-5555-0000-0000-000000000000''');
+SELECT t.ok('deleting the technology clears only technology_id; the report keeps its site and organisation',
+  t.n(format('SELECT 1 FROM cmp.violation_reports WHERE pattern = ''del.example'' AND technology_id IS NULL AND site_id = %L AND org_id = %L', :site_a, :org_a)) = 1);
+
+-- An inventory row cannot change site or organisation; ordinary edits still work. Run as a member.
+SET ROLE authenticated;
+SELECT t.login(:a_editor);
+SELECT t.refused('a member cannot move a technology to another site of the same organisation',
+  format('UPDATE cmp.technologies SET site_id = ''aaaaaaaa-3333-0000-0000-000000000000'' WHERE id = %L', a_tech), 'rule') FROM t.ids;
+SELECT t.refused('a member cannot move a technology to another organisation',
+  format('UPDATE cmp.technologies SET org_id = %L WHERE id = %L', :org_b, a_tech), 'rule') FROM t.ids;
+SELECT t.allowed('a member can still edit a technology''s name, vendor and match patterns',
+  format('UPDATE cmp.technologies SET name = ''_ga (renamed)'', vendor_id = (SELECT id FROM cmp.vendors WHERE org_id IS NULL ORDER BY name LIMIT 1), match_patterns = ARRAY[''cookie:_ga*''] WHERE id = %L', a_tech)) FROM t.ids;
+SELECT t.refused('a member cannot move a translation to another site',
+  format('UPDATE cmp.translations SET site_id = ''aaaaaaaa-3333-0000-0000-000000000000'' WHERE site_id = %L', :site_a), 'rule');
+RESET ROLE;
+SELECT t.login(NULL);
+SELECT t.refused('a technology''s site cannot change even for the database owner',
+  format('UPDATE cmp.technologies SET site_id = ''aaaaaaaa-3333-0000-0000-000000000000'' WHERE id = %L', a_tech), 'rule') FROM t.ids;
+SELECT t.refused('a purpose cannot move to another site',
+  format('UPDATE cmp.purposes SET site_id = ''aaaaaaaa-3333-0000-0000-000000000000'' WHERE site_id = %L AND key = ''marketing''', :site_a), 'rule');
+SELECT t.refused('a domain cannot move to another site',
+  format('UPDATE cmp.site_domains SET site_id = ''aaaaaaaa-3333-0000-0000-000000000000'' WHERE site_id = %L', :site_a), 'rule');
+SELECT t.refused('an organisation''s vendor cannot move to another organisation',
+  format('UPDATE cmp.vendors SET org_id = %L WHERE org_id = %L', :org_b, :org_a), 'rule');
 
 -- ───────────── 8. Retention path: whole segment, flag set, then the segment is marked purged once ─────────────
 
@@ -379,13 +461,12 @@ INSERT INTO cmp.site_domains (org_id, site_id, hostname, method) SELECT :org_b, 
 SELECT t.refused('a verified hostname cannot be verified by a second site',
   format('UPDATE cmp.site_domains SET verified_at = now() WHERE site_id = %L AND hostname = (SELECT hostname FROM cmp.site_domains WHERE site_id = %L)', :site_b, :site_a), 'unique');
 
--- The site's own default profile must have an approved version at the moment of publication,
--- even when the config names a different, approved profile.
+-- The config's profile is the site's fallback profile: it must be a version of the site's default.
 UPDATE cmp.sites SET default_profile = 'eu-gdpr' WHERE id = :site_b;
-SELECT t.refused('a config cannot be published while the site''s default profile has no approved version',
+SELECT t.refused('a config cannot be published under a profile other than the site''s default',
   format(q, :org_b, :site_b, 9, 'cfg-test', 'in-dpdp'), 'rule') FROM t.cfg_insert;
 UPDATE cmp.sites SET default_profile = 'in-dpdp' WHERE id = :site_b;
-SELECT t.allowed('the same config publishes once the site''s default profile is approved',
+SELECT t.allowed('the same config publishes once it matches the site''s default profile',
   format(q, :org_b, :site_b, 9, 'cfg-test', 'in-dpdp')) FROM t.cfg_insert;
 
 -- Approved profiles are frozen; a change of substance is a new version.
@@ -425,11 +506,11 @@ SELECT (SELECT count(*) FROM t.results WHERE ok) || ' passed, ' || (SELECT count
   SELECT n || E'\t' || CASE WHEN ok THEN 'PASS' ELSE 'FAIL' END || E'\t' || label || E'\t' || 'expected: ' || expected || E'\t' || COALESCE(detail, '') FROM t.results ORDER BY n;
   \o
 \endif
-SELECT count(*) = 0 AS all_passed FROM t.results WHERE NOT ok \gset
-\if :all_passed
-\else
-  \echo 'cmp schema tests failed'
-  \quit 1
-\endif
+-- A failed check must stop the run with an error. (psql's \quit does not set an exit status.)
+DO $$
+DECLARE f bigint := (SELECT count(*) FROM t.results WHERE NOT ok);
+BEGIN
+  IF f > 0 THEN RAISE EXCEPTION 'cmp schema tests failed: % check(s)', f; END IF;
+END $$;
 SET client_min_messages = warning;
 DROP SCHEMA t CASCADE;
