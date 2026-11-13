@@ -1,6 +1,7 @@
 import { Helmet } from "react-helmet-async";
+import { PublishedPolicy } from "@/components/governance/PublishedPolicy";
 
-export default function Terms() {
+function StaticTerms() {
   return (
     <div className="min-h-screen bg-background text-foreground p-6 md:p-12">
       <Helmet>
@@ -58,4 +59,8 @@ export default function Terms() {
       </div>
     </div>
   );
+}
+
+export default function Terms() {
+  return <PublishedPolicy slug="terms-of-service" fallback={<StaticTerms />} />;
 }

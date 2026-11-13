@@ -34,6 +34,7 @@ const overviewNav: NavItem[] = [
   { title: "Execute", subtitle: "Bespoke DPDP programmes by industry", url: "/execute", icon: Sparkles },
   { title: "Learn Hub", subtitle: "Public articles & guides", url: "/learn", icon: BookMarked },
   { title: "Content Studio", subtitle: "Blogs, guides & landing pages", url: "/studio/content", icon: BookOpen },
+  { title: "Governance Studio", subtitle: "Site policies & terms", url: "/studio/governance", icon: Scale },
 ];
 
 const assessNav: NavItem[] = [

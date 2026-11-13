@@ -1,0 +1,1 @@
+- Site policies live in `site_governance_documents` (one row per version, JSONB `sections` typed in `src/lib/governance`); publishing goes only through `rpc_publish_governance_document` so the old version is archived and the audit log is written in one step. `/privacy` and `/terms` fall back to their static text when nothing is published.

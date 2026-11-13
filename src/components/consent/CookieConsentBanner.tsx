@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -113,6 +113,8 @@ async function recordConsent(
 
 export function CookieConsentBanner() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const isProfileSetup = pathname === "/profile-setup";
   const [visible, setVisible] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
   const [categories, setCategories] = useState<Record<string, boolean>>(() => {
@@ -170,7 +172,7 @@ export function CookieConsentBanner() {
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50" role="dialog" aria-label="Cookie consent" aria-modal="false">
+    <div className={isProfileSetup ? "relative z-50 max-h-[70dvh] overflow-y-auto" : "fixed bottom-0 left-0 right-0 z-50"} role="dialog" aria-label="Cookie consent" aria-modal="false">
       <div className="bg-card border-t border-border shadow-lg max-w-full">
         <div className="max-w-6xl mx-auto p-4 md:p-6">
           {!showPreferences ? (
@@ -195,7 +197,7 @@ export function CookieConsentBanner() {
                   <span className="text-muted">|</span>
                   <button onClick={() => { setVisible(false); navigate("/privacy-preferences", { state: { scrollTo: "grievance" } }); }} className="text-primary underline hover:text-primary/80 bg-transparent border-none cursor-pointer p-0 inline text-xs" aria-label="Contact grievance officer">Grievance / Contact DPO</button>
                 </div>
-                <div className="flex gap-2 shrink-0">
+                <div className={isProfileSetup ? "flex flex-wrap gap-2" : "flex gap-2 shrink-0"}>
                   <Button onClick={handleAcceptAll} className="bg-primary hover:bg-primary/90 text-primary-foreground" aria-label="Accept all cookies">
                     Accept All
                   </Button>

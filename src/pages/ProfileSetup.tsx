@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
+import { WheelMark } from "@/components/BrandLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -8,10 +9,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Cog, Info } from "lucide-react";
+import { Info, Loader2 } from "lucide-react";
 
 export default function ProfileSetup() {
-  const { user, refreshProfile } = useAuth();
+  const { user, loading: authLoading, refreshProfile } = useAuth();
   const [fullName, setFullName] = useState("");
   const [organisation, setOrganisation] = useState("");
   const [role, setRole] = useState("");
@@ -20,16 +21,19 @@ export default function ProfileSetup() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user) {
+      toast.error("Your session has ended. Please sign in again.");
+      navigate("/auth");
+      return;
+    }
     setLoading(true);
 
     const { error } = await supabase
       .from("profiles")
-      .update({ full_name: fullName, organisation, role })
-      .eq("id", user.id);
+      .upsert({ id: user.id, full_name: fullName.trim(), organisation: organisation.trim(), role }, { onConflict: "id" });
 
     if (error) {
-      toast.error("Failed to save profile");
+      toast.error(`Could not save your profile: ${error.message}`);
     } else {
       await refreshProfile();
       toast.success("Profile saved!");
@@ -38,12 +42,21 @@ export default function ProfileSetup() {
     setLoading(false);
   };
 
+  if (authLoading) {
+    return (
+      <div className="min-h-dvh flex items-center justify-center bg-background">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+  if (!user) return <Navigate to="/auth" replace />;
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-dvh overflow-y-auto flex items-start sm:items-center justify-center bg-background px-4 py-8">
       <Card className="w-full max-w-lg border-border bg-card">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto flex items-center gap-2">
-            <Cog className="h-8 w-8 text-primary" />
+            <WheelMark size={30} />
             <span className="text-2xl font-bold text-gradient">PrivcybHub</span>
           </div>
           <CardTitle className="text-xl">Complete Your Profile</CardTitle>
@@ -53,17 +66,17 @@ export default function ProfileSetup() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="fullName">Full Name</Label>
-              <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+              <Input id="fullName" autoComplete="name" className="h-11 scroll-my-8" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="organisation">Organisation</Label>
-              <Input id="organisation" value={organisation} onChange={(e) => setOrganisation(e.target.value)} required />
+              <Input id="organisation" autoComplete="organization" className="h-11 scroll-my-8" value={organisation} onChange={(e) => setOrganisation(e.target.value)} required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
               <Select value={role} onValueChange={setRole} required>
-                <SelectTrigger><SelectValue placeholder="Select your role" /></SelectTrigger>
-                <SelectContent>
+                <SelectTrigger id="role" className="h-11 scroll-my-8"><SelectValue placeholder="Select your role" /></SelectTrigger>
+                <SelectContent className="max-h-[var(--radix-select-content-available-height)]">
                   <SelectItem value="DPO">Data Protection Officer (DPO)</SelectItem>
                   <SelectItem value="Compliance Head">Compliance Head</SelectItem>
                   <SelectItem value="Assessor">Assessor</SelectItem>
@@ -82,7 +95,7 @@ export default function ProfileSetup() {
               </p>
             </div>
 
-            <Button type="submit" className="w-full gradient-primary" disabled={loading || !role}>
+            <Button type="submit" className="h-11 w-full scroll-my-8 gradient-primary" disabled={loading || !role}>
               {loading ? "Saving..." : "Continue to Dashboard"}
             </Button>
           </form>
