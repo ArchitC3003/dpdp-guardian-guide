@@ -108,8 +108,13 @@ for MODE in $MODES; do
   LEFT="$(run -At -c "select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'cmp'")"
   [ "$LEFT" = "0" ] || { echo "FAIL: cmp functions still present after rollback"; exit 1; }
 
-  echo "5/5 apply migration again"
+  echo "5/5 apply migration again, then the platform smoke test on the fresh schema"
   run -f "$WORK/up.sql"
+  SMOKE="$(run -At -F "$(printf '\t')" -f "$WORK/cmp_platform_smoke.sql" | grep -E "^[0-9]+$(printf '\t')(PASS|FAIL)" || true)"
+  [ -n "$SMOKE" ] || { echo "FAIL: platform smoke test produced no results"; FAILED=1; }
+  echo "$SMOKE" | awk -F'\t' -v m="$MODE" '{printf "%s\t%d\t%s\tsmoke: %s\texpected: %s\t%s\n", m, 2000+$1, $2, $3, $4, $5}' >> "$ALL"
+  if echo "$SMOKE" | grep -q "$(printf '\tFAIL\t')"; then echo "$SMOKE" | grep "$(printf '\tFAIL\t')"; FAILED=1; break; fi
+  echo "  smoke: $(echo "$SMOKE" | wc -l) checks passed"
 done
 
 if [ -n "${CMP_RESULTS_OUT:-}" ]; then cp "$ALL" "$CMP_RESULTS_OUT"; chmod 644 "$CMP_RESULTS_OUT"; fi

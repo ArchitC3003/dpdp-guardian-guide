@@ -8,7 +8,7 @@ REVOKE ALL ON SCHEMA cmp FROM PUBLIC;
 REVOKE ALL ON SCHEMA cmp FROM anon;
 GRANT USAGE ON SCHEMA cmp TO authenticated, service_role;
 
--- ───────────────────────── Tenancy and sites ─────────────────────────
+-- == Tenancy and sites ==
 
 CREATE TABLE cmp.organisations (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -52,7 +52,7 @@ CREATE TABLE cmp.site_domains (
 -- A hostname can be verified by only one site at a time.
 CREATE UNIQUE INDEX site_domains_verified_host ON cmp.site_domains (hostname) WHERE verified_at IS NOT NULL;
 
--- ───────────────── Governance: profiles, purposes, vendors, technologies ─────────────────
+-- == Governance: profiles, purposes, vendors, technologies ==
 
 CREATE TABLE cmp.regulation_profiles (
   id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -135,7 +135,7 @@ CREATE TABLE cmp.translations (
   PRIMARY KEY (site_id, language, key)
 );
 
--- ───────────────────────── Published config ─────────────────────────
+-- == Published config ==
 
 CREATE TABLE cmp.signing_keys (
   key_id              text PRIMARY KEY,
@@ -176,7 +176,7 @@ ALTER TABLE cmp.sites
   ADD CONSTRAINT sites_live_config_fk FOREIGN KEY (live_config_id, id, org_id)
   REFERENCES cmp.config_versions (id, site_id, org_id);
 
--- ───────────────────────── Evidence ─────────────────────────
+-- == Evidence ==
 
 CREATE TABLE cmp.receipts (
   receipt_id           uuid PRIMARY KEY,                  -- generated in the browser
@@ -309,7 +309,7 @@ CREATE TABLE cmp.audit_log (
 );
 CREATE INDEX audit_log_org ON cmp.audit_log (org_id, at);
 
--- ───────────────────────── Membership helper ─────────────────────────
+-- == Membership helper ==
 
 CREATE FUNCTION cmp.is_member(target_org uuid, min_role text DEFAULT 'viewer')
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = cmp, pg_temp AS $$
@@ -326,7 +326,7 @@ $$;
 REVOKE ALL ON FUNCTION cmp.is_member(uuid, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION cmp.is_member(uuid, text) TO authenticated, service_role;
 
--- ───────────────────────── Integrity triggers ─────────────────────────
+-- == Integrity triggers ==
 
 -- A child row must belong to the same organisation as the site (or parents) it hangs from,
 -- so a forged org_id cannot attach data to another tenant's site.
@@ -652,7 +652,7 @@ CREATE TRIGGER scope_immutable BEFORE UPDATE OF site_id, org_id ON cmp.translati
 CREATE TRIGGER scope_immutable BEFORE UPDATE OF org_id ON cmp.vendors
   FOR EACH ROW EXECUTE FUNCTION cmp.tg_scope_immutable();
 
--- ───────────────────────── Privileges ─────────────────────────
+-- == Privileges ==
 -- Nothing is granted by default. anon gets nothing. Members get exactly the columns they may
 -- set; values the platform owns (site key, tokens, verification, published flags) are not
 -- writable by members at all. The service role gets no UPDATE or DELETE on evidence.
@@ -679,7 +679,7 @@ GRANT INSERT, UPDATE, DELETE ON cmp.organisations, cmp.org_members, cmp.sites, c
 GRANT INSERT ON cmp.config_versions, cmp.receipts, cmp.receipt_seals, cmp.receipt_flags,
       cmp.ledger_segments, cmp.checkpoints, cmp.audit_log TO service_role;
 
--- ───────────────────────── Row-level security ─────────────────────────
+-- == Row-level security ==
 -- Row-level security is enabled on every table but not FORCEd. The tables and the SECURITY
 -- DEFINER functions (membership helper, integrity and audit triggers) share one owner: the role
 -- that runs this migration. As table owner that role is exempt from the policies, which is what
@@ -735,7 +735,7 @@ CREATE POLICY approved_read ON cmp.regulation_profiles FOR SELECT TO authenticat
 CREATE POLICY key_read ON cmp.signing_keys FOR SELECT TO authenticated USING (true);
 CREATE POLICY owner_read ON cmp.audit_log FOR SELECT TO authenticated USING (org_id IS NOT NULL AND cmp.is_member(org_id, 'owner'));
 
--- ───────────────────────── Standard purposes ─────────────────────────
+-- == Standard purposes ==
 -- Used when a site is created (package 2). Sites may add their own purposes afterwards.
 
 CREATE FUNCTION cmp.seed_standard_purposes(p_site uuid) RETURNS void
@@ -753,7 +753,7 @@ $$;
 REVOKE ALL ON FUNCTION cmp.seed_standard_purposes(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION cmp.seed_standard_purposes(uuid) TO service_role;
 
--- ───────────────────────── Seed: regulation profiles ─────────────────────────
+-- == Seed: regulation profiles ==
 -- Engineering defaults, seeded as drafts. A profile cannot be used to publish a config until
 -- it is approved, which requires a named reviewer (legal sign-off).
 
@@ -795,7 +795,7 @@ INSERT INTO cmp.regulation_profiles (key, version, name, effective_from, rules, 
    "reprompt_on":[]}',
  '[]');
 
--- ───────────────────────── Seed: platform vendor catalogue ─────────────────────────
+-- == Seed: platform vendor catalogue ==
 
 INSERT INTO cmp.vendors (org_id, name, domains, country, privacy_url) VALUES
 (NULL, 'Google', ARRAY['google-analytics.com','googletagmanager.com','doubleclick.net','google.com','youtube.com'], 'US', 'https://policies.google.com/privacy'),
