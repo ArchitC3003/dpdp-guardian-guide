@@ -66,17 +66,17 @@ export default function ProfileSetup() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="fullName">Full Name</Label>
-              <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+              <Input id="fullName" autoComplete="name" className="h-11 scroll-my-8" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="organisation">Organisation</Label>
-              <Input id="organisation" value={organisation} onChange={(e) => setOrganisation(e.target.value)} required />
+              <Input id="organisation" autoComplete="organization" className="h-11 scroll-my-8" value={organisation} onChange={(e) => setOrganisation(e.target.value)} required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
               <Select value={role} onValueChange={setRole} required>
-                <SelectTrigger><SelectValue placeholder="Select your role" /></SelectTrigger>
-                <SelectContent>
+                <SelectTrigger id="role" className="h-11 scroll-my-8"><SelectValue placeholder="Select your role" /></SelectTrigger>
+                <SelectContent className="max-h-[var(--radix-select-content-available-height)]">
                   <SelectItem value="DPO">Data Protection Officer (DPO)</SelectItem>
                   <SelectItem value="Compliance Head">Compliance Head</SelectItem>
                   <SelectItem value="Assessor">Assessor</SelectItem>
@@ -95,7 +95,7 @@ export default function ProfileSetup() {
               </p>
             </div>
 
-            <Button type="submit" className="w-full gradient-primary" disabled={loading || !role}>
+            <Button type="submit" className="h-11 w-full scroll-my-8 gradient-primary" disabled={loading || !role}>
               {loading ? "Saving..." : "Continue to Dashboard"}
             </Button>
           </form>
