@@ -26,4 +26,3 @@
 - Lovable's migration tool writes a new migration file for any SQL it is given and then applies every unapplied file. To apply a migration already in the repo, give it a single comment line; expect one extra empty migration entry.
 - Before writing a migration, fetch `origin/main` and number it after the latest file in `drizzle/migrations`.
 - `src/App.tsx` pages are lazy (not landing) under `Suspense`; QueryClient: 2-min cache, no focus refetch.
-- Site policies live in `site_governance_documents` (one row per version, JSONB `sections` typed in `src/lib/governance`); publishing goes only through `rpc_publish_governance_document` so the old version is archived and the audit log is written in one step. `/privacy` and `/terms` fall back to their static text when nothing is published.
