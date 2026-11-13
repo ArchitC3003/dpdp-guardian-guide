@@ -106,6 +106,13 @@
       "when": 1794551303475,
       "tag": "0014_governance_audit_entity_type",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1794565000000,
+      "tag": "0015_cmp_schema",
+      "breakpoints": true
     }
   ]
 }
