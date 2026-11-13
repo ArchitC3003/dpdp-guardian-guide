@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { FEATURES, featureViews, stageReached, worstFirst, type WorkspaceFacts } from "./workspaceFeatures";
 import { STAGES } from "@/components/landing/stages";
+import { readFileSync } from "node:fs";
+
+const source = (path: string) => readFileSync(path, "utf8");
 
 const none = { open: 0, overdue: 0, dueSoon: 0 };
 const empty: WorkspaceFacts = {
@@ -14,6 +17,15 @@ describe("the feature list", () => {
     expect(new Set(FEATURES.map((f) => f.key)).size).toBe(FEATURES.length);
     const groups = new Set<string>([...STAGES.map((s) => s.key), "admin"]);
     expect(FEATURES.every((f) => groups.has(f.group))).toBe(true);
+  });
+
+  it("links only to pages that exist, and covers every page the sidebar offers", () => {
+    const app = source("src/App.tsx");
+    const routes = FEATURES.map((f) => f.route);
+    expect(routes.filter((r) => !app.includes(`path="${r}"`))).toEqual([]);
+    const sidebar = [...source("src/components/AppSidebar.tsx").matchAll(/url: "(\/[^"]+)"/g)].map((m) => m[1]);
+    expect(sidebar.length).toBeGreaterThan(10);
+    expect(sidebar.filter((u) => u !== "/dashboard" && !routes.includes(u))).toEqual([]);
   });
 
   it("gives every stage that is ready at least one feature", () => {

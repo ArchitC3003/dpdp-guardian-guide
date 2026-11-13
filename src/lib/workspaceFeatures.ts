@@ -45,6 +45,7 @@ export const FEATURES: Feature[] = [
   { key: "assessment-templates", group: "admin", name: "Assessment Templates", route: "/admin/assessment-templates", roles: SUPER, description: "Bundle frameworks into templates for new assessments." },
   { key: "users", group: "admin", name: "User Management", route: "/settings/users", roles: SUPER, description: "Invite people and set their roles." },
   { key: "ai", group: "admin", name: "AI Configuration", route: "/admin/ai-config", roles: SUPER, description: "Manage the assistant's prompts, models and examples." },
+  { key: "governance", group: "admin", name: "Governance Studio", route: "/studio/governance", roles: PUBLISHERS, description: "Draft and publish this site's own privacy policy and terms." },
   { key: "settings", group: "admin", name: "Account Settings", route: "/settings", description: "Your profile, appearance and account." },
   { key: "privacy", group: "admin", name: "Privacy Preferences", route: "/privacy-preferences", description: "Your own consent choices and data rights in this product." },
 ];

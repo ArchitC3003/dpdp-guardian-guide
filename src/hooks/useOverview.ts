@@ -46,6 +46,13 @@ async function fetchAll<T>(page: (from: number, to: number) => PromiseLike<{ dat
   return rows;
 }
 
+/** Run an `in (...)` query in batches, so a long id list never overflows the request URL. */
+async function inBatches<T>(ids: string[], run: (batch: string[]) => Promise<T[]>, size = 100): Promise<T[]> {
+  const batches: string[][] = [];
+  for (let i = 0; i < ids.length; i += size) batches.push(ids.slice(i, i + size));
+  return (await Promise.all(batches.map(run))).flat();
+}
+
 async function loadOverview(userId: string, includeOps: boolean): Promise<Overview> {
   const [assessmentsRes, policiesRes, workspacesRes] = await Promise.all([
     supabase.from("assessments").select("id, user_id, org_name, status, updated_at, framework_ids, special_status, dpdp_role").order("updated_at", { ascending: false }),
@@ -58,9 +65,8 @@ async function loadOverview(userId: string, includeOps: boolean): Promise<Overvi
   const frameworkIds = [...new Set(assessments.flatMap((a) => a.framework_ids ?? []))];
 
   const [checks, frameworks, domainRows] = await Promise.all([
-    ids.length
-      ? fetchAll((from, to) => supabase.from("assessment_checks").select("assessment_id, check_id, status, priority, evidence_status").in("assessment_id", ids).order("id").range(from, to))
-      : Promise.resolve([]),
+    inBatches(ids, (batch) =>
+      fetchAll((from, to) => supabase.from("assessment_checks").select("assessment_id, check_id, status, priority, evidence_status").in("assessment_id", batch).order("id").range(from, to))),
     frameworkIds.length
       ? supabase.from("assessment_frameworks").select("id, short_code").in("id", frameworkIds).then((r) => r.data ?? [])
       : Promise.resolve([]),
@@ -69,9 +75,8 @@ async function loadOverview(userId: string, includeOps: boolean): Promise<Overvi
       : Promise.resolve([]),
   ]);
   const domainIds = domainRows.map((d) => d.id);
-  const requirements = domainIds.length
-    ? await fetchAll((from, to) => supabase.from("framework_requirements").select("id, domain_id, item_code, description, risk_level, sdf_only").in("domain_id", domainIds).eq("is_active", true).order("display_order").order("id").range(from, to))
-    : [];
+  const requirements = await inBatches(domainIds, (batch) =>
+    fetchAll((from, to) => supabase.from("framework_requirements").select("id, domain_id, item_code, description, risk_level, sdf_only").in("domain_id", batch).eq("is_active", true).order("display_order").order("id").range(from, to)));
 
   const domainsByFramework = new Map<string, OverviewDomain[]>();
   for (const d of domainRows) {
