@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,51 +9,64 @@ import { postSignInPath } from "@/lib/buildIntent";
 import { AppLayout } from "@/components/AppLayout";
 import { CookieConsentBanner } from "@/components/consent/CookieConsentBanner";
 import LandingPage from "./pages/LandingPage";
-import Auth from "./pages/Auth";
-import ProfileSetup from "./pages/ProfileSetup";
-import Dashboard from "./pages/Dashboard";
-import SharedReports from "./pages/SharedReports";
-import Assessments from "./pages/Assessments";
-import Repository from "./pages/Repository";
-import ArtefactRepository from "./pages/ArtefactRepository";
-import AccountSettings from "./pages/AccountSettings";
-import UserManagement from "./pages/UserManagement";
-import Privacy from "./pages/Privacy";
-import Terms from "./pages/Terms";
-import PhaseOrgProfile from "./pages/PhaseOrgProfile";
-import PhasePolicyMatrix from "./pages/PhasePolicyMatrix";
-import PhaseRapidAssessment from "./pages/PhaseRapidAssessment";
-import PhaseDeptGrid from "./pages/PhaseDeptGrid";
-import PhaseDeptQuestionnaire from "./pages/PhaseDeptQuestionnaire";
-import PhaseDeptQuestionnaireDetail from "./pages/PhaseDeptQuestionnaireDetail";
-import PhaseFileReferences from "./pages/PhaseFileReferences";
-import PhaseDashboard from "./pages/PhaseDashboard";
-import PolicySopBuilder from "./pages/PolicySopBuilder";
-import PolicyLibrary from "./pages/PolicyLibrary";
-import AdminAiConfig from "./pages/AdminAiConfig";
-import AdminFrameworkManager from "./pages/AdminFrameworkManager";
-import AdminAssessmentTemplates from "./pages/AdminAssessmentTemplates";
-import ExecuteLanding from "./pages/execute/ExecuteLanding";
-import ExecuteSunburst from "./pages/execute/ExecuteSunburst";
-import ExecuteOrgProfile from "./pages/execute/ExecuteOrgProfile";
-import ExecuteWorkspace from "./pages/execute/ExecuteWorkspace";
-import PrivacyPreferences from "./pages/PrivacyPreferences";
-import Unsubscribe from "./pages/Unsubscribe";
-import NewsletterUnsubscribe from "./pages/learn/NewsletterUnsubscribe";
-import ConsentLedger from "./pages/admin/ConsentLedger";
-import NoticeManager from "./pages/admin/NoticeManager";
-import RightsDesk from "./pages/admin/RightsDesk";
-import GrievanceConsole from "./pages/admin/GrievanceConsole";
-import ConsentAuditLog from "./pages/admin/ConsentAuditLog";
-import LearnHub from "./pages/learn/LearnHub";
-import LearnArticle from "./pages/learn/LearnArticle";
-import LandingView from "./pages/learn/LandingView";
-import ContentStudio from "./pages/studio/ContentStudio";
-import ContentEditor from "./pages/studio/ContentEditor";
-import LeadsInbox from "./pages/studio/LeadsInbox";
-import NotFound from "./pages/NotFound";
+const Auth = lazy(() => import("./pages/Auth"));
+const ProfileSetup = lazy(() => import("./pages/ProfileSetup"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const SharedReports = lazy(() => import("./pages/SharedReports"));
+const Assessments = lazy(() => import("./pages/Assessments"));
+const Repository = lazy(() => import("./pages/Repository"));
+const ArtefactRepository = lazy(() => import("./pages/ArtefactRepository"));
+const AccountSettings = lazy(() => import("./pages/AccountSettings"));
+const UserManagement = lazy(() => import("./pages/UserManagement"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Terms = lazy(() => import("./pages/Terms"));
+const PhaseOrgProfile = lazy(() => import("./pages/PhaseOrgProfile"));
+const PhasePolicyMatrix = lazy(() => import("./pages/PhasePolicyMatrix"));
+const PhaseRapidAssessment = lazy(() => import("./pages/PhaseRapidAssessment"));
+const PhaseDeptGrid = lazy(() => import("./pages/PhaseDeptGrid"));
+const PhaseDeptQuestionnaire = lazy(() => import("./pages/PhaseDeptQuestionnaire"));
+const PhaseDeptQuestionnaireDetail = lazy(() => import("./pages/PhaseDeptQuestionnaireDetail"));
+const PhaseFileReferences = lazy(() => import("./pages/PhaseFileReferences"));
+const PhaseDashboard = lazy(() => import("./pages/PhaseDashboard"));
+const PolicySopBuilder = lazy(() => import("./pages/PolicySopBuilder"));
+const PolicyLibrary = lazy(() => import("./pages/PolicyLibrary"));
+const AdminAiConfig = lazy(() => import("./pages/AdminAiConfig"));
+const AdminFrameworkManager = lazy(() => import("./pages/AdminFrameworkManager"));
+const AdminAssessmentTemplates = lazy(() => import("./pages/AdminAssessmentTemplates"));
+const ExecuteLanding = lazy(() => import("./pages/execute/ExecuteLanding"));
+const ExecuteSunburst = lazy(() => import("./pages/execute/ExecuteSunburst"));
+const ExecuteOrgProfile = lazy(() => import("./pages/execute/ExecuteOrgProfile"));
+const ExecuteWorkspace = lazy(() => import("./pages/execute/ExecuteWorkspace"));
+const PrivacyPreferences = lazy(() => import("./pages/PrivacyPreferences"));
+const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
+const NewsletterUnsubscribe = lazy(() => import("./pages/learn/NewsletterUnsubscribe"));
+const ConsentLedger = lazy(() => import("./pages/admin/ConsentLedger"));
+const NoticeManager = lazy(() => import("./pages/admin/NoticeManager"));
+const RightsDesk = lazy(() => import("./pages/admin/RightsDesk"));
+const GrievanceConsole = lazy(() => import("./pages/admin/GrievanceConsole"));
+const ConsentAuditLog = lazy(() => import("./pages/admin/ConsentAuditLog"));
+const LearnHub = lazy(() => import("./pages/learn/LearnHub"));
+const LearnArticle = lazy(() => import("./pages/learn/LearnArticle"));
+const LandingView = lazy(() => import("./pages/learn/LandingView"));
+const ContentStudio = lazy(() => import("./pages/studio/ContentStudio"));
+const ContentEditor = lazy(() => import("./pages/studio/ContentEditor"));
+const LeadsInbox = lazy(() => import("./pages/studio/LeadsInbox"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 2 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
+
+const PageFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">Loading...</div>
+);
 
 function ProtectedRoutes() {
   const { session, profile, loading, profileLoading } = useAuth();
@@ -82,6 +96,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <CookieConsentBanner />
+          <Suspense fallback={<PageFallback />}>
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/landing" element={<LandingPage />} />
@@ -143,6 +158,7 @@ const App = () => (
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

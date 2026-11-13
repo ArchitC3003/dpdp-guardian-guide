@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Outlet } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
@@ -18,7 +19,7 @@ export function AppLayout() {
           </header>
           <main className="flex-1 overflow-auto">
             <div className="max-w-[1200px] mx-auto p-6 animate-fade-in">
-              <Outlet />
+              <Suspense fallback={<div className="p-8 text-muted-foreground">Loading...</div>}><Outlet /></Suspense>
             </div>
           </main>
           <footer className="border-t border-border px-6 py-3 flex items-center justify-center gap-4 text-xs text-muted-foreground shrink-0">
