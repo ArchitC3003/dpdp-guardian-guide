@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "audit": "node scripts/security-audit.mjs"
+    "audit": "node scripts/security-audit.mjs",
+    "check": "vitest run && vite build && node scripts/check-budgets.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
