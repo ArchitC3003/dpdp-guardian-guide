@@ -1,5 +1,5 @@
 # Authentication
-- Keep the cookie notice in document flow on profile setup so keyboard-reduced mobile screens can scroll to every form control without an overlay.
+- Cookie notice stays in document flow on profile setup so small mobile screens scroll to every control.
 - Start Google OAuth directly through the generated Lovable helper from the sign-in click, with a synchronous single-flight guard; parallel authorization attempts create independent states.
 - Return Google OAuth to the public same-origin `/auth` page and let the session-aware guard enter protected pages; full-page redirects return before session hydration.
 - Keep generated integration files unchanged; validate managed popup results with `auth.getUser()` before navigating.
@@ -25,4 +25,4 @@
 - Lovable syncs only `main`, and one Lovable Cloud database serves both live and preview. Every change follows: (1) feature branch with code, Drizzle migration and tests; (2) pull request reviewed and merged to `main`; (3) the Drizzle migration applied to Lovable Cloud from Lovable chat; (4) in Lovable chat: "Confirm commit <hash>, regenerate types, and run verifications".
 - Lovable's migration tool writes a new migration file for any SQL it is given and then applies every unapplied file. To apply a migration already in the repo, give it a single comment line; expect one extra empty migration entry.
 - Before writing a migration, fetch `origin/main` and number it after the latest file in `drizzle/migrations`.
-- Pages in `src/App.tsx` are lazy (except landing) behind `Suspense`; QueryClient caches 2 min, no focus refetch. Keeps first load and reads small.
+- `src/App.tsx` pages are lazy (not landing) under `Suspense`; QueryClient: 2-min cache, no focus refetch.
