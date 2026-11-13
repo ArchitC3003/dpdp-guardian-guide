@@ -13,13 +13,20 @@ export interface AssessmentPosture {
   updatedAt: string;
   /** Short names of the frameworks assessed, e.g. "DPDP Act 2023". */
   frameworks: string[];
+  /** True when the signed-in person created it. */
+  mine: boolean;
   posture: Posture;
 }
+
+/** The last thing the signed-in person worked on in a tool, for a "resume" link. */
+export interface LastItem { id: string; name: string }
 
 export interface Overview {
   assessments: AssessmentPosture[];
   policies: PolicyCounts;
+  lastPolicy: LastItem | null;
   workspaces: number;
+  lastWorkspace: LastItem | null;
   /** Null when the signed-in person cannot see privacy operations. */
   rights: SlaCounts | null;
   grievances: SlaCounts | null;
@@ -39,11 +46,11 @@ async function fetchAll<T>(page: (from: number, to: number) => PromiseLike<{ dat
   return rows;
 }
 
-async function loadOverview(includeOps: boolean): Promise<Overview> {
+async function loadOverview(userId: string, includeOps: boolean): Promise<Overview> {
   const [assessmentsRes, policiesRes, workspacesRes] = await Promise.all([
-    supabase.from("assessments").select("id, org_name, status, updated_at, framework_ids, special_status, dpdp_role").order("updated_at", { ascending: false }),
-    supabase.from("policy_documents").select("status, review_date"),
-    supabase.from("execute_workspaces").select("id", { count: "exact", head: true }),
+    supabase.from("assessments").select("id, user_id, org_name, status, updated_at, framework_ids, special_status, dpdp_role").order("updated_at", { ascending: false }),
+    supabase.from("policy_documents").select("id, user_id, title, status, review_date").order("updated_at", { ascending: false }),
+    supabase.from("execute_workspaces").select("id, user_id, org_name").order("updated_at", { ascending: false }),
   ]);
   if (assessmentsRes.error) throw assessmentsRes.error;
   const assessments = assessmentsRes.data ?? [];
@@ -93,6 +100,7 @@ async function loadOverview(includeOps: boolean): Promise<Overview> {
       name: a.org_name?.trim() || "Untitled assessment",
       status: a.status,
       updatedAt: a.updated_at,
+      mine: a.user_id === userId,
       frameworks: fwIds.length ? fwIds.map((id) => shortCode.get(id)).filter((s): s is string => !!s) : ["DPDP Act 2023"],
       posture: summarise(domains, checksByAssessment.get(a.id) ?? [], (a.special_status ?? {}) as SpecialFlags),
     };
@@ -108,29 +116,35 @@ async function loadOverview(includeOps: boolean): Promise<Overview> {
     if (!g.error) grievances = slaCounts((g.data ?? []).map((x) => ({ status: x.status, deadline: grievanceDeadline(x) })), GRIEVANCE_CLOSED);
   }
 
+  const policies = policiesRes.data ?? [];
+  const workspaces = workspacesRes.data ?? [];
+  const myPolicy = policies.find((x) => x.user_id === userId);
+  const myWorkspace = workspaces.find((x) => x.user_id === userId);
   return {
     assessments: postures,
-    policies: policyCounts(policiesRes.data ?? []),
-    workspaces: workspacesRes.count ?? 0,
+    policies: policyCounts(policies),
+    lastPolicy: myPolicy ? { id: myPolicy.id, name: myPolicy.title } : null,
+    workspaces: workspaces.length,
+    lastWorkspace: myWorkspace ? { id: myWorkspace.id, name: myWorkspace.org_name } : null,
     rights, grievances,
   };
 }
 
 /** Everything the signed-in overview shows, read live. `includeOps` adds rights requests and grievances. */
-export function useOverview(enabled: boolean, includeOps: boolean) {
+export function useOverview(userId: string | undefined, enabled: boolean, includeOps: boolean) {
   const [data, setData] = useState<Overview | null>(null);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !userId) return;
     let live = true;
     setError(false);
-    loadOverview(includeOps)
+    loadOverview(userId, includeOps)
       .then((d) => { if (live) setData(d); })
       .catch(() => { if (live) setError(true); });
     return () => { live = false; };
-  }, [enabled, includeOps, attempt]);
+  }, [userId, enabled, includeOps, attempt]);
 
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
   return { data, error, loading: !data && !error, retry };
