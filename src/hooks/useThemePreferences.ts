@@ -1,3 +1,4 @@
+import { setPreference } from "@/lib/consent";
 import { useState, useEffect, useCallback } from "react";
 
 export type AccentTheme = "teal" | "ocean" | "purple" | "rose" | "amber" | "indigo";
@@ -144,7 +145,7 @@ export function useThemePreferences() {
   const setPreferences = useCallback((update: Partial<ThemePreferences>) => {
     setPreferencesState((prev) => {
       const next = { ...prev, ...update };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      setPreference(STORAGE_KEY, JSON.stringify(next));
       return next;
     });
   }, []);

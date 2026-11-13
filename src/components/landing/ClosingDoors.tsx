@@ -1,3 +1,4 @@
+import { openConsentPreferences } from "@/lib/consent";
 import { Link } from "react-router-dom";
 import { BrandLogo } from "@/components/BrandLogo";
 import { LANDING_LOGO } from "./LandingNav";
@@ -30,6 +31,7 @@ export function LandingFooter() {
         <nav aria-label="Legal">
           <Link to="/privacy">Privacy</Link>
           <Link to="/terms">Terms</Link>
+          <button type="button" onClick={openConsentPreferences}>Privacy choices</button>
         </nav>
       </div>
     </footer>

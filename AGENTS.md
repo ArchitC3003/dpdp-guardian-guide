@@ -26,3 +26,7 @@
 - Lovable's migration tool writes a new migration file for any SQL it is given and then applies every unapplied file. To apply a migration already in the repo, give it a single comment line; expect one extra empty migration entry.
 - Before writing a migration, fetch `origin/main` and number it after the latest file in `drizzle/migrations`.
 - `src/App.tsx` pages are lazy (not landing) under `Suspense`; QueryClient: 2-min cache, no focus refetch.
+# Consent
+- `src/lib/consent.ts` is the single inventory and gate for cookies and browser storage: the banner and `/privacy-preferences` render `CONSENT_CATEGORIES`, and non-essential writes go through `setPreference` / `setPreferenceCookie`. Declare a technology there (and in `GATED_STORAGE` if optional) before storing anything new; never list one that is not in use.
+- Fonts are self-hosted from `src/assets/fonts` via `src/styles/fonts.css`; do not add third-party font or script links.
+- Rights requests and grievances are written only by the `submit-privacy-request` function (works signed out, validated, rate limited); never grant anon insert on those tables. "Privacy choices" links call `openConsentPreferences()`.

@@ -7,108 +7,33 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ChevronDown, Shield, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  CONSENT_CATEGORIES, CONSENT_OPEN_EVENT, choicesFor, readConsent, saveConsent, splitChoices,
+  type ConsentAction, type ConsentChoices,
+} from "@/lib/consent";
 
-const STORAGE_KEY = "privcybhub_cookie_consent_v2";
-
-interface CookieCategory {
-  id: string;
-  name: string;
-  description: string;
-  required: boolean;
-  default: boolean;
-  cookies: { name: string; provider: string; duration: string; purpose: string }[];
-}
-
-const COOKIE_CATEGORIES: CookieCategory[] = [
-  {
-    id: "strictly_necessary",
-    name: "Strictly Necessary",
-    description: "These cookies are essential for the website to function. They enable core features such as security, session management, and accessibility. You cannot disable these cookies.",
-    required: true,
-    default: true,
-    cookies: [
-      { name: "sb-access-token", provider: "PrivCybHub", duration: "Session", purpose: "Authentication session token" },
-      { name: "sb-refresh-token", provider: "PrivCybHub", duration: "30 days", purpose: "Session refresh for seamless login" },
-      { name: "privcybhub_cookie_consent", provider: "PrivCybHub", duration: "1 year", purpose: "Stores your cookie preferences" },
-    ],
-  },
-  {
-    id: "functional",
-    name: "Functional / Preferences",
-    description: "These cookies enable enhanced functionality and personalisation, such as remembering your language or region settings and UI preferences.",
-    required: false,
-    default: false,
-    cookies: [
-      { name: "sidebar_state", provider: "PrivCybHub", duration: "1 year", purpose: "Remembers sidebar collapsed/expanded state" },
-      { name: "theme_preference", provider: "PrivCybHub", duration: "1 year", purpose: "Stores light/dark mode preference" },
-    ],
-  },
-  {
-    id: "analytics",
-    name: "Analytics & Performance",
-    description: "These cookies help us understand how visitors interact with the platform by collecting anonymous usage statistics. No personally identifiable information is collected.",
-    required: false,
-    default: false,
-    cookies: [
-      { name: "_ga", provider: "Google Analytics", duration: "2 years", purpose: "Distinguishes unique users (if enabled)" },
-      { name: "_gid", provider: "Google Analytics", duration: "24 hours", purpose: "Distinguishes unique users (if enabled)" },
-    ],
-  },
-  {
-    id: "marketing",
-    name: "Marketing & Advertising",
-    description: "These cookies are used to deliver advertisements relevant to you and your interests. They may also be used to limit the number of times you see an advertisement.",
-    required: false,
-    default: false,
-    cookies: [
-      { name: "_fbp", provider: "Facebook", duration: "3 months", purpose: "Tracks visits across websites for ad targeting (if enabled)" },
-    ],
-  },
-  {
-    id: "third_party",
-    name: "Third-Party / Vendor Cookies",
-    description: "These cookies are set by external services embedded in our platform, such as support chat widgets, embedded content, or integration partners.",
-    required: false,
-    default: false,
-    cookies: [
-      { name: "intercom-session", provider: "Intercom", duration: "1 week", purpose: "Support chat session (if enabled)" },
-    ],
-  },
-];
-
-async function recordConsent(
-  actionType: string,
-  accepted: string[],
-  rejected: string[],
-  userId?: string,
-  noticeVersionId?: string
-) {
-  try {
-    const sessionId = !userId ? crypto.randomUUID() : undefined;
-    // We can't insert via the typed client since the table is new and types aren't updated yet
-    // Use .from() which works dynamically
-    await (supabase as any).from("consent_receipts").insert({
-      user_id: userId || null,
-      session_id: sessionId,
-      notice_version_id: noticeVersionId || null,
-      categories_accepted: accepted,
-      categories_rejected: rejected,
-      action_type: actionType,
-      user_agent: navigator.userAgent,
-      banner_language: "en",
-    });
-
-    // Audit log
-    await (supabase as any).from("consent_audit_log").insert({
-      actor_id: userId || null,
-      actor_type: userId ? "user" : "system",
-      action: `Consent ${actionType}`,
-      entity_type: "Consent",
-      notes: `Categories accepted: ${accepted.join(", ") || "none"}`,
-    });
-  } catch (e) {
-    console.error("Failed to record consent:", e);
-  }
+async function recordConsent(actionType: ConsentAction, choices: ConsentChoices, userId?: string) {
+  const { accepted, rejected } = splitChoices(choices);
+  const { error } = await supabase.from("consent_receipts").insert({
+    user_id: userId || null,
+    session_id: userId ? null : crypto.randomUUID(),
+    categories_accepted: accepted,
+    categories_rejected: rejected,
+    action_type: actionType,
+    withdrawal_timestamp: actionType === "withdrawn" ? new Date().toISOString() : null,
+    user_agent: navigator.userAgent,
+    banner_language: "en",
+  });
+  if (error) console.error("Failed to record consent:", error.message);
+  if (!userId) return; // the audit log accepts entries from signed-in people only
+  const { error: auditError } = await supabase.from("consent_audit_log").insert({
+    actor_id: userId,
+    actor_type: "user",
+    action: `Consent ${actionType}`,
+    entity_type: "Consent",
+    notes: `Categories accepted: ${accepted.join(", ") || "none"}`,
+  });
+  if (auditError) console.error("Failed to write consent audit entry:", auditError.message);
 }
 
 export function CookieConsentBanner() {
@@ -117,57 +42,33 @@ export function CookieConsentBanner() {
   const isProfileSetup = pathname === "/profile-setup";
   const [visible, setVisible] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
-  const [categories, setCategories] = useState<Record<string, boolean>>(() => {
-    const init: Record<string, boolean> = {};
-    COOKIE_CATEGORIES.forEach((c) => (init[c.id] = c.default));
-    return init;
-  });
+  const [categories, setCategories] = useState<ConsentChoices>(() => readConsent()?.categories ?? choicesFor(false));
   const { session } = useAuth();
 
   useEffect(() => {
-    const consent = localStorage.getItem(STORAGE_KEY);
-    if (!consent) setVisible(true);
+    if (!readConsent()) setVisible(true);
+    // "Privacy choices" links anywhere on the site reopen the panel with the current choice.
+    const reopen = () => {
+      setCategories(readConsent()?.categories ?? choicesFor(false));
+      setShowPreferences(true);
+      setVisible(true);
+    };
+    window.addEventListener(CONSENT_OPEN_EVENT, reopen);
+    return () => window.removeEventListener(CONSENT_OPEN_EVENT, reopen);
   }, []);
 
-  const getAcceptedRejected = useCallback(
-    (cats: Record<string, boolean>) => {
-      const accepted = Object.entries(cats)
-        .filter(([, v]) => v)
-        .map(([k]) => k);
-      const rejected = Object.entries(cats)
-        .filter(([, v]) => !v)
-        .map(([k]) => k)
-        .filter((k) => !COOKIE_CATEGORIES.find((c) => c.id === k)?.required);
-      return { accepted, rejected };
-    },
-    []
-  );
-
-  const handleAcceptAll = () => {
-    const all: Record<string, boolean> = {};
-    COOKIE_CATEGORIES.forEach((c) => (all[c.id] = true));
-    const { accepted, rejected } = getAcceptedRejected(all);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ categories: all, action: "accept_all", ts: new Date().toISOString() }));
-    recordConsent("accept_all", accepted, rejected, session?.user?.id);
-    setVisible(false);
-  };
-
-  const handleRejectAll = () => {
-    const min: Record<string, boolean> = {};
-    COOKIE_CATEGORIES.forEach((c) => (min[c.id] = c.required));
-    const { accepted, rejected } = getAcceptedRejected(min);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ categories: min, action: "reject_all", ts: new Date().toISOString() }));
-    recordConsent("reject_all", accepted, rejected, session?.user?.id);
-    setVisible(false);
-  };
-
-  const handleSavePreferences = () => {
-    const { accepted, rejected } = getAcceptedRejected(categories);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ categories, action: "custom", ts: new Date().toISOString() }));
-    recordConsent("custom", accepted, rejected, session?.user?.id);
+  const decide = useCallback((choices: ConsentChoices, action: ConsentAction) => {
+    const hadOptional = splitChoices(readConsent()?.categories ?? {}).accepted.length > 1;
+    const saved = saveConsent(choices, action === "reject_all" && hadOptional ? "withdrawn" : action);
+    setCategories(saved.categories);
+    void recordConsent(saved.action, saved.categories, session?.user?.id);
     setVisible(false);
     setShowPreferences(false);
-  };
+  }, [session?.user?.id]);
+
+  const handleAcceptAll = () => decide(choicesFor(true), "accept_all");
+  const handleRejectAll = () => decide(choicesFor(false), "reject_all");
+  const handleSavePreferences = () => decide(categories, readConsent() ? "updated" : "custom");
 
   if (!visible) return null;
 
@@ -182,9 +83,9 @@ export function CookieConsentBanner() {
                 <div>
                   <h2 className="text-base font-semibold text-foreground mb-1">We value your privacy</h2>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    We collect limited data categories (session identifiers, usage analytics) to provide and improve our compliance platform.
-                    Your data is processed for platform functionality and service improvement.
-                    You can withdraw consent at any time via{" "}
+                    We store only what is needed to sign you in and keep your session secure. With your permission we also
+                    remember your display and listening preferences. We do not use analytics, advertising or third-party trackers.
+                    You can change or withdraw your choice at any time via{" "}
                     <button onClick={() => { setVisible(false); navigate("/privacy-preferences"); }} className="text-primary underline hover:text-primary/80 bg-transparent border-none cursor-pointer p-0 inline text-sm">Preferences</button>.
                     To raise a concern, use our{" "}
                     <button onClick={() => { setVisible(false); navigate("/privacy-preferences", { state: { scrollTo: "grievance" } }); }} className="text-primary underline hover:text-primary/80 bg-transparent border-none cursor-pointer p-0 inline text-sm">Grievance / Contact DPO</button> link.
@@ -198,10 +99,10 @@ export function CookieConsentBanner() {
                   <button onClick={() => { setVisible(false); navigate("/privacy-preferences", { state: { scrollTo: "grievance" } }); }} className="text-primary underline hover:text-primary/80 bg-transparent border-none cursor-pointer p-0 inline text-xs" aria-label="Contact grievance officer">Grievance / Contact DPO</button>
                 </div>
                 <div className={isProfileSetup ? "flex flex-wrap gap-2" : "flex gap-2 shrink-0"}>
-                  <Button onClick={handleAcceptAll} className="bg-primary hover:bg-primary/90 text-primary-foreground" aria-label="Accept all cookies">
+                  <Button onClick={handleAcceptAll} className="bg-primary hover:bg-primary/90 text-primary-foreground" aria-label="Accept all">
                     Accept All
                   </Button>
-                  <Button variant="outline" onClick={handleRejectAll} aria-label="Reject all optional cookies">
+                  <Button variant="outline" onClick={handleRejectAll} aria-label="Reject all optional storage">
                     Reject All
                   </Button>
                   <Button variant="secondary" onClick={() => setShowPreferences(true)} aria-label="Manage cookie preferences">
@@ -213,13 +114,13 @@ export function CookieConsentBanner() {
           ) : (
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-semibold text-foreground">Manage Cookie Preferences</h2>
-                <Button variant="ghost" size="icon" onClick={() => setShowPreferences(false)} aria-label="Close preferences">
+                <h2 className="text-base font-semibold text-foreground">Privacy choices</h2>
+                <Button variant="ghost" size="icon" onClick={() => (readConsent() ? setVisible(false) : setShowPreferences(false))} aria-label="Close preferences">
                   <X className="h-4 w-4" />
                 </Button>
               </div>
               <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
-                {COOKIE_CATEGORIES.map((cat) => (
+                {CONSENT_CATEGORIES.map((cat) => (
                   <Collapsible key={cat.id}>
                     <div className="border border-border rounded-lg p-3">
                       <div className="flex items-center justify-between">
@@ -238,20 +139,21 @@ export function CookieConsentBanner() {
                             if (!cat.required) setCategories((prev) => ({ ...prev, [cat.id]: checked }));
                           }}
                           disabled={cat.required}
-                          aria-label={`Toggle ${cat.name} cookies`}
+                          aria-label={`Toggle ${cat.name}`}
                         />
                       </div>
                       <p className="text-xs text-muted-foreground mt-1 ml-5">{cat.description}</p>
                       <CollapsibleContent>
                         <div className="mt-3 ml-5 border-t border-border pt-2">
-                          <p className="text-xs font-medium text-muted-foreground mb-2">Cookies in this category:</p>
+                          <p className="text-xs font-medium text-muted-foreground mb-2">What is stored in this category:</p>
                           <div className="space-y-1">
-                            {cat.cookies.map((cookie) => (
-                              <div key={cookie.name} className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground bg-muted/30 rounded px-2 py-1">
-                                <span className="font-mono font-medium text-foreground">{cookie.name}</span>
-                                <span>Provider: {cookie.provider}</span>
-                                <span>Duration: {cookie.duration}</span>
-                                <span>Purpose: {cookie.purpose}</span>
+                            {cat.technologies.map((tech) => (
+                              <div key={tech.name} className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground bg-muted/30 rounded px-2 py-1">
+                                <span className="font-mono font-medium text-foreground">{tech.name}</span>
+                                <span>Type: {tech.kind}</span>
+                                <span>Set by: {tech.provider}</span>
+                                <span>Kept: {tech.duration}</span>
+                                <span>Purpose: {tech.purpose}</span>
                               </div>
                             ))}
                           </div>
@@ -262,8 +164,8 @@ export function CookieConsentBanner() {
                 ))}
               </div>
               <div className="flex justify-end gap-2 mt-4 pt-3 border-t border-border">
-                <Button variant="outline" onClick={handleRejectAll} aria-label="Reject all optional cookies">Reject All</Button>
-                <Button onClick={handleSavePreferences} className="bg-primary hover:bg-primary/90 text-primary-foreground" aria-label="Save cookie preferences">
+                <Button variant="outline" onClick={handleRejectAll} aria-label="Reject all optional storage">Reject All</Button>
+                <Button onClick={handleSavePreferences} className="bg-primary hover:bg-primary/90 text-primary-foreground" aria-label="Save privacy choices">
                   Save Preferences
                 </Button>
               </div>
