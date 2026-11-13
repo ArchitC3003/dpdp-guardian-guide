@@ -100,7 +100,7 @@ export function featureViews(role: Role, facts: WorkspaceFacts): FeatureView[] {
   };
   const resume: Record<string, FeatureView["resume"]> = {
     assessments: unfinished && { label: `Resume ${unfinished.name}`, to: `/assessment/${unfinished.id}/rapid-assessment` },
-    register: facts.lastPolicy ? { label: `Last edited: ${facts.lastPolicy.name}`, to: "/policy-library" } : undefined,
+    register: facts.lastPolicy ? { label: `Last edited: ${facts.lastPolicy.name}`, to: `/policy-library?doc=${facts.lastPolicy.id}` } : undefined,
     execute: facts.lastWorkspace ? { label: `Resume ${facts.lastWorkspace.name}`, to: `/execute/workspace/${facts.lastWorkspace.id}` } : undefined,
   };
 

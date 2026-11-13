@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -86,6 +86,16 @@ export default function PolicyLibrary() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy] = useState("updated");
   const [selectedDoc, setSelectedDoc] = useState<PolicyDoc | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedDoc = searchParams.get("doc");
+
+  // A link such as the dashboard's "Last edited" opens its document once the register has loaded.
+  useEffect(() => {
+    if (!requestedDoc || loading) return;
+    const doc = docs.find((d) => d.id === requestedDoc);
+    if (doc) setSelectedDoc(doc);
+    setSearchParams((p) => { p.delete("doc"); return p; }, { replace: true });
+  }, [requestedDoc, loading, docs, setSearchParams]);
 
   useEffect(() => {
     if (!user) return;

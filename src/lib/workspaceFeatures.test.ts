@@ -70,7 +70,7 @@ describe("featureViews", () => {
       grievances: none,
     };
     expect(view("admin", facts, "register").flags.map((f) => f.text)).toEqual(["1 policy past the review date", "1 policy waiting in review"]);
-    expect(view("admin", facts, "register").resume?.label).toBe("Last edited: Retention Policy");
+    expect(view("admin", facts, "register").resume).toEqual({ label: "Last edited: Retention Policy", to: "/policy-library?doc=p" });
     expect(view("admin", facts, "execute").resume?.to).toBe("/execute/workspace/w");
     expect(view("admin", facts, "rights").flags).toEqual([{ text: "1 request overdue", urgent: true }, { text: "2 requests due within 7 days", urgent: false }]);
     expect(view("admin", facts, "grievances").flags).toEqual([]);

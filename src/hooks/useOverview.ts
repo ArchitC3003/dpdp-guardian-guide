@@ -54,13 +54,12 @@ async function inBatches<T>(ids: string[], run: (batch: string[]) => Promise<T[]
 }
 
 async function loadOverview(userId: string, includeOps: boolean): Promise<Overview> {
-  const [assessmentsRes, policiesRes, workspacesRes] = await Promise.all([
-    supabase.from("assessments").select("id, user_id, org_name, status, updated_at, framework_ids, special_status, dpdp_role").order("updated_at", { ascending: false }),
-    supabase.from("policy_documents").select("id, user_id, title, status, review_date").order("updated_at", { ascending: false }),
-    supabase.from("execute_workspaces").select("id, user_id, org_name").order("updated_at", { ascending: false }),
+  // Assessments are required; a tool whose rows cannot be read simply shows nothing waiting.
+  const [assessments, policies, workspaces] = await Promise.all([
+    fetchAll((from, to) => supabase.from("assessments").select("id, user_id, org_name, status, updated_at, framework_ids, special_status, dpdp_role").order("updated_at", { ascending: false }).order("id").range(from, to)),
+    fetchAll((from, to) => supabase.from("policy_documents").select("id, user_id, title, status, review_date").order("updated_at", { ascending: false }).order("id").range(from, to)).catch(() => []),
+    fetchAll((from, to) => supabase.from("execute_workspaces").select("id, user_id, org_name").order("updated_at", { ascending: false }).order("id").range(from, to)).catch(() => []),
   ]);
-  if (assessmentsRes.error) throw assessmentsRes.error;
-  const assessments = assessmentsRes.data ?? [];
   const ids = assessments.map((a) => a.id);
   const frameworkIds = [...new Set(assessments.flatMap((a) => a.framework_ids ?? []))];
 
@@ -114,15 +113,13 @@ async function loadOverview(userId: string, includeOps: boolean): Promise<Overvi
   let rights: SlaCounts | null = null, grievances: SlaCounts | null = null;
   if (includeOps) {
     const [r, g] = await Promise.all([
-      supabase.from("rights_requests").select("status, sla_deadline"),
-      supabase.from("grievances").select("status, sla_deadline_ack, sla_deadline_resolution"),
+      fetchAll((from, to) => supabase.from("rights_requests").select("status, sla_deadline").order("id").range(from, to)).catch(() => null),
+      fetchAll((from, to) => supabase.from("grievances").select("status, sla_deadline_ack, sla_deadline_resolution").order("id").range(from, to)).catch(() => null),
     ]);
-    if (!r.error) rights = slaCounts((r.data ?? []).map((x) => ({ status: x.status, deadline: x.sla_deadline })), RIGHTS_CLOSED);
-    if (!g.error) grievances = slaCounts((g.data ?? []).map((x) => ({ status: x.status, deadline: grievanceDeadline(x) })), GRIEVANCE_CLOSED);
+    if (r) rights = slaCounts(r.map((x) => ({ status: x.status, deadline: x.sla_deadline })), RIGHTS_CLOSED);
+    if (g) grievances = slaCounts(g.map((x) => ({ status: x.status, deadline: grievanceDeadline(x) })), GRIEVANCE_CLOSED);
   }
 
-  const policies = policiesRes.data ?? [];
-  const workspaces = workspacesRes.data ?? [];
   const myPolicy = policies.find((x) => x.user_id === userId);
   const myWorkspace = workspaces.find((x) => x.user_id === userId);
   return {
