@@ -1,6 +1,7 @@
 import { Helmet } from "react-helmet-async";
+import { PublishedPolicy } from "@/components/governance/PublishedPolicy";
 
-export default function Privacy() {
+function StaticPrivacy() {
   return (
     <div className="min-h-screen bg-background text-foreground p-6 md:p-12">
       <Helmet>
@@ -76,4 +77,8 @@ export default function Privacy() {
       </div>
     </div>
   );
+}
+
+export default function Privacy() {
+  return <PublishedPolicy slug="privacy-policy" fallback={<StaticPrivacy />} />;
 }

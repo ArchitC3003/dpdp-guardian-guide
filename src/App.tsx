@@ -51,6 +51,8 @@ const LandingView = lazy(() => import("./pages/learn/LandingView"));
 const ContentStudio = lazy(() => import("./pages/studio/ContentStudio"));
 const ContentEditor = lazy(() => import("./pages/studio/ContentEditor"));
 const LeadsInbox = lazy(() => import("./pages/studio/LeadsInbox"));
+const PolicyPage = lazy(() => import("./pages/PolicyPage"));
+const GovernanceStudio = lazy(() => import("./pages/studio/GovernanceStudio"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -104,6 +106,7 @@ const App = () => (
             <Route path="/profile-setup" element={<ProfileSetup />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
+            <Route path="/policies/:slug" element={<PolicyPage />} />
             <Route path="/privacy-preferences" element={<PrivacyPreferences />} />
             <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route path="/learn/unsubscribe" element={<NewsletterUnsubscribe />} />
@@ -134,6 +137,7 @@ const App = () => (
               <Route path="/admin/rights-desk" element={<RightsDesk />} />
               <Route path="/admin/grievance-console" element={<GrievanceConsole />} />
               <Route path="/admin/consent-audit-log" element={<ConsentAuditLog />} />
+              <Route path="/studio/governance" element={<GovernanceStudio />} />
               <Route path="/consent" element={<ConsentLedger />} />
               <Route path="/consent/ledger" element={<ConsentLedger />} />
               <Route path="/consent/notices" element={<NoticeManager />} />

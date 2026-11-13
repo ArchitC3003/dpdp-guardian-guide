@@ -92,6 +92,20 @@
       "when": 1794430000000,
       "tag": "0012_shared_custom_departments_expiry",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794551123899,
+      "tag": "0013_site_governance_documents",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1794551303475,
+      "tag": "0014_governance_audit_entity_type",
+      "breakpoints": true
     }
   ]
 }

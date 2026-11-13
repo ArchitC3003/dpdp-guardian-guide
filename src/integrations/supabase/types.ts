@@ -2746,6 +2746,66 @@ export type Database = {
           },
         ]
       }
+      site_governance_documents: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          effective_date: string | null
+          id: string
+          intro: string | null
+          is_material_change: boolean
+          published_at: string | null
+          published_by: string | null
+          sections: Json
+          slug: string
+          status: string
+          summary_of_changes: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          effective_date?: string | null
+          id?: string
+          intro?: string | null
+          is_material_change?: boolean
+          published_at?: string | null
+          published_by?: string | null
+          sections?: Json
+          slug: string
+          status?: string
+          summary_of_changes?: string | null
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          effective_date?: string | null
+          id?: string
+          intro?: string | null
+          is_material_change?: boolean
+          published_at?: string | null
+          published_by?: string | null
+          sections?: Json
+          slug?: string
+          status?: string
+          summary_of_changes?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: string
+        }
+        Relationships: []
+      }
       suppressed_emails: {
         Row: {
           created_at: string
@@ -2903,6 +2963,34 @@ export type Database = {
           read_ct: number
         }[]
       }
+      rpc_publish_governance_document: {
+        Args: { doc_id: string }
+        Returns: {
+          category: string
+          created_at: string
+          created_by: string | null
+          effective_date: string | null
+          id: string
+          intro: string | null
+          is_material_change: boolean
+          published_at: string | null
+          published_by: string | null
+          sections: Json
+          slug: string
+          status: string
+          summary_of_changes: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "site_governance_documents"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       rpc_restore_content_version: {
         Args: { version_id: string }
         Returns: {
@@ -3008,6 +3096,34 @@ export type Database = {
       rpc_set_content_frameworks: {
         Args: { codes: string[]; post_id: string }
         Returns: undefined
+      }
+      rpc_unpublish_governance_document: {
+        Args: { doc_id: string }
+        Returns: {
+          category: string
+          created_at: string
+          created_by: string | null
+          effective_date: string | null
+          id: string
+          intro: string | null
+          is_material_change: boolean
+          published_at: string | null
+          published_by: string | null
+          sections: Json
+          slug: string
+          status: string
+          summary_of_changes: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "site_governance_documents"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
     }
     Enums: {
