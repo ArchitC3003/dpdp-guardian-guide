@@ -69,7 +69,7 @@ CREATE TABLE cmp.regulation_profiles (
   UNIQUE (key, version),
   CHECK (effective_until IS NULL OR effective_until > effective_from),
   -- a profile cannot be approved without a named reviewer and date
-  CHECK (status = 'draft' OR (reviewed_by IS NOT NULL AND reviewed_at IS NOT NULL))
+  CHECK (status = 'draft' OR (length(btrim(COALESCE(reviewed_by, ''))) > 0 AND reviewed_at IS NOT NULL))
 );
 
 CREATE TABLE cmp.vendors (
@@ -157,15 +157,21 @@ CREATE TABLE cmp.config_versions (
   profile_id      uuid NOT NULL REFERENCES cmp.regulation_profiles(id),
   notice_version  text NOT NULL,
   change_impact   text NOT NULL CHECK (change_impact IN ('none','inventory','vendor','purpose','profile')),
-  supersedes_id   uuid REFERENCES cmp.config_versions(id),
-  copied_from_id  uuid REFERENCES cmp.config_versions(id),
+  supersedes_id   uuid,
+  copied_from_id  uuid,
   published_by    uuid NOT NULL,
   published_at    timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (site_id, version)
+  UNIQUE (site_id, version),
+  -- Target for same-site, same-organisation references from other tables.
+  UNIQUE (id, site_id, org_id),
+  FOREIGN KEY (supersedes_id, site_id, org_id) REFERENCES cmp.config_versions (id, site_id, org_id),
+  FOREIGN KEY (copied_from_id, site_id, org_id) REFERENCES cmp.config_versions (id, site_id, org_id)
 );
 
+-- The live config must be a config of this same site and organisation.
 ALTER TABLE cmp.sites
-  ADD CONSTRAINT sites_live_config_fk FOREIGN KEY (live_config_id) REFERENCES cmp.config_versions(id);
+  ADD CONSTRAINT sites_live_config_fk FOREIGN KEY (live_config_id, id, org_id)
+  REFERENCES cmp.config_versions (id, site_id, org_id);
 
 -- ───────────────────────── Evidence ─────────────────────────
 
@@ -178,7 +184,7 @@ CREATE TABLE cmp.receipts (
   action               text NOT NULL CHECK (action IN ('given','updated','withdrawn','expired','signalled','migrated')),
   purposes             jsonb NOT NULL CHECK (jsonb_typeof(purposes) = 'array'),
   previous_receipt_id  uuid,
-  config_version_id    uuid REFERENCES cmp.config_versions(id),
+  config_version_id    uuid,
   config_hash          text,
   notice_version       text,
   profile_id           uuid REFERENCES cmp.regulation_profiles(id),
@@ -193,7 +199,10 @@ CREATE TABLE cmp.receipts (
   provenance           jsonb,                             -- migrated records only
   canonical            text NOT NULL,                     -- RFC 8785 text; the receipt of record
   CHECK ((action = 'migrated') = (provenance IS NOT NULL)),
-  CHECK (action = 'migrated' OR config_version_id IS NOT NULL)
+  CHECK (action = 'migrated' OR config_version_id IS NOT NULL),
+  UNIQUE (receipt_id, site_id, org_id),
+  -- A receipt can only name a config of its own site and organisation.
+  FOREIGN KEY (config_version_id, site_id, org_id) REFERENCES cmp.config_versions (id, site_id, org_id)
 );
 CREATE INDEX receipts_site_received ON cmp.receipts (site_id, received_at);
 CREATE INDEX receipts_visitor ON cmp.receipts (site_id, visitor_id, received_at);
@@ -212,18 +221,22 @@ CREATE TABLE cmp.ledger_segments (
   sealed_at          timestamptz NOT NULL DEFAULT now(),
   purged_at          timestamptz,
   UNIQUE (site_id, segment_no),
+  UNIQUE (id, site_id, org_id),
   CHECK (last_seq >= first_seq)
 );
 
 CREATE TABLE cmp.receipt_seals (
-  receipt_id  uuid PRIMARY KEY REFERENCES cmp.receipts(receipt_id) ON DELETE CASCADE,
+  receipt_id  uuid PRIMARY KEY,
   org_id      uuid NOT NULL REFERENCES cmp.organisations(id),
   site_id     uuid NOT NULL REFERENCES cmp.sites(id),
-  segment_id  uuid NOT NULL REFERENCES cmp.ledger_segments(id),
+  segment_id  uuid NOT NULL,
   seq         bigint NOT NULL CHECK (seq > 0),
   prev_hash   text NOT NULL CHECK (prev_hash ~ '^[0-9a-f]{64}$'),
   hash        text NOT NULL CHECK (hash ~ '^[0-9a-f]{64}$'),
-  UNIQUE (site_id, seq)
+  UNIQUE (site_id, seq),
+  -- A seal, its receipt and its segment must all belong to one site and organisation.
+  FOREIGN KEY (receipt_id, site_id, org_id) REFERENCES cmp.receipts (receipt_id, site_id, org_id) ON DELETE CASCADE,
+  FOREIGN KEY (segment_id, site_id, org_id) REFERENCES cmp.ledger_segments (id, site_id, org_id)
 );
 CREATE INDEX receipt_seals_segment ON cmp.receipt_seals (segment_id);
 
@@ -232,8 +245,10 @@ CREATE TABLE cmp.receipt_flags (
   receipt_id  uuid NOT NULL,
   org_id      uuid NOT NULL REFERENCES cmp.organisations(id),
   site_id     uuid NOT NULL REFERENCES cmp.sites(id),
-  reason      text NOT NULL,
-  flagged_at  timestamptz NOT NULL DEFAULT now()
+  reason      text NOT NULL CHECK (length(btrim(reason)) > 0),
+  flagged_at  timestamptz NOT NULL DEFAULT now(),
+  -- A flag must point at a real receipt of the same site and organisation; it is purged with it.
+  FOREIGN KEY (receipt_id, site_id, org_id) REFERENCES cmp.receipts (receipt_id, site_id, org_id) ON DELETE CASCADE
 );
 CREATE INDEX receipt_flags_receipt ON cmp.receipt_flags (receipt_id);
 
@@ -241,7 +256,7 @@ CREATE TABLE cmp.checkpoints (
   id                   uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id               uuid NOT NULL REFERENCES cmp.organisations(id),
   site_id              uuid NOT NULL REFERENCES cmp.sites(id),
-  segment_id           uuid NOT NULL REFERENCES cmp.ledger_segments(id),
+  segment_id           uuid NOT NULL,
   segment_hash         text NOT NULL,
   last_seq             bigint NOT NULL,
   taken_at             timestamptz NOT NULL DEFAULT now(),
@@ -249,7 +264,9 @@ CREATE TABLE cmp.checkpoints (
   signature            text NOT NULL,
   tsa_name             text,
   tsa_token            bytea,
-  delivered_to_tenant  timestamptz
+  delivered_to_tenant  timestamptz,
+  -- A checkpoint can only cover a segment of its own site and organisation.
+  FOREIGN KEY (segment_id, site_id, org_id) REFERENCES cmp.ledger_segments (id, site_id, org_id)
 );
 CREATE INDEX checkpoints_site ON cmp.checkpoints (site_id, taken_at);
 
@@ -261,8 +278,8 @@ CREATE TABLE cmp.violation_reports (
   category       text NOT NULL CHECK (category IN ('observed','known_technology','potential_violation')),
   technology_id  uuid REFERENCES cmp.technologies(id) ON DELETE SET NULL,
   pattern        text NOT NULL DEFAULT '',
-  occurrences    integer NOT NULL DEFAULT 0,
-  views_sampled  integer NOT NULL DEFAULT 0,
+  occurrences    integer NOT NULL DEFAULT 0 CHECK (occurrences >= 0),
+  views_sampled  integer NOT NULL DEFAULT 0 CHECK (views_sampled >= 0),
   sample_rate    numeric NOT NULL CHECK (sample_rate > 0 AND sample_rate <= 1)
 );
 CREATE UNIQUE INDEX violation_reports_bucket ON cmp.violation_reports
@@ -348,7 +365,7 @@ BEGIN
   RAISE EXCEPTION 'cmp: % rows cannot be deleted', TG_TABLE_NAME USING ERRCODE = '42501';
 END $$;
 
--- Receipts and seals may be deleted only by the retention routine, which removes whole sealed
+-- Receipts, their seals and their flags may be deleted only by the retention routine, which removes whole sealed
 -- segments. The routine (package 6) is the only code that holds DELETE on these tables and
 -- sets this flag; the flag alone grants nothing.
 CREATE FUNCTION cmp.tg_delete_only_by_retention() RETURNS trigger LANGUAGE plpgsql AS $$
@@ -407,6 +424,105 @@ BEGIN
   RETURN NEW;
 END $$;
 
+-- An approved profile is evidence: receipts point at it. Its content is frozen from approval.
+-- The only later change allowed is retirement. A change of substance is a new version.
+CREATE FUNCTION cmp.tg_profile_frozen() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    IF OLD.status <> 'draft' THEN
+      RAISE EXCEPTION 'cmp: an approved or retired regulation profile cannot be deleted' USING ERRCODE = '42501';
+    END IF;
+    RETURN OLD;
+  END IF;
+  IF OLD.status = 'draft' THEN
+    IF NEW.status = 'retired' THEN
+      RAISE EXCEPTION 'cmp: a draft profile cannot be retired; delete it instead' USING ERRCODE = '42501';
+    END IF;
+    RETURN NEW;
+  END IF;
+  IF OLD.status = 'retired' THEN
+    RAISE EXCEPTION 'cmp: a retired regulation profile cannot be changed' USING ERRCODE = '42501';
+  END IF;
+  -- approved: allow only approved -> retired, optionally closing its effective period
+  IF NEW.status <> 'retired'
+     OR (to_jsonb(NEW) - 'status' - 'effective_until') IS DISTINCT FROM (to_jsonb(OLD) - 'status' - 'effective_until') THEN
+    RAISE EXCEPTION 'cmp: an approved regulation profile is frozen; create a new version instead' USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END $$;
+
+-- A site's default profile must name a profile that exists.
+CREATE FUNCTION cmp.tg_site_profile() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = cmp, pg_temp AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM cmp.regulation_profiles p WHERE p.key = NEW.default_profile) THEN
+    RAISE EXCEPTION 'cmp: unknown regulation profile %', NEW.default_profile USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END $$;
+
+-- A config can be published only under an approved profile, only while the site's default profile
+-- has an approved version, and only signed with an active key issued for signing configs.
+CREATE FUNCTION cmp.tg_config_guard() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = cmp, pg_temp AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM cmp.regulation_profiles p WHERE p.id = NEW.profile_id AND p.status = 'approved') THEN
+    RAISE EXCEPTION 'cmp: a config can be published only under an approved regulation profile' USING ERRCODE = '42501';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM cmp.sites s JOIN cmp.regulation_profiles p ON p.key = s.default_profile
+                 WHERE s.id = NEW.site_id AND p.status = 'approved') THEN
+    RAISE EXCEPTION 'cmp: the site''s default regulation profile has no approved version' USING ERRCODE = '42501';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM cmp.signing_keys k
+                 WHERE k.key_id = NEW.signing_key_id AND k.purpose = 'config' AND k.retired_at IS NULL) THEN
+    RAISE EXCEPTION 'cmp: a config must be signed with an active config-signing key' USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END $$;
+
+CREATE FUNCTION cmp.tg_checkpoint_guard() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = cmp, pg_temp AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM cmp.signing_keys k
+                 WHERE k.key_id = NEW.signing_key_id AND k.purpose = 'checkpoint' AND k.retired_at IS NULL) THEN
+    RAISE EXCEPTION 'cmp: a checkpoint must be signed with an active checkpoint-signing key' USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END $$;
+
+-- A signing key never changes; it can only be retired, once. It is never deleted, so old
+-- signatures stay checkable.
+CREATE FUNCTION cmp.tg_signing_key_frozen() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'cmp: a signing key cannot be deleted' USING ERRCODE = '42501';
+  END IF;
+  IF OLD.retired_at IS NOT NULL OR NEW.retired_at IS NULL
+     OR (to_jsonb(NEW) - 'retired_at') IS DISTINCT FROM (to_jsonb(OLD) - 'retired_at') THEN
+    RAISE EXCEPTION 'cmp: a signing key can only be retired, once' USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END $$;
+
+-- An organisation always keeps at least one owner. The organisation row is locked while the
+-- owners are counted, so two concurrent removals cannot both succeed. The count must see other
+-- committed changes, so owner removals are refused outside READ COMMITTED.
+CREATE FUNCTION cmp.tg_keep_an_owner() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = cmp, pg_temp AS $$
+BEGIN
+  IF OLD.role <> 'owner' OR (TG_OP = 'UPDATE' AND NEW.role = 'owner' AND NEW.org_id = OLD.org_id) THEN
+    RETURN NULL;
+  END IF;
+  IF current_setting('transaction_isolation') <> 'read committed' THEN
+    RAISE EXCEPTION 'cmp: owner changes must run in a READ COMMITTED transaction' USING ERRCODE = '42501';
+  END IF;
+  PERFORM 1 FROM cmp.organisations o WHERE o.id = OLD.org_id FOR UPDATE;
+  IF FOUND AND NOT EXISTS (SELECT 1 FROM cmp.org_members m WHERE m.org_id = OLD.org_id AND m.role = 'owner') THEN
+    RAISE EXCEPTION 'cmp: an organisation must keep at least one owner' USING ERRCODE = '42501';
+  END IF;
+  RETURN NULL;
+END $$;
+
 -- Before and after values of every management change.
 CREATE FUNCTION cmp.tg_audit() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = cmp, pg_temp AS $$
@@ -434,11 +550,11 @@ BEGIN
     EXECUTE format('CREATE TRIGGER no_update BEFORE UPDATE ON cmp.%I FOR EACH ROW EXECUTE FUNCTION cmp.tg_no_update()', t);
   END LOOP;
   -- never deleted
-  FOREACH t IN ARRAY ARRAY['receipt_flags','config_versions','checkpoints','audit_log','ledger_segments'] LOOP
+  FOREACH t IN ARRAY ARRAY['config_versions','checkpoints','audit_log','ledger_segments'] LOOP
     EXECUTE format('CREATE TRIGGER no_delete BEFORE DELETE ON cmp.%I FOR EACH ROW EXECUTE FUNCTION cmp.tg_no_delete()', t);
   END LOOP;
   -- deleted only by retention
-  FOREACH t IN ARRAY ARRAY['receipts','receipt_seals'] LOOP
+  FOREACH t IN ARRAY ARRAY['receipts','receipt_seals','receipt_flags'] LOOP
     EXECUTE format('CREATE TRIGGER delete_only_by_retention BEFORE DELETE ON cmp.%I FOR EACH ROW EXECUTE FUNCTION cmp.tg_delete_only_by_retention()', t);
   END LOOP;
   -- audited
@@ -458,6 +574,18 @@ CREATE TRIGGER purpose_frozen BEFORE UPDATE OR DELETE ON cmp.purposes
   FOR EACH ROW EXECUTE FUNCTION cmp.tg_purpose_frozen();
 CREATE TRIGGER site_guard BEFORE UPDATE ON cmp.sites
   FOR EACH ROW EXECUTE FUNCTION cmp.tg_site_guard();
+CREATE TRIGGER site_profile BEFORE INSERT OR UPDATE OF default_profile ON cmp.sites
+  FOR EACH ROW EXECUTE FUNCTION cmp.tg_site_profile();
+CREATE TRIGGER profile_frozen BEFORE UPDATE OR DELETE ON cmp.regulation_profiles
+  FOR EACH ROW EXECUTE FUNCTION cmp.tg_profile_frozen();
+CREATE TRIGGER config_guard BEFORE INSERT ON cmp.config_versions
+  FOR EACH ROW EXECUTE FUNCTION cmp.tg_config_guard();
+CREATE TRIGGER checkpoint_guard BEFORE INSERT ON cmp.checkpoints
+  FOR EACH ROW EXECUTE FUNCTION cmp.tg_checkpoint_guard();
+CREATE TRIGGER signing_key_frozen BEFORE UPDATE OR DELETE ON cmp.signing_keys
+  FOR EACH ROW EXECUTE FUNCTION cmp.tg_signing_key_frozen();
+CREATE TRIGGER keep_an_owner AFTER UPDATE OR DELETE ON cmp.org_members
+  FOR EACH ROW EXECUTE FUNCTION cmp.tg_keep_an_owner();
 
 -- ───────────────────────── Privileges ─────────────────────────
 -- Nothing is granted by default. anon gets nothing. Members get exactly the columns they may
