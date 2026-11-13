@@ -1,380 +1,262 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { useState, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useOverview, type AssessmentPosture } from "@/hooks/useOverview";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  ClipboardList, Compass, Play, Plug, GraduationCap, Sparkles,
-  BookOpen, Users, Bot, ScrollText, FileText, Scale, AlertTriangle,
-  FileSearch, ArrowRight, ChevronRight, Layers, Shield, BookMarked,
-} from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RequirementMap } from "@/components/dashboard/RequirementMap";
+import { ProgrammeTrail } from "@/components/dashboard/ProgrammeTrail";
+import { bandFor, plural, type Cell, type SlaCounts } from "@/lib/overview";
 import { cn } from "@/lib/utils";
-import {
-  RadialBarChart, RadialBar, PolarAngleAxis, ResponsiveContainer,
-} from "recharts";
 
-type Tile = {
-  key: string;
-  title: string;
-  description: string;
-  icon: any;
-  url?: string;
-  cta: string;
-  comingSoon?: boolean;
-  variant?: "default" | "dark";
-};
+const day = (iso: string) => new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 
-const moduleTiles: Tile[] = [
-  {
-    key: "assess",
-    title: "Assess",
-    description: "Conduct gap assessments, monitor compliance readiness, and manage audit workflows against DPDP 2023 and global frameworks.",
-    icon: ClipboardList,
-    url: "/assessments",
-    cta: "Go to Assessments",
-  },
-  {
-    key: "build",
-    title: "Build (Policies)",
-    description: "Generate and manage organisational policies, SOPs, and legal frameworks using our AI-powered policy generator.",
-    icon: Compass,
-    url: "/policy-sop-builder",
-    cta: "Open Policy Builder",
-  },
-  {
-    key: "execute",
-    title: "Execute",
-    description: "Track real-time compliance tasks, schedule internal audits, and manage ongoing privacy operations.",
-    icon: Play,
-    cta: "Coming Soon",
-    comingSoon: true,
-  },
-  {
-    key: "integrate",
-    title: "Integrate",
-    description: "Connect your existing tech stack to automate data discovery and monitor sync status across cloud providers.",
-    icon: Plug,
-    cta: "Coming Soon",
-    comingSoon: true,
-  },
-  {
-    key: "learn",
-    title: "Learn",
-    description: "Publish SEO-ready blogs, guides and landing pages to the public site, and capture consented leads.",
-    icon: GraduationCap,
-    url: "/learn",
-    cta: "Open Learn Hub",
-  },
-  {
-    key: "ai",
-    title: "AI Copilot",
-    description: "Draft complex Privacy Impact Assessments (PIA), DPIA notes and policy clauses using our compliant LLM.",
-    icon: Sparkles,
-    url: "/policy-sop-builder",
-    cta: "Try Beta Features",
-    variant: "dark",
-  },
-];
+function Section({ title, aside, children, className }: { title: string; aside?: ReactNode; children: ReactNode; className?: string }) {
+  return (
+    <section className={className}>
+      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h2 className="font-serif text-xl">{title}</h2>
+        {aside && <div className="text-sm text-muted-foreground">{aside}</div>}
+      </div>
+      {children}
+    </section>
+  );
+}
 
-const adminTiles: Tile[] = [
-  { key: "frameworks", title: "Framework Manager", description: "Manage assessment frameworks and requirements.", icon: BookOpen, url: "/admin/frameworks", cta: "Open" },
-  { key: "users", title: "User Management", description: "Invite team members and assign roles.", icon: Users, url: "/settings/users", cta: "Open" },
-  { key: "ai-config", title: "AI Configuration", description: "Manage prompts, models, and few-shot examples.", icon: Bot, url: "/admin/ai-config", cta: "Open" },
-  { key: "templates", title: "Assessment Templates", description: "Curate framework bundles for new assessments.", icon: BookMarked, url: "/admin/assessment-templates", cta: "Open" },
-];
+const TextLink = ({ to, children }: { to: string; children: ReactNode }) => (
+  <Link to={to} className="font-medium text-primary underline-offset-4 hover:underline focus-visible:underline">{children}</Link>
+);
 
-const privacyOpsTiles: Tile[] = [
-  { key: "consent", title: "Consent Ledger", description: "Consent receipts and records.", icon: ScrollText, url: "/consent/ledger", cta: "Open" },
-  { key: "notices", title: "Notice Manager", description: "Create and publish privacy notices.", icon: FileText, url: "/consent/notices", cta: "Open" },
-  { key: "rights", title: "Rights Desk", description: "Data principal rights requests.", icon: Scale, url: "/consent/rights-desk", cta: "Open" },
-  { key: "grievances", title: "Grievances", description: "Complaints and grievance redressal.", icon: AlertTriangle, url: "/consent/grievances", cta: "Open" },
-  { key: "audit", title: "Audit Log", description: "Tamper-evident event log.", icon: FileSearch, url: "/consent/audit-log", cta: "Open" },
-];
+/** The sentence that opens the page: where the assessment in view stands. */
+function headline(a: AssessmentPosture): { title: string; detail: string } {
+  const p = a.posture;
+  if (p.answered === 0) {
+    return {
+      title: `${a.name} has not answered any requirements yet.`,
+      detail: `${plural(p.applicable, "requirement")} apply. Answer them to see where you stand and what to close first.`,
+    };
+  }
+  const parts = [
+    p.gap ? `${p.gap} ${p.gap === 1 ? "is" : "are"} not met${p.criticalGaps ? `, ${p.criticalGaps} of them critical` : ""}` : "None are marked not met",
+    p.partial ? `${p.partial} ${p.partial === 1 ? "is" : "are"} partly met` : "",
+    p.open ? `${p.open} ${p.open === 1 ? "is" : "are"} still unanswered` : "",
+  ].filter(Boolean);
+  return { title: `${a.name} meets ${p.met} of ${plural(p.applicable, "requirement")}.`, detail: `${parts.join(". ")}.` };
+}
 
-interface ActivityItem {
-  id: string;
-  kind: "assessment" | "policy";
-  title: string;
-  status: string;
-  updated_at: string;
-  url: string;
+const RISK_LABEL = { critical: "Critical risk", high: "High risk", standard: "Standard risk" } as const;
+
+function GapList({ gaps, href }: { gaps: Cell[]; href: string }) {
+  return (
+    <ol className="border-t border-border">
+      {gaps.map((g, i) => (
+        <li key={g.id} className="border-b border-border">
+          <Link to={href} className="-mx-2 flex gap-4 rounded-md px-2 py-3 transition-colors hover:bg-card focus-visible:bg-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring">
+            <span className="w-5 shrink-0 font-serif text-lg leading-6 text-muted-foreground tabular-nums">{i + 1}</span>
+            <span className="min-w-0">
+              <span className="block text-sm leading-6 line-clamp-2">{g.description}</span>
+              <span className="mt-0.5 flex flex-wrap gap-x-4 text-xs text-muted-foreground">
+                <span>{g.domainName}</span>
+                <span className={cn(g.risk === "critical" && "font-semibold text-[hsl(var(--coral))]")}>{RISK_LABEL[g.risk]}</span>
+                <span>{g.state === "gap" ? "Not met" : "Partly met"}</span>
+                {g.priority && <span>{g.priority.replace("–", ", ")}</span>}
+              </span>
+            </span>
+          </Link>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function OpsRow({ label, to, counts }: { label: string; to: string; counts: SlaCounts }) {
+  return (
+    <li className="flex items-baseline justify-between gap-4 border-b border-border py-2.5 text-sm">
+      <TextLink to={to}>{label}</TextLink>
+      <span className="text-right text-muted-foreground">
+        {counts.open === 0 ? "None open" : (
+          <>
+            {counts.open} open
+            {counts.overdue > 0 && <span className="font-semibold text-[hsl(var(--coral))]">, {counts.overdue} overdue</span>}
+            {counts.dueSoon > 0 && <>, {counts.dueSoon} due within 7 days</>}
+          </>
+        )}
+      </span>
+    </li>
+  );
+}
+
+function Skeleton() {
+  return (
+    <div className="space-y-6" role="status" aria-label="Loading overview">
+      <div className="h-10 w-2/3 animate-pulse rounded-md bg-muted" />
+      <div className="h-5 w-1/2 animate-pulse rounded-md bg-muted" />
+      <div className="h-72 animate-pulse rounded-md bg-muted" />
+    </div>
+  );
 }
 
 export default function Dashboard() {
   const { user, profile } = useAuth();
-  const { userRoleLabel, userRoleColor, canManageUsers } = usePermissions();
-  const navigate = useNavigate();
+  const { userRoleLabel, canManageUsers, canCreate, loading: roleLoading } = usePermissions();
+  const { data, error, loading, retry } = useOverview(!!user && !roleLoading, canManageUsers);
+  const [focusId, setFocusId] = useState<string | null>(null);
 
-  const [activity, setActivity] = useState<ActivityItem[]>([]);
-  const [readiness, setReadiness] = useState<number>(0);
-  const [assessmentTotal, setAssessmentTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const context = [profile?.organisation, userRoleLabel].filter(Boolean).join(", ");
 
-  useEffect(() => {
-    if (!user) return;
-    void load();
-  }, [user]);
-
-  const load = async () => {
-    setLoading(true);
-    const [{ data: assessments }, { data: policies }] = await Promise.all([
-      supabase
-        .from("assessments")
-        .select("id, org_name, status, updated_at")
-        .order("updated_at", { ascending: false })
-        .limit(5),
-      supabase
-        .from("policy_documents")
-        .select("id, title, status, updated_at")
-        .order("updated_at", { ascending: false })
-        .limit(5),
-    ]);
-
-    const items: ActivityItem[] = [];
-    (assessments ?? []).slice(0, 3).forEach((a) =>
-      items.push({
-        id: a.id,
-        kind: "assessment",
-        title: a.org_name || "Untitled Assessment",
-        status: a.status,
-        updated_at: a.updated_at,
-        url: `/assessment/${a.id}/dashboard`,
-      }),
-    );
-    (policies ?? []).slice(0, 2).forEach((p: any) =>
-      items.push({
-        id: p.id,
-        kind: "policy",
-        title: p.title,
-        status: p.status,
-        updated_at: p.updated_at,
-        url: `/policy-library`,
-      }),
-    );
-    items.sort((a, b) => +new Date(b.updated_at) - +new Date(a.updated_at));
-    setActivity(items.slice(0, 5));
-
-    // Readiness: % of assessments completed vs total (weighted: In Progress = 50)
-    const all = assessments ?? [];
-    setAssessmentTotal(all.length);
-    if (all.length === 0) {
-      setReadiness(0);
-    } else {
-      const score = all.reduce((sum, a) => {
-        if (a.status === "Completed") return sum + 100;
-        if (a.status === "In Progress") return sum + 50;
-        return sum;
-      }, 0) / all.length;
-      setReadiness(Math.round(score));
-    }
-    setLoading(false);
-  };
-
-  const renderTile = (t: Tile) => {
-    const Icon = t.icon;
-    const isDark = t.variant === "dark";
+  if (error) {
     return (
-      <Card
-        key={t.key}
-        className={cn(
-          "border-border transition-all flex flex-col",
-          isDark ? "bg-slate-950 border-slate-800" : "bg-card hover:border-primary/40",
-          t.comingSoon && "opacity-70",
-        )}
-      >
-        <CardContent className="p-5 flex flex-col gap-4 flex-1">
-          <div className="flex items-center gap-3">
-            <div
-              className={cn(
-                "h-11 w-11 rounded-xl flex items-center justify-center shrink-0",
-                isDark
-                  ? "bg-primary/15 text-primary"
-                  : "bg-primary/10 text-primary",
-              )}
-            >
-              <Icon className="h-5 w-5" />
-            </div>
-            <div className="flex items-center gap-2">
-              <h3 className={cn("font-semibold text-base", isDark && "text-slate-100")}>
-                {t.title}
-              </h3>
-              {t.comingSoon && (
-                <Badge variant="outline" className="text-[9px] border-amber-500/40 text-amber-400">
-                  Soon
-                </Badge>
-              )}
-            </div>
-          </div>
-          <p
-            className={cn(
-              "text-sm leading-relaxed flex-1",
-              isDark ? "text-slate-400" : "text-muted-foreground",
-            )}
-          >
-            {t.description}
-          </p>
-          <Button
-            disabled={t.comingSoon}
-            onClick={() => t.url && navigate(t.url)}
-            className={cn(
-              "w-full justify-center",
-              isDark && !t.comingSoon && "bg-transparent border border-primary/40 text-primary hover:bg-primary/10",
-            )}
-            variant={isDark ? "outline" : "default"}
-          >
-            {t.cta}
-            {!t.comingSoon && <ArrowRight className="h-4 w-4 ml-1" />}
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="max-w-xl space-y-4 py-8">
+        <h1 className="font-serif text-3xl">The overview could not be loaded.</h1>
+        <p className="text-muted-foreground">Your data is unchanged. Check your connection and load it again.</p>
+        <Button onClick={retry}>Load again</Button>
+      </div>
     );
-  };
+  }
+  if (loading || !data) return <Skeleton />;
+
+  const focus = data.assessments.find((a) => a.id === focusId) ?? data.assessments[0];
+  const inProgress = data.assessments.filter((a) => a.status !== "Completed").length;
+  const trail = <ProgrammeTrail assessments={data.assessments.length} inProgress={inProgress} policies={data.policies} workspaces={data.workspaces} />;
+  const ops = (data.rights || data.grievances) && (
+    <Section title="Requests from people" className="mt-10">
+      <ul className="border-t border-border">
+        {data.rights && <OpsRow label="Rights requests" to="/consent/rights-desk" counts={data.rights} />}
+        {data.grievances && <OpsRow label="Grievances" to="/consent/grievances" counts={data.grievances} />}
+      </ul>
+    </Section>
+  );
+
+  if (!focus) {
+    return (
+      <div className="grid gap-12 lg:grid-cols-[1fr_20rem]">
+        <div className="max-w-xl space-y-4">
+          {context && <p className="text-sm text-muted-foreground">{context}</p>}
+          <h1 className="font-serif text-4xl leading-tight">Start with a gap assessment.</h1>
+          <p className="text-muted-foreground">
+            Answer the requirements that apply to your organisation. This page then shows where you stand, requirement by requirement, and what to close first.
+          </p>
+          <Button asChild><Link to="/assessments">{canCreate ? "Start an assessment" : "Open assessments"}</Link></Button>
+        </div>
+        <div>
+          <Section title="Your programme">{trail}</Section>
+          {ops}
+        </div>
+      </div>
+    );
+  }
+
+  const p = focus.posture;
+  const { title, detail } = headline(focus);
+  const assessHref = `/assessment/${focus.id}/rapid-assessment`;
+  const resultsHref = `/assessment/${focus.id}/dashboard`;
 
   return (
-    <div className="space-y-6">
-      {/* Welcome header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">
-            Welcome{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Your PrivcybHub regulatory workspace
-            {profile?.organisation && (
-              <> · <span className="text-foreground/80">{profile.organisation}</span></>
-            )}
-          </p>
+    <div className="space-y-12">
+      <header>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">{context || "Overview"}</p>
+          {data.assessments.length > 1 && (
+            <Select value={focus.id} onValueChange={setFocusId}>
+              <SelectTrigger className="w-full sm:w-72" aria-label="Assessment in view"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {data.assessments.map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
         </div>
-        <Badge variant="outline" className={cn("text-xs px-2.5 py-1 self-start", userRoleColor)}>
-          <Shield className="h-3 w-3 mr-1" />
-          {userRoleLabel}
-        </Badge>
-      </div>
 
-      {/* Module tiles */}
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            Modules
-          </h2>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {moduleTiles.map(renderTile)}
-        </div>
-      </section>
-
-      {/* Privacy Operations (GRC Manager / Admin) */}
-      {canManageUsers && (
-        <section>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              Privacy Operations
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {privacyOpsTiles.map(renderTile)}
-          </div>
-        </section>
-      )}
-
-      {/* Admin tools */}
-      {canManageUsers && (
-        <section>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-              <Shield className="h-3.5 w-3.5 text-primary" /> Admin Tools
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {adminTiles.map(renderTile)}
-          </div>
-        </section>
-      )}
-
-      {/* Bottom: Recent Activity + Readiness */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="border-border bg-card lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-base">Recent Activity</CardTitle>
-            <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate("/assessments")}>
-              View All <ChevronRight className="h-3 w-3 ml-1" />
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="space-y-2">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-12 bg-muted/50 rounded-lg animate-pulse" />
-                ))}
-              </div>
-            ) : activity.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">
-                No recent activity yet. Start an assessment or generate a policy.
-              </p>
-            ) : (
-              <div className="space-y-1.5">
-                {activity.map((a) => (
-                  <button
-                    key={`${a.kind}-${a.id}`}
-                    onClick={() => navigate(a.url)}
-                    className="w-full flex items-center justify-between p-3 rounded-lg bg-secondary/40 hover:bg-secondary transition-colors text-left"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      {a.kind === "assessment" ? (
-                        <ClipboardList className="h-4 w-4 text-primary shrink-0" />
-                      ) : (
-                        <FileText className="h-4 w-4 text-primary shrink-0" />
-                      )}
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{a.title}</p>
-                        <p className="text-[11px] text-muted-foreground">
-                          {a.kind === "assessment" ? "Assessment" : "Policy"} · {new Date(a.updated_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
-                        </p>
-                      </div>
-                    </div>
-                    <Badge variant="outline" className="text-[9px] shrink-0">{a.status}</Badge>
-                  </button>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="border-border bg-card">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Layers className="h-4 w-4 text-primary" /> Overall Readiness
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="relative h-44 flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <RadialBarChart
-                  innerRadius="75%"
-                  outerRadius="100%"
-                  data={[{ name: "readiness", value: readiness, fill: "hsl(var(--primary))" }]}
-                  startAngle={90}
-                  endAngle={-270}
-                >
-                  <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
-                  <RadialBar background={{ fill: "hsl(var(--muted))" }} dataKey="value" cornerRadius={8} />
-                </RadialBarChart>
-              </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-3xl font-bold text-foreground">{readiness}%</span>
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">
-                  Readiness
-                </span>
-              </div>
+        <div className="mt-5 grid items-end gap-x-12 gap-y-6 lg:grid-cols-[1fr_auto]">
+          <div>
+            <h1 className="max-w-[22ch] font-serif text-[clamp(1.9rem,3.6vw,2.9rem)] leading-[1.12] tracking-tight [text-wrap:balance]">{title}</h1>
+            <p className="mt-4 max-w-[62ch] text-base text-muted-foreground">{detail}</p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Button asChild><Link to={assessHref}>{p.open > 0 ? "Continue the assessment" : "Review the answers"}</Link></Button>
+              <Button asChild variant="outline"><Link to={resultsHref}>Open full results</Link></Button>
             </div>
-            <p className="text-xs text-muted-foreground text-center mt-2">
-              Across {assessmentTotal} assessment{assessmentTotal === 1 ? "" : "s"}
+          </div>
+          {p.score !== null && (
+            <div className="lg:text-right">
+              <p className="font-serif text-6xl leading-none">{p.score}<span className="text-3xl">%</span></p>
+              <p className="mt-2 text-sm font-semibold">{bandFor(p.score)}</p>
+              <p className="text-sm text-muted-foreground">Readiness, weighted by risk</p>
+            </div>
+          )}
+        </div>
+      </header>
+
+      <Section
+        title="Every requirement, by area"
+        aside={<>{focus.frameworks.join(", ")}, updated {day(focus.updatedAt)}</>}
+      >
+        <RequirementMap posture={p} href={assessHref} />
+        {p.answered > 0 && p.unverified > 0 && (
+          <p className="mt-4 text-sm text-muted-foreground">
+            {plural(p.unverified, "answer")} {p.unverified === 1 ? "rests" : "rest"} on evidence that has not been seen and verified.
+          </p>
+        )}
+      </Section>
+
+      <div className="grid gap-12 lg:grid-cols-[1fr_20rem]">
+        <div className="min-w-0 space-y-12">
+          <Section title="Close these first" aside={p.topGaps.length > 0 && "Ordered by priority, then risk"}>
+            {p.topGaps.length > 0 ? <GapList gaps={p.topGaps} href={assessHref} /> : (
+              <p className="text-sm text-muted-foreground">
+                {p.answered === 0 ? "Gaps appear here once requirements are answered." : "Nothing is marked not met or partly met."}
+              </p>
+            )}
+          </Section>
+
+          {data.assessments.length > 1 && (
+            <Section title="All assessments" aside={<TextLink to="/assessments">Manage assessments</TextLink>}>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[34rem] text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-left text-muted-foreground">
+                      <th className="py-2 pr-4 font-medium">Organisation</th>
+                      <th className="py-2 pr-4 font-medium">Readiness</th>
+                      <th className="py-2 pr-4 font-medium text-right">Not met</th>
+                      <th className="py-2 pr-4 font-medium">Status</th>
+                      <th className="py-2 font-medium text-right">Updated</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.assessments.map((a) => (
+                      <tr key={a.id} className={cn("border-b border-border", a.id === focus.id && "bg-card")}>
+                        <td className="max-w-[16rem] truncate py-2.5 pr-4 pl-2"><TextLink to={`/assessment/${a.id}/dashboard`}>{a.name}</TextLink></td>
+                        <td className="py-2.5 pr-4">
+                          {a.posture.score === null ? <span className="text-muted-foreground">Not started</span> : (
+                            <span className="flex items-center gap-3">
+                              <span className="h-1.5 w-24 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+                                <span className="block h-full rounded-full bg-primary" style={{ width: `${a.posture.score}%` }} />
+                              </span>
+                              <span className="tabular-nums">{a.posture.score}%</span>
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-2.5 pr-4 text-right tabular-nums">{a.posture.gap}</td>
+                        <td className="py-2.5 pr-4 text-muted-foreground">{a.status}</td>
+                        <td className="py-2.5 pr-2 text-right text-muted-foreground whitespace-nowrap">{day(a.updatedAt)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Section>
+          )}
+        </div>
+
+        <div>
+          <Section title="Your programme">{trail}</Section>
+          {data.policies.reviewOverdue > 0 && (
+            <p className="mt-6 border-l-2 border-[hsl(var(--coral))] pl-3 text-sm">
+              {plural(data.policies.reviewOverdue, "policy", "policies")} {data.policies.reviewOverdue === 1 ? "is" : "are"} past the review date.{" "}
+              <TextLink to="/policy-library">Open the policy register</TextLink>
             </p>
-          </CardContent>
-        </Card>
+          )}
+          {ops}
+        </div>
       </div>
     </div>
   );

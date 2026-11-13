@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DOMAINS, type Domain } from "@/data/assessmentDomains";
 import { RiskBadge } from "@/components/RiskBadge";
 import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { PROCESSOR_HIDDEN_CODES } from "@/lib/overview";
 
 interface CheckRow {
   id?: string;
@@ -42,8 +43,6 @@ interface RequirementMeta {
 
 type DpdpRole = "data_fiduciary" | "joint_data_fiduciary" | "data_processor" | "dual_role";
 
-// Domain codes hidden for pure Data Processors (consent/notice/grievance/rights)
-const PROCESSOR_HIDDEN_CODES = new Set(["A", "B", "H", "I"]);
 
 export default function PhaseRapidAssessment() {
   const { assessmentId } = useParams();
