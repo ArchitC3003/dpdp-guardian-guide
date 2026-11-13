@@ -25,5 +25,4 @@
 - Lovable syncs only `main`, and one Lovable Cloud database serves both live and preview. Every change follows: (1) feature branch with code, Drizzle migration and tests; (2) pull request reviewed and merged to `main`; (3) the Drizzle migration applied to Lovable Cloud from Lovable chat; (4) in Lovable chat: "Confirm commit <hash>, regenerate types, and run verifications".
 - Lovable's migration tool writes a new migration file for any SQL it is given and then applies every unapplied file. To apply a migration already in the repo, give it a single comment line; expect one extra empty migration entry.
 - Before writing a migration, fetch `origin/main` and number it after the latest file in `drizzle/migrations`.
-- Pages in `src/App.tsx` load lazily (except the landing page) behind `Suspense`, with another boundary around the `AppLayout` outlet; keep new pages lazy so the first download stays small.
-- The shared QueryClient caches for 2 minutes and does not refetch on window focus; override per query only when the data must be live.
+- Pages in `src/App.tsx` are lazy (except landing) behind `Suspense`; QueryClient caches 2 min, no focus refetch. Keeps first load and reads small.
