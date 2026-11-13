@@ -26,3 +26,4 @@
 - Lovable's migration tool writes a new migration file for any SQL it is given and then applies every unapplied file. To apply a migration already in the repo, give it a single comment line; expect one extra empty migration entry.
 - Before writing a migration, fetch `origin/main` and number it after the latest file in `drizzle/migrations`.
 - `src/App.tsx` pages are lazy (not landing) under `Suspense`; QueryClient: 2-min cache, no focus refetch.
+- CI (`.github/workflows/ci.yml`) runs type-check, tests and build on every pull request; lint is advisory until the existing errors are cleared. CI rewrites `bun.lock` download links to the public npm registry at install time, so leave the Lovable cache links in the committed lockfile.

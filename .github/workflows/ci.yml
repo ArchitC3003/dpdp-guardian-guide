@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Type-check, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+
+      # bun.lock is written by Lovable and points at Lovable's own package
+      # cache. Download the same versions from the public npm registry
+      # instead; the integrity hashes in the lockfile are still enforced.
+      - name: Use the public npm registry
+        run: sed -i -E 's#https://europe-west[0-9]+-npm\.pkg\.dev/lovable-core-prod/sandbox-npm-cache/#https://registry.npmjs.org/#g' bun.lock
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Type-check
+        run: |
+          bunx tsc -p tsconfig.app.json --noEmit
+          bunx tsc -p tsconfig.node.json --noEmit
+
+      - name: Test
+        run: bun run test
+
+      - name: Build
+        run: bun run build
+
+  lint:
+    name: Lint (advisory)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # The codebase has existing lint errors, so this job reports without
+    # blocking. Remove continue-on-error once `bun run lint` is clean.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+
+      - name: Use the public npm registry
+        run: sed -i -E 's#https://europe-west[0-9]+-npm\.pkg\.dev/lovable-core-prod/sandbox-npm-cache/#https://registry.npmjs.org/#g' bun.lock
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Lint
+        run: bun run lint

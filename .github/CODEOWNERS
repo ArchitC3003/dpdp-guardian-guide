@@ -1,0 +1,7 @@
+# Default reviewer for every change.
+* @ArchitC3003
+
+# Database and backend changes reach the shared Lovable Cloud database.
+/drizzle/   @ArchitC3003
+/supabase/  @ArchitC3003
+/.github/   @ArchitC3003
