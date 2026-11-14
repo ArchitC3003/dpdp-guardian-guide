@@ -9,7 +9,7 @@ Responds to the round-3 review. Not merged to main. Not applied to the PrivcybHu
 | --- | --- | --- | --- |
 | 1 | Rollback safety | Done | Section 2 |
 | 2 | Applied profile in package 2 | Recorded as a package 2 requirement | Specification, "Package 1 gate decisions"; AGENTS.md. profile_id is unchanged. Package 1 does not claim country-specific profile resolution |
-| 3 | Update the Technical Specification | Done | New section "Package 1 gate decisions": row-level security decision, same-site keys, receipt binding, scope immutability, frozen profiles and keys, last-owner rule, rollback behaviour, package 2 receipt fields, and a table of what hosting validation has and has not shown. The earlier "enabled and forced" wording is corrected |
+| 3 | Update the Technical Specification | Done; extract in docs/consent-platform/package-1-gate-decisions.md | New section "Package 1 gate decisions": row-level security decision, same-site keys, receipt binding, scope immutability, frozen profiles and keys, last-owner rule, rollback behaviour, package 2 receipt fields, and a table of what hosting validation has and has not shown. The earlier "enabled and forced" wording is corrected |
 | 4 | Classify the Supabase results correctly | Done | Described everywhere as a separate-project run, not Lovable Cloud |
 | 5 | Keep the suite and mutation tests permanently | Done | npm run test:db and npm run test:db:mutations; both extended in this round |
 | 6 | Branch divergence | Resolved by merge after review | Section 4 |
