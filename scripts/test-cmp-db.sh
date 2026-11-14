@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Runs the consent-platform database tests on a throwaway local Postgres. For each owner mode:
-#   apply migration -> run tests -> concurrency checks -> reverse migration -> apply again.
+#   apply migration -> run tests -> concurrency checks -> rollback safety -> reverse -> apply again.
 #
 # The migration and tests run as "platform_owner", a non-superuser role like the hosting
 # platform's migration role. Two modes show the schema does not depend on BYPASSRLS:
@@ -8,12 +8,13 @@
 #   nobypassrls  the owner has no BYPASSRLS
 #
 # Needs PostgreSQL 15+ server binaries (initdb, pg_ctl) and psql. Usage: npm run test:db
-# Environment: CMP_MODES (default "bypassrls nobypassrls"), CMP_MIGRATION (migration file to test),
+# Environment: CMP_MODES (default "bypassrls nobypassrls"), CMP_MIGRATION and CMP_ROLLBACK (files to test),
 #              CMP_RESULTS_OUT (write every check's outcome to this file), CMP_TEST_PORT.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 MIGRATION="${CMP_MIGRATION:-$ROOT/drizzle/migrations/0015_cmp_schema.sql}"
+ROLLBACK="${CMP_ROLLBACK:-$ROOT/drizzle/rollback/0015_cmp_schema.down.sql}"
 MODES="${CMP_MODES:-bypassrls nobypassrls}"
 BIN="$(pg_config --bindir 2>/dev/null || true)"
 [ -x "$BIN/initdb" ] || BIN="$(ls -d /usr/lib/postgresql/*/bin 2>/dev/null | sort -V | tail -1)"
@@ -21,8 +22,9 @@ BIN="$(pg_config --bindir 2>/dev/null || true)"
 
 WORK="$(mktemp -d)"
 PORT="${CMP_TEST_PORT:-54329}"
-cp "$ROOT"/drizzle/tests/*.sql "$ROOT"/drizzle/rollback/0015_cmp_schema.down.sql "$WORK"/
+cp "$ROOT"/drizzle/tests/*.sql "$WORK"/
 cp "$MIGRATION" "$WORK/up.sql"
+cp "$ROLLBACK" "$WORK/down.sql"
 
 # Postgres will not run as root; use the postgres account when we are root.
 if [ "$(id -u)" = "0" ]; then
@@ -101,12 +103,56 @@ for MODE in $MODES; do
   sed "s/^/$MODE\t/" "$RESULTS" >> "$ALL"
   [ "$FAILED" = "0" ] || break
 
-  echo "4/5 reverse migration"
-  run -f "$WORK/0015_cmp_schema.down.sql"
+  echo "4/5 rollback safety, then reverse migration"
+  # The rollback must refuse, changing nothing, while anything outside cmp depends on it.
+  # Each case creates one such object in another schema, runs the rollback, and checks that it was
+  # refused with SQLSTATE 2BP01 naming that object and nothing else, and that the object and cmp are
+  # both still there.
+  N=3000
+  run -c "create schema if not exists ext" >/dev/null
+  refuses() { # $1 label, $2 create statement, $3 text the refusal must name, $4 query proving survival, $5 drop statement
+    run -c "$2" >/dev/null
+    OUT="$(run -v VERBOSITY=verbose -f "$WORK/down.sql" 2>&1)" && CODE=0 || CODE=$?
+    KEPT="$(run -At -c "select ($4)::int::text || ',' || (select count(*) from pg_namespace where nspname = 'cmp') || ',' || (select count(*) from pg_tables where schemaname = 'cmp')")"
+    if [ "$CODE" -ne 0 ] && echo "$OUT" | grep -q "ERROR:  2BP01: cmp rollback refused" && echo "$OUT" | grep -qF "$3" && ! echo "$OUT" | grep -q "pg_toast" && [ "$(echo "$OUT" | grep -o 'ERROR:.*' | head -1 | tr ';' '\n' | wc -l)" = "1" ] && [ "$KEPT" = "1,1,19" ]; then
+      record PASS "$1" "refused with 2BP01 naming the object; object and cmp intact" "$(echo "$OUT" | grep -o 'ERROR:.*' | head -1 | cut -c1-220); kept=$KEPT"
+    else
+      record FAIL "$1" "refused with 2BP01 naming the object; object and cmp intact" "exit=$CODE kept=$KEPT $(echo "$OUT" | tr '\n' ' ' | cut -c1-300)"
+    fi
+    run -c "$5" >/dev/null
+  }
+  refuses "rollback refuses while a view outside cmp selects from it" \
+    "create view ext.vendor_names as select name from cmp.vendors" "view ext.vendor_names" \
+    "select count(*) = 1 from pg_views where schemaname = 'ext' and viewname = 'vendor_names'" "drop view ext.vendor_names"
+  refuses "rollback refuses while a table outside cmp has a foreign key into it" \
+    "create table ext.billing (org_id uuid references cmp.organisations(id))" "ext.billing" \
+    "select count(*) = 1 from pg_constraint where conrelid = 'ext.billing'::regclass and contype = 'f'" "drop table ext.billing"
+  refuses "rollback refuses while a policy outside cmp calls a cmp function" \
+    "create table ext.notes (org_id uuid); alter table ext.notes enable row level security; create policy members on ext.notes using (cmp.is_member(org_id))" "policy members on table ext.notes" \
+    "select count(*) = 1 from pg_policies where schemaname = 'ext' and policyname = 'members'" "drop table ext.notes"
+  refuses "rollback refuses while a trigger outside cmp uses a cmp function" \
+    "create table ext.frozen (id int); create trigger no_update before update on ext.frozen for each row execute function cmp.tg_no_update()" "trigger no_update on table ext.frozen" \
+    "select count(*) = 1 from pg_trigger where tgrelid = 'ext.frozen'::regclass and not tgisinternal" "drop table ext.frozen"
+  refuses "rollback refuses while a column outside cmp uses a cmp row type" \
+    "create table ext.snapshots (v cmp.vendors)" "ext.snapshots" \
+    "select count(*) = 1 from information_schema.columns where table_schema = 'ext' and table_name = 'snapshots' and column_name = 'v'" "drop table ext.snapshots"
+  refuses "rollback refuses while a routine outside cmp refers to it in its body" \
+    "create function ext.org_count() returns bigint language plpgsql as \$f\$ begin return (select count(*) from cmp.organisations); end \$f\$" "ext.org_count()" \
+    "select count(*) = 1 from pg_proc where oid = 'ext.org_count()'::regprocedure" "drop function ext.org_count()"
+  run -c "create table ext.unrelated (id int); insert into ext.unrelated values (1)" >/dev/null
+  sed "s/^/$MODE\t/" "$RESULTS" | awk -F'\t' '$2 > 3000' >> "$ALL"
+  [ "$FAILED" = "0" ] || break
+
+  run -f "$WORK/down.sql"
   LEFT="$(run -At -c "select count(*) from pg_namespace where nspname = 'cmp'")"
   [ "$LEFT" = "0" ] || { echo "FAIL: cmp schema still present after rollback"; exit 1; }
   LEFT="$(run -At -c "select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'cmp'")"
   [ "$LEFT" = "0" ] || { echo "FAIL: cmp functions still present after rollback"; exit 1; }
+  KEPT="$(run -At -c "select count(*) from ext.unrelated")"
+  if [ "$KEPT" = "1" ]; then S3=PASS; else S3=FAIL; FAILED=1; fi
+  printf '%s\t3099\t%s\trollback with no dependants removes cmp and leaves an unrelated table untouched\texpected: cmp gone, ext.unrelated has 1 row\tcmp schemas=%s, ext.unrelated rows=%s\n' "$MODE" "$S3" "$LEFT" "$KEPT" >> "$ALL"
+  echo "  $S3 rollback with no dependants removes cmp and leaves an unrelated table untouched"
+  [ "$FAILED" = "0" ] || break
 
   echo "5/5 apply migration again, then the platform smoke test on the fresh schema"
   run -f "$WORK/up.sql"

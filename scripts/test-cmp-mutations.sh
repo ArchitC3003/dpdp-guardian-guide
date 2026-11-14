@@ -1,18 +1,20 @@
 #!/usr/bin/env bash
 # Mutation tests for the consent-platform schema: remove one control at a time from a copy of the
-# migration and confirm the unchanged test suite fails, naming the check that should catch it.
+# migration (or of the rollback script) and confirm the unchanged test suite fails, naming the check that should catch it.
 # A mutation that still passes means the suite does not cover that control.
 # Usage: npm run test:db:mutations
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SRC="$ROOT/drizzle/migrations/0015_cmp_schema.sql"
+DOWN="$ROOT/drizzle/rollback/0015_cmp_schema.down.sql"
 TMP="$(mktemp -d)"; chmod 755 "$TMP"; trap 'rm -rf "$TMP"' EXIT
 
-python3 - "$SRC" "$TMP" <<'EOF'
+python3 - "$SRC" "$TMP" "$DOWN" <<'EOF'
 import sys
-src, out = sys.argv[1], sys.argv[2]
+src, out, down = sys.argv[1], sys.argv[2], sys.argv[3]
 base = open(src).read()
+down_base = open(down).read()
 # name | check that must fail | list of (find, replace)
 mutations = [
  ("receipt-config-site-key", "a Site A receipt cannot name Site B's config", [
@@ -44,24 +46,33 @@ mutations = [
  ("config-key-purpose", "a config cannot be signed with a checkpoint key", [
    ("WHERE k.key_id = NEW.signing_key_id AND k.purpose = 'config' AND k.retired_at IS NULL", "WHERE k.key_id = NEW.signing_key_id AND k.retired_at IS NULL")]),
 ]
+# The same, applied to the rollback script instead of the migration.
+rollback_mutations = [
+ ("rollback-dependency-check", "rollback refuses while a view outside cmp selects from it", [
+   ("  WHERE ref_ns = ns AND dep_ns IS DISTINCT FROM ns;", "  WHERE false;")]),
+ ("rollback-routine-scan", "rollback refuses while a routine outside cmp refers to it in its body", [
+   ("    AND p.prosrc ~* '\\mcmp\\.[a-z_]';", "    AND false;")]),
+]
 with open(out + "/list.txt", "w") as lst:
-    for name, check, edits in mutations:
-        s = base
-        for a, b in edits:
-            if s.count(a) != 1:
-                sys.exit(f"mutation {name}: pattern found {s.count(a)} times, expected 1")
-            s = s.replace(a, b)
-        open(f"{out}/{name}.sql", "w").write(s)
-        lst.write(f"{name}\t{check}\n")
+    for target, text, group in (("up", base, mutations), ("down", down_base, rollback_mutations)):
+        for name, check, edits in group:
+            s = text
+            for a, b in edits:
+                if s.count(a) != 1:
+                    sys.exit(f"mutation {name}: pattern found {s.count(a)} times, expected 1")
+                s = s.replace(a, b)
+            open(f"{out}/{name}.sql", "w").write(s)
+            lst.write(f"{name}\t{check}\t{target}\n")
 EOF
 [ $? -eq 0 ] || exit 2
 
 BAD=0; N=0
-while IFS=$'\t' read -r NAME CHECK; do
+while IFS=$'\t' read -r NAME CHECK TARGET; do
   N=$((N+1))
-  OUT="$(CMP_MODES=bypassrls CMP_MIGRATION="$TMP/$NAME.sql" CMP_TEST_PORT="${CMP_TEST_PORT:-54331}" bash "$ROOT/scripts/test-cmp-db.sh" 2>&1)"; CODE=$?
-  FAILS="$(echo "$OUT" | grep -c '^FAIL: .* \[expected ' || true)"
-  if [ "$CODE" -ne 0 ] && echo "$OUT" | grep -qF "FAIL: $CHECK ["; then
+  if [ "$TARGET" = "down" ]; then UP="$SRC"; DN="$TMP/$NAME.sql"; else UP="$TMP/$NAME.sql"; DN="$DOWN"; fi
+  OUT="$(CMP_MODES=bypassrls CMP_MIGRATION="$UP" CMP_ROLLBACK="$DN" CMP_TEST_PORT="${CMP_TEST_PORT:-54331}" bash "$ROOT/scripts/test-cmp-db.sh" 2>&1)"; CODE=$?
+  FAILS="$(echo "$OUT" | grep -cE '^FAIL: .* \[expected |^  FAIL ' || true)"
+  if [ "$CODE" -ne 0 ] && { echo "$OUT" | grep -qF "FAIL: $CHECK [" || echo "$OUT" | grep -qF "  FAIL $CHECK"; }; then
     echo "CAUGHT    $NAME: suite failed ($FAILS checks), including \"$CHECK\""
   else
     echo "NOT CAUGHT $NAME: expected \"$CHECK\" to fail (exit $CODE, $FAILS failed checks)"; BAD=1
