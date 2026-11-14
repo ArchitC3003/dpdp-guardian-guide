@@ -14,16 +14,7 @@ import { Shield, FileText, AlertTriangle, Upload, Send } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-
-const STORAGE_KEY = "privcybhub_cookie_consent_v2";
-
-const COOKIE_CATEGORIES = [
-  { id: "strictly_necessary", name: "Strictly Necessary", description: "Essential for website function. Cannot be disabled.", required: true },
-  { id: "functional", name: "Functional / Preferences", description: "Enhanced functionality like language and UI preferences.", required: false },
-  { id: "analytics", name: "Analytics & Performance", description: "Anonymous usage statistics to improve the platform.", required: false },
-  { id: "marketing", name: "Marketing & Advertising", description: "Delivers relevant advertisements.", required: false },
-  { id: "third_party", name: "Third-Party / Vendor", description: "External services like support widgets.", required: false },
-];
+import { CONSENT_CATEGORIES, CONSENT_CHANGE_EVENT, choicesFor, readConsent, saveConsent, splitChoices, type ConsentAction, type ConsentChoices } from "@/lib/consent";
 
 const RIGHTS_TYPES = [
   "Right to Information about processing (Section 11 DPDP Act)",
@@ -43,7 +34,9 @@ const GRIEVANCE_NATURES = [
 
 export default function PrivacyPreferences() {
   const { session, profile } = useAuth();
-  const [categories, setCategories] = useState<Record<string, boolean>>({});
+  const [categories, setCategories] = useState<ConsentChoices>(() => readConsent()?.categories ?? choicesFor(false));
+  const [sending, setSending] = useState(false);
+  const [website, setWebsite] = useState(""); // honeypot
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [rightsOpen, setRightsOpen] = useState(false);
   const [grievanceOpen, setGrievanceOpen] = useState(false);
@@ -61,102 +54,81 @@ export default function PrivacyPreferences() {
   const [gEmail, setGEmail] = useState("");
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        setCategories(parsed.categories || {});
-        setLastUpdated(parsed.ts);
-      } catch { /* ignore */ }
-    } else {
-      const init: Record<string, boolean> = {};
-      COOKIE_CATEGORIES.forEach((c) => (init[c.id] = c.required ? true : false));
-      setCategories(init);
-    }
+    const sync = () => {
+      const stored = readConsent();
+      setCategories(stored?.categories ?? choicesFor(false));
+      setLastUpdated(stored?.ts ?? null);
+    };
+    sync();
+    window.addEventListener(CONSENT_CHANGE_EVENT, sync);
+    return () => window.removeEventListener(CONSENT_CHANGE_EVENT, sync);
+  }, []);
+
+  useEffect(() => {
     if (session?.user?.email) {
       setRightsEmail(session.user.email);
       setGEmail(session.user.email);
     }
   }, [session]);
 
-  const handleSave = async () => {
-    const accepted = Object.entries(categories).filter(([, v]) => v).map(([k]) => k);
-    const rejected = Object.entries(categories).filter(([, v]) => !v).map(([k]) => k).filter((k) => !COOKIE_CATEGORIES.find((c) => c.id === k)?.required);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ categories, action: "updated", ts: new Date().toISOString() }));
-    try {
-      await (supabase as any).from("consent_receipts").insert({
-        user_id: session?.user?.id || null,
-        categories_accepted: accepted,
-        categories_rejected: rejected,
-        action_type: "updated",
-        user_agent: navigator.userAgent,
-        banner_language: "en",
-      });
-    } catch { /* ignore */ }
-    toast({ title: "Preferences saved", description: "Your cookie preferences have been updated." });
-    setLastUpdated(new Date().toISOString());
+  const record = async (choices: ConsentChoices, action: ConsentAction, done: { title: string; description: string }) => {
+    const saved = saveConsent(choices, action);
+    const { accepted, rejected } = splitChoices(saved.categories);
+    const { error } = await supabase.from("consent_receipts").insert({
+      user_id: session?.user?.id || null,
+      session_id: session?.user?.id ? null : crypto.randomUUID(),
+      categories_accepted: accepted,
+      categories_rejected: rejected,
+      action_type: action,
+      withdrawal_timestamp: action === "withdrawn" ? saved.ts : null,
+      user_agent: navigator.userAgent,
+      banner_language: "en",
+    });
+    // The choice is already in force in this browser; only the server record can fail.
+    if (error) toast({ title: done.title, description: "Your choice applies on this device, but we could not log it. Please try again.", variant: "destructive" });
+    else toast(done);
   };
 
-  const handleWithdrawAll = async () => {
-    const min: Record<string, boolean> = {};
-    COOKIE_CATEGORIES.forEach((c) => (min[c.id] = c.required));
-    setCategories(min);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ categories: min, action: "withdrawn", ts: new Date().toISOString() }));
-    try {
-      await (supabase as any).from("consent_receipts").insert({
-        user_id: session?.user?.id || null,
-        categories_accepted: ["strictly_necessary"],
-        categories_rejected: ["functional", "analytics", "marketing", "third_party"],
-        action_type: "withdrawn",
-        withdrawal_timestamp: new Date().toISOString(),
-        user_agent: navigator.userAgent,
-        banner_language: "en",
-      });
-    } catch { /* ignore */ }
-    toast({ title: "Consent withdrawn", description: "All optional consent has been withdrawn." });
-    setLastUpdated(new Date().toISOString());
+  const handleSave = () => record(categories, "updated", { title: "Preferences saved", description: "Your privacy choices have been updated." });
+  const handleWithdrawAll = () => record(choicesFor(false), "withdrawn", { title: "Consent withdrawn", description: "All optional consent has been withdrawn and stored preferences were erased." });
+
+  const submit = async (body: Record<string, unknown>, label: string) => {
+    setSending(true);
+    const { data, error } = await supabase.functions.invoke("submit-privacy-request", { body: { ...body, website } });
+    setSending(false);
+    if (error || data?.error || !data?.ok) {
+      toast({ title: "Not submitted", description: data?.error || "We could not submit this. Please try again or write to privacy@privcybhub.com.", variant: "destructive" });
+      return false;
+    }
+    toast({ title: `${label} submitted`, description: `Reference ${data.reference}. Keep this for follow-up; we will reply to the email address you gave.` });
+    return true;
   };
 
   const submitRightsRequest = async () => {
-    if (!rightsType || !rightsDesc || !rightsEmail || !rightsConfirm) {
+    if (!rightsType || !rightsDesc.trim() || !rightsEmail.trim() || !rightsConfirm) {
       toast({ title: "Missing fields", description: "Please fill all required fields.", variant: "destructive" });
       return;
     }
-    try {
-      await (supabase as any).from("rights_requests").insert({
-        user_id: session?.user?.id || null,
-        user_email: rightsEmail,
-        request_type: rightsType,
-        description: rightsDesc.slice(0, 500),
-      });
-      toast({ title: "Request submitted", description: "Your rights request has been submitted. You will receive an acknowledgement." });
+    if (await submit({ kind: "rights", email: rightsEmail, request_type: rightsType, description: rightsDesc, confirmed: true }, "Request")) {
       setRightsOpen(false);
       setRightsType(""); setRightsDesc(""); setRightsConfirm(false);
-    } catch (e) {
-      toast({ title: "Error", description: "Failed to submit request.", variant: "destructive" });
     }
   };
 
   const submitGrievance = async () => {
-    if (!gSubject || !gNature || !gDesc || !gEmail) {
+    if (!gSubject.trim() || !gNature || !gDesc.trim() || !gEmail.trim()) {
       toast({ title: "Missing fields", description: "Please fill all required fields.", variant: "destructive" });
       return;
     }
-    try {
-      await (supabase as any).from("grievances").insert({
-        user_id: session?.user?.id || null,
-        user_email: gEmail,
-        subject: gSubject,
-        nature: gNature,
-        description: gDesc.slice(0, 1000),
-      });
-      toast({ title: "Grievance submitted", description: "Your complaint has been registered. You will receive an acknowledgement." });
+    if (await submit({ kind: "grievance", email: gEmail, subject: gSubject, nature: gNature, description: gDesc }, "Grievance")) {
       setGrievanceOpen(false);
       setGSubject(""); setGNature(""); setGDesc("");
-    } catch (e) {
-      toast({ title: "Error", description: "Failed to submit grievance.", variant: "destructive" });
     }
   };
+
+  const honeypot = (
+    <input tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" name="website" value={website} onChange={(e) => setWebsite(e.target.value)} />
+  );
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4 space-y-6">
@@ -175,7 +147,7 @@ export default function PrivacyPreferences() {
           {lastUpdated && <CardDescription>Last updated: {new Date(lastUpdated).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}</CardDescription>}
         </CardHeader>
         <CardContent className="space-y-4">
-          {COOKIE_CATEGORIES.map((cat) => (
+          {CONSENT_CATEGORIES.map((cat) => (
             <div key={cat.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
               <div>
                 <div className="flex items-center gap-2">
@@ -264,7 +236,8 @@ export default function PrivacyPreferences() {
                   <Checkbox checked={rightsConfirm} onCheckedChange={(v) => setRightsConfirm(!!v)} id="rights-confirm" />
                   <Label htmlFor="rights-confirm" className="text-sm">I confirm this request relates to my personal data</Label>
                 </div>
-                <Button onClick={submitRightsRequest} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
+                {honeypot}
+                <Button onClick={submitRightsRequest} disabled={sending} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
                   <Send className="h-4 w-4 mr-2" /> Submit Request
                 </Button>
               </div>
@@ -293,7 +266,7 @@ export default function PrivacyPreferences() {
               <div className="space-y-4">
                 <div>
                   <Label>Subject of Complaint *</Label>
-                  <Input value={gSubject} onChange={(e) => setGSubject(e.target.value)} placeholder="Brief subject" />
+                  <Input value={gSubject} onChange={(e) => setGSubject(e.target.value)} maxLength={200} placeholder="Brief subject" />
                 </div>
                 <div>
                   <Label>Nature *</Label>
@@ -312,7 +285,8 @@ export default function PrivacyPreferences() {
                   <Label>Email address *</Label>
                   <Input value={gEmail} onChange={(e) => setGEmail(e.target.value)} type="email" />
                 </div>
-                <Button onClick={submitGrievance} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
+                {honeypot}
+                <Button onClick={submitGrievance} disabled={sending} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
                   <Send className="h-4 w-4 mr-2" /> Submit Grievance
                 </Button>
               </div>

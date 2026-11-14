@@ -1,3 +1,4 @@
+import { hasConsent } from "@/lib/consent";
 import { splitForSpeech, type SpeechBlock } from "./extractReadable";
 
 export const SPEECH_RATES = [0.75, 1, 1.25, 1.5, 2] as const;
@@ -270,5 +271,8 @@ export class SpeechController {
     this.listeners.forEach((fn) => fn());
   }
   private read(key: string): string | null { try { return this.storage?.getItem(key) ?? null; } catch { return null; } }
-  private write(key: string, value: string) { try { this.storage?.setItem(key, value); } catch { /* preference only */ } }
+  private write(key: string, value: string) {
+    if (!hasConsent("functional")) return; // preference storage needs the visitor's consent
+    try { this.storage?.setItem(key, value); } catch { /* preference only */ }
+  }
 }

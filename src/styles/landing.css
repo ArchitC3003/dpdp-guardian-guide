@@ -194,7 +194,8 @@
 @media (max-width: 700px) { .lp-close .lp-wrap { grid-template-columns: 1fr; } .lp-close::after { width: 150px; height: 150px; bottom: -60px; } }
 .lp-foot .lp-wrap { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; align-items: center; padding-block: 20px; font-size: 14px; }
 .lp-foot nav { display: flex; gap: 18px; }
-.lp-foot nav a { color: var(--lp-ink); }
+.lp-foot nav a, .lp-foot nav button { color: var(--lp-ink); }
+.lp-foot nav button { background: none; border: 0; padding: 0; font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 
 @media (prefers-reduced-motion: reduce) {
   .lp *, .lp *::before, .lp *::after { animation: none !important; transition: none !important; }

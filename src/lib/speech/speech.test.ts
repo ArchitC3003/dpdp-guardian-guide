@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { extractReadable, splitForSpeech } from "./extractReadable";
 import { SpeechController, rankVoices } from "./SpeechController";
+import { choicesFor, saveConsent } from "@/lib/consent";
 
 function dom(html: string): Element {
   const root = document.createElement("div");
@@ -186,7 +187,20 @@ describe("SpeechController", () => {
     c.destroy();
   });
 
+  it("does not remember speed or voice unless preference storage is allowed", () => {
+    saveConsent(choicesFor(false), "reject_all");
+    const e = fakeEngine();
+    const c = new SpeechController(e.env);
+    c.setRate(1.5);
+    expect(c.getState().rate).toBe(1.5);
+    c.destroy();
+    const again = new SpeechController(e.env);
+    expect(again.getState().rate).toBe(1);
+    again.destroy();
+  });
+
   it("applies a new speed or voice to the current sentence and remembers it", () => {
+    saveConsent(choicesFor(true), "accept_all");
     const e = fakeEngine();
     const c = new SpeechController(e.env);
     c.load(blocks("One.", "Two."));

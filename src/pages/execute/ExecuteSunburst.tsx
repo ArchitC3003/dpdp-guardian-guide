@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { setPreference } from "@/lib/consent";
 import { IndustryChart } from "@/components/execute/IndustryChart";
 import { SectorList } from "@/components/execute/SectorList";
 import { ImpactPanel } from "@/components/execute/ImpactPanel";
@@ -73,7 +74,7 @@ export default function ExecuteSunburst() {
   }, [selected]);
   const changeView = (v: View) => {
     setView(v);
-    try { localStorage.setItem(VIEW_KEY, v); } catch { /* storage unavailable */ }
+    setPreference(VIEW_KEY, v);
   };
 
   const results = useMemo(() => searchIndustries(query), [query]);

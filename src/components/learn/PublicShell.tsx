@@ -1,3 +1,4 @@
+import { openConsentPreferences } from "@/lib/consent";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +28,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
           <span>© {new Date().getFullYear()} PrivcybHub, Pune, India</span>
           <div className="flex gap-5">
             <Link to="/privacy">Privacy</Link><Link to="/terms">Terms</Link><Link to="/privacy-preferences">Privacy preferences</Link>
+            <button type="button" onClick={openConsentPreferences} className="hover:text-foreground">Privacy choices</button>
           </div>
         </div>
       </footer>
